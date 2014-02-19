@@ -1,0 +1,48 @@
+[
+	{
+		"model": "snow.locations",
+		"pk": 1,
+		"fields": {
+			"location_name": "arctic"
+			}	
+	},
+	{
+		"model": "snow.locations",
+		"pk": 2,
+		"fields": {
+			"location_name": "antarctic"
+			}
+	},
+	{
+		"model": "snow.layer_groups",
+		"pk": 1,
+		"fields": {
+			"group_name": "uncatagorized",
+			"description": "default catagory for layers with no group"
+			}
+	},
+	{
+		"model": "snow.layer_groups",
+		"pk": 2,
+		"fields": {
+			"group_name": "standard",
+			"description": "surface and bottom layers"
+			}
+	},
+	{
+		"model": "snow.layers",
+		"pk": 1,
+		"fields": {
+			"layer_name": "surface",
+			"layer_group": 2
+			}
+	},
+	{
+		"model": "snow.layers",
+		"pk": 2,
+		"fields": {
+			"layer_name": "bottom",
+			"layer_group": 2
+			}
+	}
+]
