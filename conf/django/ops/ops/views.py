@@ -797,7 +797,7 @@ def get_layer_points_csv(request):
         
         # CREATE THE QUERY
         c_layer_pks = tuple(models.layers.objects.filter(layer_name__in=['surface','bottom'],status='normal').values_list('pk',flat=True))
-        query = "SELECT DISTINCT ON (lp.gps_time) s.season_name,sg.segment_name,lp.segment_id,lp.layer_id,lp.gps_time,lp.twtt,lp.quality,lp.pick_type,ST_X(lp.layer_point),ST_Y(lp.layer_point),ST_Z(lp.layer_point) FROM %s_layer_points lp INNER JOIN %s_seasons s ON lp.season_id = s.season_id INNER JOIN %s_segments sg ON lp.segment_id = sg.segment_id WHERE s.status = 'public' AND lp.layer_id IN %s AND lp.location_id=%s AND sg.segment_name BETWEEN '%s' AND '%s' AND ST_Within(lp.layer_point,ST_GeomFromText('%s',4326)) ORDER BY lp.gps_time,lp.segment_id" % (response1,response1,response1,c_layer_pks,c_location,startseg,stopseg,bound)
+        query = "SELECT DISTINCT ON (lp.gps_time) s.season_name,sg.segment_name,lp.segment_id,lp.layer_id,lp.gps_time,lp.twtt,lp.quality,lp.pick_type,ST_X(lp.layer_point),ST_Y(lp.layer_point),ST_Z(lp.layer_point) FROM %s_layer_points lp INNER JOIN %s_seasons s ON lp.season_id = s.season_id INNER JOIN %s_segments sg ON lp.segment_id = sg.segment_id WHERE s.status = 'public' AND lp.layer_id IN %s AND lp.location_id=%s AND sg.segment_name BETWEEN '%s' AND '%s' AND ST_Within(lp.layer_point,ST_GeomFromText('%s',4326)) ORDER BY lp.gps_time,lp.segment_id LIMIT 2000000;" % (response1,response1,response1,c_layer_pks,c_location,startseg,stopseg,bound)
 
         # OPEN A CURSOR
         cursor = connection.cursor()
@@ -990,7 +990,7 @@ def get_layer_points_kml(request):
         c_location = models.locations.objects.filter(location_name=region).values_list('location_id',flat=True)[0]
         
         # CREATE THE QUERY
-        query = "SELECT DISTINCT ON (pp.gps_time) sg.segment_name,pp.segment_id,ST_X(pp.point_path),ST_Y(pp.point_path),ST_Z(pp.point_path),pp.gps_time FROM %s_segments sg INNER JOIN %s_point_paths pp ON sg.segment_id = pp.segment_id INNER JOIN %s_seasons s ON pp.season_id = s.season_id WHERE s.status = 'public' AND pp.location_id=%s AND sg.segment_name BETWEEN '%s' AND '%s' AND ST_Within(pp.point_path,ST_GeomFromText('%s',4326)) ORDER BY pp.gps_time,pp.segment_id" % (response1,response1,response1,c_location,startseg,stopseg,bound)
+        query = "SELECT DISTINCT ON (pp.gps_time) sg.segment_name,pp.segment_id,ST_X(pp.point_path),ST_Y(pp.point_path),ST_Z(pp.point_path),pp.gps_time FROM %s_segments sg INNER JOIN %s_point_paths pp ON sg.segment_id = pp.segment_id INNER JOIN %s_seasons s ON pp.season_id = s.season_id WHERE s.status = 'public' AND pp.location_id=%s AND sg.segment_name BETWEEN '%s' AND '%s' AND ST_Within(pp.point_path,ST_GeomFromText('%s',4326)) ORDER BY pp.gps_time,pp.segment_id LIMIT 2000000;" % (response1,response1,response1,c_location,startseg,stopseg,bound)
         
         # OPEN A CURSOR
         cursor = connection.cursor()
