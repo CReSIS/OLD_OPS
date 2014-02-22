@@ -807,9 +807,11 @@ def get_layer_points_csv(request):
 
             # FETCH THE ROWS
             rows = cursor.fetchall()
-        finally: 
+		
+		finally: 
             cursor.close()    
-        # CONFIRM THERE IS DATA
+        
+		# CONFIRM THERE IS DATA
         if not rows:
             return utility.response(0,'NO DATA FOUND. (NO DATA IN YOUR SEARCH REGION)')
         
