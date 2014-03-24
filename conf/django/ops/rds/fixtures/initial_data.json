@@ -3,37 +3,39 @@
 		"model": "rds.locations",
 		"pk": 1,
 		"fields": {
-			"location_name": "arctic"
+			"name": "arctic"
 			}	
 	},
 	{
 		"model": "rds.locations",
 		"pk": 2,
 		"fields": {
-			"location_name": "antarctic"
+			"name": "antarctic"
 			}
 	},
 	{
 		"model": "rds.layer_groups",
 		"pk": 1,
 		"fields": {
-			"group_name": "uncatagorized",
-			"description": "default catagory for layers with no group"
+			"name": "uncatagorized",
+			"description": "default catagory for layers with no group",
+			"public": true
 			}
 	},
 	{
 		"model": "rds.layer_groups",
 		"pk": 2,
 		"fields": {
-			"group_name": "standard",
-			"description": "surface and bottom layers"
+			"name": "standard",
+			"description": "surface and bottom layers",
+			"public": true
 			}
 	},
 	{
 		"model": "rds.layers",
 		"pk": 1,
 		"fields": {
-			"layer_name": "surface",
+			"name": "surface",
 			"layer_group": 2
 			}
 	},
@@ -41,7 +43,7 @@
 		"model": "rds.layers",
 		"pk": 2,
 		"fields": {
-			"layer_name": "bottom",
+			"name": "bottom",
 			"layer_group": 2
 			}
 	}

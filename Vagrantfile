@@ -26,8 +26,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 		vb.name = "OpenPolarServer"
 
 		# CHANGE THE HARDWARE ALLOTMENT
-		vb.customize ["modifyvm", :id, "--memory", "2048"]
-		vb.customize ["modifyvm", :id, "--cpus", "2"]
+		vb.customize ["modifyvm", :id, "--memory", "1024"]
+		vb.customize ["modifyvm", :id, "--cpus", "1"]
 
 	end
 

@@ -13,14 +13,14 @@
 #
 # PRIMARY SOFTWARE INSTALLED AND CONFIGURED
 #	- APACHE HTTPD, APACHE TOMCAT, POSTGRESQL, POSTGIS, GEOSERVER(WAR), DJANGO FRAMEWORK, PYTHON27(VIRTUALENV)
-#
 
 # =================================================================================
 # USER SETUP PARAMETERS
 
+newDb=1 # CREATE A NEW DATABASE SERVER (THIS SHOULD BE ON FOR DEV BOXES, OFF FOR OPS-TEMP)
+
 # BASIC SYSTEM INFORMATION
 serverAdmin="root"; # REPLACE WITH AN EMAIL IF YOU WISH
-
 serverName="192.168.111.222"; # PROBABLY SHOULD NOT CHANGE THIS. (HAVE NOT TRACKED DOWN ALL DEPENDENCIES YET)
 
 # OPTIONAL INSTALLATIONS
@@ -53,6 +53,16 @@ printf "\n"
 
 startTime=$(date -u);
 appName="ops";
+
+# --------------------------------------------------------------------
+# WRITE DNS ENTRY
+
+dnsStr="
+nameserver 8.8.8.8
+nameserver 8.8.4.4";
+
+echo -n > /etc/resolv.conf
+echo -e "$dnsStr" > /etc/resolv.conf
 
 # --------------------------------------------------------------------
 # UPDATE THE SYSTEM AND INSTALL REPOS AND UTILITY PACKAGES
@@ -376,73 +386,78 @@ rm -f ~/jai_imageio-1_1-lib-linux-amd64-jre.bin
 # --------------------------------------------------------------------
 # INSTALL AND CONFIGURE POSTGRESQL + POSTGIS
 
-# EXCLUDE POSTGRESQL FROM THE BASE CentOS RPM
-sed -i -e '/^\[base\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
-sed -i -e '/^\[updates\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
+if [ $newDb -eq 1 ]; then
 
-# INSTALL POSTGRESQL
-yum install -y postgresql93* postgis2_93* 
+	# EXCLUDE POSTGRESQL FROM THE BASE CentOS RPM
+	sed -i -e '/^\[base\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
+	sed -i -e '/^\[updates\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
 
-# INSTALL PYTHON PSYCOPG2 MODULE FOR POSTGRES
-export PATH=/usr/pgsql-9.3/bin:"$PATH"
-pip install psycopg2
+	# INSTALL POSTGRESQL
+	yum install -y postgresql93* postgis2_93* 
 
-# MAKE THE SNFS1 MOCK DIRECTORY IF IT DOESNT EXIST
-if [ ! -d "/cresis/snfs1/web/ops/pgsql/9.3/" ]
-	then
-		mkdir -p /cresis/snfs1/web/ops/pgsql/9.3/
-		chown postgres:postgres /cresis/snfs1/web/ops/pgsql/9.3/
-		chmod 700 /cresis/snfs1/web/ops/pgsql/9.3/
+	# INSTALL PYTHON PSYCOPG2 MODULE FOR POSTGRES
+	export PATH=/usr/pgsql-9.3/bin:"$PATH"
+	pip install psycopg2
+
+	# MAKE THE SNFS1 MOCK DIRECTORY IF IT DOESNT EXIST
+	if [ ! -d "/cresis/snfs1/web/ops/pgsql/9.3/" ]
+		then
+			mkdir -p /cresis/snfs1/web/ops/pgsql/9.3/
+			chown postgres:postgres /cresis/snfs1/web/ops/pgsql/9.3/
+			chmod 700 /cresis/snfs1/web/ops/pgsql/9.3/
+	fi
+
+	# SET THE DEVELOPMENT USERNAME AND PASSWORD
+	dbUser='admin'
+	dbPswd='pubAdmin'
+
+	# INITIALIZE THE DATABASE CLUSTER
+	pgDir='/cresis/snfs1/web/ops/pgsql/9.3/'
+	cmdStr='/usr/pgsql-9.3/bin/initdb -D '$pgDir
+	su - postgres -c "$cmdStr"
+	pgConfDir=$pgDir"postgresql.conf"
+
+	# SET UP THE POSTGRESQL CONFIG FILES
+	sed -i "s,#port = 5432,port = 5432,g" $pgConfDir
+	sed -i "s,#track_counts = on,track_counts = on,g" $pgConfDir
+	sed -i "s,#autovacuum = on,autovacuum = on,g" $pgConfDir
+	sed -i "s,local   all             all                                     peer,local   all             all                                     trust,g" $pgConfDir
+
+	# START UP THE POSTGRESQL SERVER
+	su - postgres -c '/usr/pgsql-9.3/bin/pg_ctl start -D '$pgDir
+	sleep 5
+
+	# CREATE THE ADMIN ROLE
+	cmdstring="CREATE ROLE "$dbUser" WITH SUPERUSER LOGIN PASSWORD '"$dbPswd"';"
+	psql -U postgres -d postgres -c "$cmdstring"
+
+	# CREATE THE POSTGIS TEMPLATE
+	cmdstring="createdb postgis_template -O "$dbUser 
+	su - postgres -c "$cmdstring"
+	psql -U postgres -d postgis_template -c "CREATE EXTENSION postgis; CREATE EXTENSION postgis_topology;"
+
+	# CREATE THE APP DATABASE
+	cmdstring="createdb "$appName" -O "$dbUser" -T postgis_template"
+	su - postgres -c "$cmdstring"
+	
 fi
-
-# SET THE DEVELOPMENT USERNAME AND PASSWORD
-dbUser='admin'
-dbPswd='pubAdmin'
-
-# INITIALIZE THE DATABASE CLUSTER
-pgDir='/cresis/snfs1/web/ops/pgsql/9.3/'
-cmdStr='/usr/pgsql-9.3/bin/initdb -D '$pgDir
-su - postgres -c "$cmdStr"
-pgConfDir=$pgDir"postgresql.conf"
-
-# SET UP THE POSTGRESQL CONFIG FILES
-sed -i "s,#port = 5432,port = 5432,g" $pgConfDir
-sed -i "s,#track_counts = on,track_counts = on,g" $pgConfDir
-sed -i "s,#autovacuum = on,autovacuum = on,g" $pgConfDir
-sed -i "s,local   all             all                                     peer,local   all             all                                     trust,g" $pgConfDir
-
-# START UP THE POSTGRESQL SERVER
-su - postgres -c '/usr/pgsql-9.3/bin/pg_ctl start -D '$pgDir
-sleep 5
-
-# CREATE THE ADMIN ROLE
-cmdstring="CREATE ROLE "$dbUser" WITH SUPERUSER LOGIN PASSWORD '"$dbPswd"';"
-psql -U postgres -d postgres -c "$cmdstring"
-
-# CREATE THE POSTGIS TEMPLATE
-cmdstring="createdb postgis_template -O "$dbUser 
-su - postgres -c "$cmdstring"
-psql -U postgres -d postgis_template -c "CREATE EXTENSION postgis; CREATE EXTENSION postgis_topology;"
-
-# CREATE THE APP DATABASE
-cmdstring="createdb "$appName" -O "$dbUser" -T postgis_template"
-su - postgres -c "$cmdstring"
 
 # --------------------------------------------------------------------
 # INSTALL PYTHON PACKAGES / SCIPY / GEOS
 
 # INSTALL PACKAGES WITH PIP
-pip install Cython 
-pip install geojson 
+# pip install Cython 
+pip install geojson
 pip install ujson 
 pip install django-extensions 
 pip install simplekml
 pip install --pre line_profiler
+pip install pylint
 
 # INSTALL SCIPY 
-yum -y install atlas-devel blas-devel
-pip install numpy
-pip install scipy 
+# yum -y install atlas-devel blas-devel
+# pip install numpy
+# pip install scipy
 
 # INSTALL GEOS
 yum -y install geos-devel
@@ -457,8 +472,10 @@ pip install Django==1.6.2
 mkdir -p /var/django/
 cp -rf /vagrant/conf/django/* /var/django/
 
-# SYNC THE DJANGO DEFINED DATABASE
-python /var/django/$appName/manage.py syncdb --noinput 
+if [ $newDb -eq 1 ]; then
+	# SYNC THE DJANGO DEFINED DATABASE
+	python /var/django/$appName/manage.py syncdb --noinput 
+fi
 
 # --------------------------------------------------------------------
 # BULKLOAD DATA TO POSTGRESQL
@@ -487,10 +504,18 @@ fi
 # INSALL APACHE TOMCAT
 yum install -y tomcat6
 
-# INSTALL GEOSERVER WAR
-cd ~ && wget https://ops.cresis.ku.edu/data/geoserver/geoserver.pub.war
-mv ./geoserver.pub.war /var/lib/tomcat6/webapps/geoserver.war
+if [ -f /vagrant/conf/geoserver/geoserver.war ]; then
 
+	mv /vagrant/conf/geoserver/geoserver.war /var/lib/tomcat6/webapps/geoserver.war
+
+else
+
+	# INSTALL GEOSERVER WAR
+	cd ~ && wget https://ops.cresis.ku.edu/data/geoserver/geoserver.pub2.war
+	mv ./geoserver.pub2.war /var/lib/tomcat6/webapps/geoserver.war
+
+fi
+	
 # MAKE THE DIRECTORY FOR DATA
 mkdir -p /cresis/web/
 
@@ -500,7 +525,7 @@ if [ -f /vagrant/data/geoserver/geoserver.zip ]; then
 	# UNZIP THE EXISTING DATA PACK
 	unzip /vagrant/data/geoserver/geoserver.zip -d /cresis/web
 
-else 
+else
 
 	# DOWNLOAD THE DATA PACK FROM CReSIS (MINIMAL LAYERS)
 	cd /vagrant/data/geoserver/ && wget https://ops.cresis.ku.edu/data/geoserver/geoserver.zip
@@ -518,8 +543,8 @@ service tomcat6 start
 
 cp -rf /vagrant/conf/geoportal/* /var/www/html/ # COPY THE APPLICATION
 
-# WRITE THE BASE URL TO globals.js
-sed -i "s,	 baseUrl: ""http://192.168.111.222"",	 baseUrl: ""$serverName"",g" /var/www/html/app/Global.js
+# WRITE THE BASE URL TO app.js
+# sed -i "s,	 baseUrl: ""http://192.168.111.222"",	 baseUrl: ""$serverName"",g" /var/www/html/app.js
 
 # CREATE AND CONFIGURE ALL THE OUTPUT DIRECTORIES
 mkdir -p /cresis/snfs1/web/ops/data/csv/
@@ -541,9 +566,13 @@ chmod 777 /var/profile_logs/txt/
 service httpd start
 chkconfig httpd on
 
-# POSTGRESQL
-su - postgres -c '/usr/pgsql-9.3/bin/pg_ctl start -D '$pgDir
-sleep 5
+if [ $newDb -eq 1 ]; then
+
+	# POSTGRESQL
+	su - postgres -c '/usr/pgsql-9.3/bin/pg_ctl start -D '$pgDir
+	sleep 5
+	
+fi
 
 # APACHE TOMCAT
 service tomcat6 start

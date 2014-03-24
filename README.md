@@ -28,9 +28,9 @@ Vagrant(1.4.3+): http://www.vagrantup.com/downloads.html
 Creating your own standalone installation of the OPS system is simple!
 
 1. Install VirtualBox and Vagrant (See Requirements above)
-2. Download a release or pull a GitHub branch
-2. Open a Command Prompt / Terminal and move (cd) into the root directory of the project
-3. Type ```vagrant up``` to start the installation process (~30 minutes)
+2. Download a release or pull the GitHub development branch
+2. Open a Command Promt / Terminal and move (cd) into the root directory of the project
+3. Type ```vagrant up``` to start the installation process (~30-40 minutes)
 4. Visit 192.168.111.222 in your browser when it's done!
 
 
