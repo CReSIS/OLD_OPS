@@ -1,0 +1,32 @@
+<dataStore>
+  <id>DataStoreInfoImpl--4dd02097:1405ef0542e:-7fe7</id>
+  <name>arctic_ops</name>
+  <description>arctic_ops</description>
+  <type>PostGIS</type>
+  <enabled>true</enabled>
+  <workspace>
+    <id>WorkspaceInfoImpl--4dd02097:1405ef0542e:-8000</id>
+  </workspace>
+  <connectionParameters>
+    <entry key="port">5432</entry>
+    <entry key="Connection timeout">20</entry>
+    <entry key="passwd">crypt1:jqzlDtXXFxC+/yjgiAjMvQUeR6RH1MSr</entry>
+    <entry key="dbtype">postgis</entry>
+    <entry key="host">localhost</entry>
+    <entry key="validate connections">true</entry>
+    <entry key="encode functions">false</entry>
+    <entry key="max connections">10</entry>
+    <entry key="database">ops</entry>
+    <entry key="namespace">http://ops.cresis.ku.edu/arctic</entry>
+    <entry key="schema">public</entry>
+    <entry key="Loose bbox">true</entry>
+    <entry key="Expose primary keys">false</entry>
+    <entry key="fetch size">1000</entry>
+    <entry key="Max open prepared statements">50</entry>
+    <entry key="preparedStatements">false</entry>
+    <entry key="Estimated extends">true</entry>
+    <entry key="user">admin</entry>
+    <entry key="min connections">1</entry>
+  </connectionParameters>
+  <__default>false</__default>
+</dataStore>

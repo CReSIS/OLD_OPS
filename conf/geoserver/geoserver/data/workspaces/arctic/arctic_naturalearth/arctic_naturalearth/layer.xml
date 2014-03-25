@@ -1,0 +1,16 @@
+<layer>
+  <name>arctic_naturalearth</name>
+  <id>LayerInfoImpl-2210fdd4:143a9ee925f:-7406</id>
+  <type>RASTER</type>
+  <defaultStyle>
+    <id>StyleInfoImpl--570ae188:124761b8d78:-7fe2</id>
+  </defaultStyle>
+  <resource class="coverage">
+    <id>CoverageInfoImpl-2210fdd4:143a9ee925f:-7407</id>
+  </resource>
+  <enabled>true</enabled>
+  <attribution>
+    <logoWidth>0</logoWidth>
+    <logoHeight>0</logoHeight>
+  </attribution>
+</layer>

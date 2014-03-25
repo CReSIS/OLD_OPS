@@ -1,0 +1,19 @@
+Manifest-Version: 1.0
+Archiver-Version: Plexus Archiver
+Created-By: Apache Maven
+Built-By: jetty
+Build-Jdk: 1.6.0_22
+Specification-Title: GeoServer Web Application
+Specification-Version: 2.3.4
+Specification-Vendor: The Open Planning Project
+Implementation-Title: GeoServer Web Application
+Implementation-Version: 2.3.4
+Implementation-Vendor-Id: org.geoserver.web
+Implementation-Vendor: The Open Planning Project
+Application-Name: 
+Build-Timestamp: 22-Jul-2013 12:09
+GeoServerModule: core
+Git-Revision: e1968356424f8707db5661eaf7693ad3721fe625
+Iteration-Name: 
+Project-Version: 2.3.4
+

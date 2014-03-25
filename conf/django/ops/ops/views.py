@@ -61,7 +61,7 @@ def createPath(request):
 		linePathGeom = GEOSGeometry(ujson.dumps(inLinePath)) # create a geometry object
 		
 		# get or create the segments object
-		segmentsObj,_ = models.segments.objects.get_or_create(season_id=seasonsObj.pk,radar_id=radarsObj.pk,name=inSegment,path=linePathGeom)
+		segmentsObj,_ = models.segments.objects.get_or_create(season_id=seasonsObj.pk,radar_id=radarsObj.pk,name=inSegment,geom=linePathGeom)
 
 		frmPks = []
 		for frmId in range(int(inFrameCount)):
@@ -84,7 +84,7 @@ def createPath(request):
 			if len(pointPathObj) < 1:
 				
 				# add a point path object to the output list
-				pointPathObjs.append(models.point_paths(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=inGpsTime[ptIdx],roll=inRoll[ptIdx],pitch=inPitch[ptIdx],heading=inHeading[ptIdx],path=pointPathGeom))
+				pointPathObjs.append(models.point_paths(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=inGpsTime[ptIdx],roll=inRoll[ptIdx],pitch=inPitch[ptIdx],heading=inHeading[ptIdx],geom=pointPathGeom))
 		
 		if len(pointPathObjs) > 0:
 			_ = models.point_paths.objects.bulk_create(pointPathObjs) # bulk create the point paths objects
@@ -549,9 +549,9 @@ def getPath(request):
 		
 		# get point paths based on input 
 		if nativeGeom:
-			pointPathsObj = models.point_paths.objects.filter(season_id__name=inSeasonName, location_id__name=inLocationName, gps_time__gte=inStartGpsTime, gps_time__lte=inStopGpsTime).order_by('gps_time').values_list('pk','gps_time','path')
+			pointPathsObj = models.point_paths.objects.filter(season_id__name=inSeasonName, location_id__name=inLocationName, gps_time__gte=inStartGpsTime, gps_time__lte=inStopGpsTime).order_by('gps_time').values_list('pk','gps_time','geom')
 		else:
-			pointPathsObj = models.point_paths.objects.filter(season_id__name=inSeasonName, location_id__name=inLocationName, gps_time__gte=inStartGpsTime, gps_time__lte=inStopGpsTime).transform(epsg).order_by('gps_time').values_list('pk','gps_time','path')
+			pointPathsObj = models.point_paths.objects.filter(season_id__name=inSeasonName, location_id__name=inLocationName, gps_time__gte=inStartGpsTime, gps_time__lte=inStopGpsTime).transform(epsg).order_by('gps_time').values_list('pk','gps_time','geom')
 		
 		# unzip the data for output
 		pks,gpsTimes,pointPaths = zip(*pointPathsObj)
@@ -634,7 +634,7 @@ def getFrameClosest(request):
 		closestFrameId = models.point_paths.objects.filter(location_id__name=inLocationName,season_id__name__in=inSeasonNames,season_id__public__in=inSeasonStatus,segment_id__name__range=(inStartSeg,inStopSeg)).transform(epsg).distance(inPoint).order_by('distance').values_list('frame_id','distance')[0][0]
 		
 		# get the frame name,segment id, season name, path, and gps_time from point_paths for the frame id above
-		pointPathsObj = models.point_paths.objects.select_related('frames__name','seasons_name').filter(frame_id=closestFrameId).transform(epsg).order_by('gps_time').values_list('frame__name','segment_id','season__name','path','gps_time')
+		pointPathsObj = models.point_paths.objects.select_related('frames__name','seasons_name').filter(frame_id=closestFrameId).transform(epsg).order_by('gps_time').values_list('frame__name','segment_id','season__name','geom','gps_time')
 		
 		# get the (x,y,z) coords from pointPathsObj
 		pointPathsGeoms = [(pointPath[3].x,pointPath[3].y,pointPath[4]) for pointPath in pointPathsObj]
@@ -907,7 +907,7 @@ def getLayerPointsCsv(request):
 		inPoly = GEOSGeometry(inBoundaryWkt, srid=4326) # create a polygon geometry object
 	
 		# get the point paths that match the input filters
-		pointPathsObj = models.point_paths.objects.select_related('season__name','frame__name').filter(location__name=inLocationName,season__name__in=inSeasons,segment__name__range=(inStartSeg,inStopSeg),path__within=inPoly).order_by('frame__name','gps_time').values_list('pk','gps_time','roll','pitch','heading','path','season__name','frame__name')[:2000000]
+		pointPathsObj = models.point_paths.objects.select_related('season__name','frame__name').filter(location__name=inLocationName,season__name__in=inSeasons,segment__name__range=(inStartSeg,inStopSeg),path__within=inPoly).order_by('frame__name','gps_time').values_list('pk','gps_time','roll','pitch','heading','geom','season__name','frame__name')[:2000000]
 		
 		# unzip the pointPathsObj into lists of values
 		ppIds,ppGpsTimes,ppRolls,ppPitchs,ppHeadings,ppPaths,ppSeasonNames,ppFrameNames = zip(*pointPathsObj)
@@ -1137,7 +1137,7 @@ def getLayerPointsKml(request):
 		inPoly = GEOSGeometry(inBoundaryWkt, srid=4326) # create a polygon geometry object
 	
 		# get the segments object
-		segmentsObj = models.segments.objects.filter(season_id__name__in=inSeasonNames,name__range=(inStartSeg,inStopSeg),path__within=inPoly).values_list('name','path')
+		segmentsObj = models.segments.objects.filter(season_id__name__in=inSeasonNames,name__range=(inStartSeg,inStopSeg),path__within=inPoly).values_list('name','geom')
 		
 		segmentNames,segmentPaths = zip(*segmentsObj) # unzip the segmentsObj
 		del segmentsObj
@@ -1323,7 +1323,7 @@ def getCrossovers(request):
 		# get all of the data needed for crossovers
 		try:
 		
-			cursor.execute("WITH cx AS (SELECT point_path_1_id, point_path_2_id, angle FROM %s_crossovers WHERE point_path_1_id IN %s OR point_path_2_id IN %s) SELECT pp1.id, pp2.id, lp1.id, lp2.id, lp1.twtt, lp2.twtt, ABS(lp1.twtt - lp2.twtt), cx.angle, ST_Z(pp1.path), ST_Z(pp2.path), pp1.frame_id, pp2.frame_id FROM cx, %s_layer_points AS lp1, %s_layer_points AS lp2, %s_point_paths AS pp1, %s_point_paths AS pp2 WHERE cx.point_path_1_id = lp1.point_path_id AND cx.point_path_2_id = lp2.point_path_id AND lp1.layer_id IN %s AND lp2.layer_id IN %s AND pp1.id = lp1.point_path_id AND pp2.id = lp2.point_path_id;",[app,inPointPathIds,inPointPathIds,app,app,app,app,inLayerIds,inLayerIds])
+			cursor.execute("WITH cx AS (SELECT point_path_1_id, point_path_2_id, angle FROM %s_crossovers WHERE point_path_1_id IN %s OR point_path_2_id IN %s) SELECT pp1.id, pp2.id, lp1.id, lp2.id, lp1.twtt, lp2.twtt, ABS(lp1.twtt - lp2.twtt), cx.angle, ST_Z(pp1.geom), ST_Z(pp2.geom), pp1.frame_id, pp2.frame_id FROM cx, %s_layer_points AS lp1, %s_layer_points AS lp2, %s_point_paths AS pp1, %s_point_paths AS pp2 WHERE cx.point_path_1_id = lp1.point_path_id AND cx.point_path_2_id = lp2.point_path_id AND lp1.layer_id IN %s AND lp2.layer_id IN %s AND pp1.id = lp1.point_path_id AND pp2.id = lp2.point_path_id;",[app,inPointPathIds,inPointPathIds,app,app,app,app,inLayerIds,inLayerIds])
 			
 			crossoverRows = cursor.fetchall() # get all of the data from the query
 			
@@ -1440,7 +1440,7 @@ def getFrameSearch(request):
 		epsg = utility.epsgFromLocation(inLocationName) # get the input epsg
 		
 		# get the season name, segment id, X, Y, and gps time for the frame (transform the geometry)
-		pointPathsObj = models.point_paths.objects.select_related('season__name').filter(frame_id=framesObj.pk).transform(epsg).values_list('season__name','segment_id','path','gps_time').order_by('gps_time')
+		pointPathsObj = models.point_paths.objects.select_related('season__name').filter(frame_id=framesObj.pk).transform(epsg).values_list('season__name','segment_id','geom','gps_time').order_by('gps_time')
 		
 		pointPathsData = zip(*pointPathsObj) # extract all the elements
 		del pointPathsObj

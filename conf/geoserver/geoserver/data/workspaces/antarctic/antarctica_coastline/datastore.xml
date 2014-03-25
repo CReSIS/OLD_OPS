@@ -1,0 +1,23 @@
+<dataStore>
+  <id>DataStoreInfoImpl--4dd02097:1405ef0542e:-7ff5</id>
+  <name>antarctica_coastline</name>
+  <description>Vector Coastline of Antarctica</description>
+  <type>Shapefile</type>
+  <enabled>true</enabled>
+  <workspace>
+    <id>WorkspaceInfoImpl--4dd02097:1405ef0542e:-7ffe</id>
+  </workspace>
+  <connectionParameters>
+    <entry key="memory mapped buffer">true</entry>
+    <entry key="timezone">UTC</entry>
+    <entry key="fstype">shape</entry>
+    <entry key="create spatial index">true</entry>
+    <entry key="charset">ISO-8859-1</entry>
+    <entry key="filetype">shapefile</entry>
+    <entry key="enable spatial index">true</entry>
+    <entry key="cache and reuse memory maps">true</entry>
+    <entry key="url">file:///cresis/web/geoserver/data/antarctic/vector/antarctica_coastline.shp</entry>
+    <entry key="namespace">http://ops.cresis.ku.edu/antarctic</entry>
+  </connectionParameters>
+  <__default>false</__default>
+</dataStore>

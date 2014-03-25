@@ -28,7 +28,7 @@ class segments(models.Model):
 	season = models.ForeignKey('seasons')
 	radar = models.ForeignKey('radars')
 	name = models.CharField(max_length=20)
-	path = models.LineStringField()
+	geom = models.LineStringField()
 	objects = models.GeoManager()
 
 	def __unicode__(self):
@@ -52,7 +52,7 @@ class point_paths(models.Model):
 	roll = models.DecimalField(max_digits=6,decimal_places=5)
 	pitch = models.DecimalField(max_digits=6,decimal_places=5)
 	heading = models.DecimalField(max_digits=6,decimal_places=5)
-	path = models.PointField(dim=3)
+	geom = models.PointField(dim=3)
 	objects = models.GeoManager()
 
 	def __unicode__(self):
@@ -63,7 +63,7 @@ class crossovers(models.Model):
 	point_path_1 = models.ForeignKey('point_paths',related_name='point_paths_link_fk_1')
 	point_path_2 = models.ForeignKey('point_paths',related_name='point_paths_link_fk_2')
 	angle = models.DecimalField(max_digits=6,decimal_places=3)
-	cross = models.PointField()
+	geom = models.PointField()
 	objects = models.GeoManager()
 
 	def __unicode__(self):

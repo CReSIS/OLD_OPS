@@ -65,6 +65,12 @@ echo -n > /etc/resolv.conf
 echo -e "$dnsStr" > /etc/resolv.conf
 
 # --------------------------------------------------------------------
+# WRITE ~/.bashrc ENVIRONMENT VARIABLES
+
+echo 'GEOSERVER_DATA_DIR="/cresis/snfs1/web/ops/geoserver"' >> ~/.bashrc # GEOSERVER DATA DIRECTORY
+. ~/.bashrc # RELOAD VARIABLES
+
+# --------------------------------------------------------------------
 # UPDATE THE SYSTEM AND INSTALL REPOS AND UTILITY PACKAGES
 
 # UPDATE SYSTEM
@@ -365,23 +371,31 @@ fi
 # --------------------------------------------------------------------
 # INSTALL JAVA JRE, JAI, JAI I/O
 
-cd ~ && wget --no-check-certificate --no-cookies --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com" "http://download.oracle.com/otn-pub/java/jdk/7/jre-7-linux-x64.rpm"
-rpm -Uvh jre*
+# OLD DOWLOAD LINKS
+#cd ~ && wget --no-check-certificate --no-cookies --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com" "http://download.oracle.com/otn-pub/java/jdk/7/jre-7-linux-x64.rpm"
+#cd ~ && wget http://download.java.net/media/jai/builds/release/1_1_3/jai-1_1_3-lib-linux-amd64-jre.bin
+#cd ~ && wget http://download.java.net/media/jai-imageio/builds/release/1.1/jai_imageio-1_1-lib-linux-amd64-jre.bin
+
+# COPY INSTALLATION FILES
+cp -r /vagrant/conf/java/* ~/
+
+# INSTALL JAVA JRE
+cd ~ && rpm -Uvh jre*
 alternatives --install /usr/bin/java java /usr/java/latest/bin/java 200000
-rm -f ~/jre-7-linux-x64.rpm
+rm -f ~/jre-8-linux-x64.rpm
 
-cd ~ && wget http://download.java.net/media/jai/builds/release/1_1_3/jai-1_1_3-lib-linux-amd64-jre.bin
-cd ~ && wget http://download.java.net/media/jai-imageio/builds/release/1.1/jai_imageio-1_1-lib-linux-amd64-jre.bin
+# INSTALL JAI
+cd /usr/java/jre1.8.0/
+chmod u+x ~/jai-1_1_3-lib-linux-amd64-jre.bin
+echo "yes" | ~/jai-1_1_3-lib-linux-amd64-jre.bin
+rm -f ~/jai-1_1_3-lib-linux-amd64-jre.bin
 
-cd /usr/java/jre1.7.0/
-chmod u+x ~/jai-1_1_3-lib-linux-amd64-jre.bin 
-echo "yes" | ~/jai-1_1_3-lib-linux-amd64-jre.bin 
-rm -f ~/jai-1_1_3-lib-linux-amd64-jre.bin 
-
+# INSTALL JAI-IO
 export _POSIX2_VERSION=199209 
 chmod u+x ~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
 echo "yes" | ~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
 rm -f ~/jai_imageio-1_1-lib-linux-amd64-jre.bin
+
 
 # --------------------------------------------------------------------
 # INSTALL AND CONFIGURE POSTGRESQL + POSTGIS
@@ -504,26 +518,24 @@ fi
 # INSALL APACHE TOMCAT
 yum install -y tomcat6
 
-if [ -f /vagrant/conf/geoserver/geoserver.war ]; then
+# CONFIGURE TOMCAT6
+echo 'JAVA_HOME="/usr/java/jre1.8.0/"' >> /etc/tomcat6/tomcat6.conf
+echo 'JAVA_OPTS="-server -Xms512m -Xmx512m -XX:+UseParallelGC -XX:+UseParallelOldGC"' >> /etc/tomcat6/tomcat6.conf # SHOULD BE MODIFIED FOR MORE RAM
+echo 'CATALINA_OPTS="-DGEOSERVER_DATA_DIR=/cresis/snfs1/web/ops/geoserver"' >> /etc/tomcat6/tomcat6.conf
 
-	mv /vagrant/conf/geoserver/geoserver.war /var/lib/tomcat6/webapps/geoserver.war
-
-else
-
-	# INSTALL GEOSERVER WAR
-	cd ~ && wget https://ops.cresis.ku.edu/data/geoserver/geoserver.pub2.war
-	mv ./geoserver.pub2.war /var/lib/tomcat6/webapps/geoserver.war
-
+# MAKE THE EXTERNAL GEOSERVER DATA DIRECTORY (IF IT DOESNT EXIST)
+if [ ! -d "/cresis/snfs1/web/ops/geoserver/" ]; then
+	mkdir -p /cresis/snfs1/web/ops/geoserver/
 fi
-	
-# MAKE THE DIRECTORY FOR DATA
-mkdir -p /cresis/web/
 
-# GET/UNZIP THE DATA
+# EXTRACT THE OPS GEOSERVER DATA DIR TO THE DIRECTORY
+cp -rf /vagrant/conf/geoserver/geoserver/* /cresis/snfs1/web/ops/geoserver/
+chown -R tomcat:tomcat /cresis/snfs1/web/ops/geoserver/
+
+# GET THE GEOSERVER REFERENCE DATA
 if [ -f /vagrant/data/geoserver/geoserver.zip ]; then
 
-	# UNZIP THE EXISTING DATA PACK
-	unzip /vagrant/data/geoserver/geoserver.zip -d /cresis/web
+	unzip /vagrant/data/geoserver/geoserver.zip -d /cresis/snfs1/web/ops/
 
 else
 
@@ -531,12 +543,25 @@ else
 	cd /vagrant/data/geoserver/ && wget https://ops.cresis.ku.edu/data/geoserver/geoserver.zip
 	
 	# UNZIP THE DOWNLOADED DATA PACK
-	unzip /vagrant/data/geoserver/geoserver.zip -d /cresis/web
+	unzip /vagrant/data/geoserver/geoserver.zip -d /cresis/snfs1/web/ops/geoserver/data/data/
 
 fi
 
-# START APACHE TOMCAT (UNPACKS GEOSERVER WEB ARCHIVE)
+# COPY THE GEOSERVER WAR TO TOMCAT
+cp /vagrant/conf/geoserver/geoserver.war /var/lib/tomcat6/webapps
+
+# SET OWNERSHIP/PERMISSIONS OF GEOSERVER DATA DIRECTORY
+chmod -R u=rwX,g=rwX,o=rX /cresis/snfs1/web/ops/geoserver/
+chown -R tomcat:tomcat /cresis/snfs1/web/ops/geoserver/
+
+# START APACHE TOMCAT
 service tomcat6 start
+
+# COPY OVER CUSTOM WEB.XML (SETTING CUSTOM DATA DIRECTORY
+#cp -f /vagrant/conf/geoserver/web.xml.ops /var/lib/tomcat6/webapps/geoserver/WEB-INF/web.xml
+
+# RESTART APACHE TOMCAT
+#service tomcat6 restart
 
 # --------------------------------------------------------------------
 # INSTALL AND CONFIGURE WEB APPLICATION

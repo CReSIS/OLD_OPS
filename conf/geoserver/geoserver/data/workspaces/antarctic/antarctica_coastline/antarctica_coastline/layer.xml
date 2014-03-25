@@ -1,0 +1,16 @@
+<layer>
+  <name>antarctica_coastline</name>
+  <id>LayerInfoImpl--4dd02097:1405ef0542e:-7ff3</id>
+  <type>VECTOR</type>
+  <defaultStyle>
+    <id>StyleInfoImpl--4dd02097:1405ef0542e:-7ff8</id>
+  </defaultStyle>
+  <resource class="featureType">
+    <id>FeatureTypeInfoImpl--4dd02097:1405ef0542e:-7ff4</id>
+  </resource>
+  <enabled>true</enabled>
+  <attribution>
+    <logoWidth>0</logoWidth>
+    <logoHeight>0</logoHeight>
+  </attribution>
+</layer>

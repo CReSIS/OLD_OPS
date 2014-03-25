@@ -1,0 +1,16 @@
+<layer>
+  <name>antarctica_bedmap2_bed</name>
+  <id>LayerInfoImpl--15da18bd:14171a0888e:-7469</id>
+  <type>RASTER</type>
+  <defaultStyle>
+    <id>StyleInfoImpl--15da18bd:14171a0888e:-6c47</id>
+  </defaultStyle>
+  <resource class="coverage">
+    <id>CoverageInfoImpl--15da18bd:14171a0888e:-746a</id>
+  </resource>
+  <enabled>true</enabled>
+  <attribution>
+    <logoWidth>0</logoWidth>
+    <logoHeight>0</logoHeight>
+  </attribution>
+</layer>
