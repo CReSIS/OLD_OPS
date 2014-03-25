@@ -534,7 +534,7 @@ cp -rf /vagrant/conf/geoserver/geoserver/* /cresis/snfs1/web/ops/geoserver/
 # GET THE GEOSERVER REFERENCE DATA
 if [ -f /vagrant/data/geoserver/geoserver.zip ]; then
 
-	unzip /vagrant/data/geoserver/geoserver.zip -d /cresis/snfs1/web/ops/geoserver/data/data/
+	unzip /vagrant/data/geoserver/geoserver.zip -d /cresis/snfs1/web/ops/geoserver/data/
 
 else
 
@@ -542,14 +542,14 @@ else
 	cd /vagrant/data/geoserver/ && wget https://ops.cresis.ku.edu/data/geoserver/geoserver.zip
 	
 	# UNZIP THE DOWNLOADED DATA PACK
-	unzip /vagrant/data/geoserver/geoserver.zip -d /cresis/snfs1/web/ops/geoserver/data/data/
+	unzip /vagrant/data/geoserver/geoserver.zip -d /cresis/snfs1/web/ops/geoserver/data/
 
 fi
 
 # TEMPORARY HACK UNTIL THE GEOSERVER.ZIP STRUCTURE CHANGES
-mv /cresis/snfs1/web/ops/geoserver/data/data/geoserver/data/arctic /cresis/snfs1/web/ops/geoserver/data/data/
-mv /cresis/snfs1/web/ops/geoserver/data/data/geoserver/data/antarctic /cresis/snfs1/web/ops/geoserver/data/data/
-rm -rf /cresis/snfs1/web/ops/geoserver/data/data/geoserver/
+mv /cresis/snfs1/web/ops/geoserver/data/geoserver/data/arctic /cresis/snfs1/web/ops/geoserver/data/
+mv /cresis/snfs1/web/ops/geoserver/data/geoserver/data/antarctic /cresis/snfs1/web/ops/geoserver/data/
+rm -rf /cresis/snfs1/web/ops/geoserver/data/geoserver/
 
 # COPY THE GEOSERVER WAR TO TOMCAT
 cp /vagrant/conf/geoserver/geoserver.war /var/lib/tomcat6/webapps

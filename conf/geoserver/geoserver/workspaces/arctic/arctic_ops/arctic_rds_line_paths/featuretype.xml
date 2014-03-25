@@ -51,23 +51,23 @@
         <escapeSql>false</escapeSql>
         <geometry>
           <name>geom</name>
-          <type>Geometry</type>
+          <type>LineString</type>
           <srid>4326</srid>
         </geometry>
         <parameter>
           <name>start_seg</name>
           <defaultValue>&apos;00000000_00&apos;</defaultValue>
-          <regexpValidator>^[\w\d\s]+$</regexpValidator>
+          <regexpValidator>^[\w\d\s\&apos;\,]+$</regexpValidator>
         </parameter>
         <parameter>
           <name>stop_seg</name>
           <defaultValue>&apos;99999999_99&apos;</defaultValue>
-          <regexpValidator>^[\w\d\s]+$</regexpValidator>
+          <regexpValidator>^[\w\d\s\&apos;\,]+$</regexpValidator>
         </parameter>
         <parameter>
           <name>season_name</name>
           <defaultValue>select name from rds_seasons</defaultValue>
-          <regexpValidator>^[\w\d\s]+$</regexpValidator>
+          <regexpValidator>^[\w\d\s\&apos;\,]+$</regexpValidator>
         </parameter>
         <parameter>
           <name>location_id</name>
@@ -77,7 +77,7 @@
         <parameter>
           <name>status</name>
           <defaultValue>True</defaultValue>
-          <regexpValidator>^[\w\d\s]+$</regexpValidator>
+          <regexpValidator>^[\w\d\s\&apos;\,]+$</regexpValidator>
         </parameter>
       </virtualTable>
     </entry>
