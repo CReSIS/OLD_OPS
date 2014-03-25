@@ -826,10 +826,10 @@ def getLayerPoints(request):
 
 			if inGeomType == 'proj':
 				epsg = utility.epsgFromLocation(inLocationName) # get the input epsg
-				layerPointsObj = models.layer_points.objects.select_related('point_path__gps_time','point_path__path').filter(point_path_id__in=inPointPathIds,layer_id__in=layerIds).transform(epsg).values_list('point_path','layer_id','point_path__gps_time','twtt','type','quality','point_path__path')
+				layerPointsObj = models.layer_points.objects.select_related('point_path__gps_time','point_path__geom').filter(point_path_id__in=inPointPathIds,layer_id__in=layerIds).transform(epsg).values_list('point_path','layer_id','point_path__gps_time','twtt','type','quality','point_path__geom')
 
 			elif inGeomType == 'geog':
-				layerPointsObj = models.layer_points.objects.select_related('point_path__gps_time','point_path__path').filter(point_path_id__in=inPointPathIds,layer_id__in=layerIds).values_list('point_path','layer_id','point_path__gps_time','twtt','type','quality','point_path__path')
+				layerPointsObj = models.layer_points.objects.select_related('point_path__gps_time','point_path__geom').filter(point_path_id__in=inPointPathIds,layer_id__in=layerIds).values_list('point_path','layer_id','point_path__gps_time','twtt','type','quality','point_path__geom')
 
 			else:
 				return utility.response(0,'ERROR GEOM TYPE [%s] NOT SUPPORTED.' % inGeomType)
@@ -907,7 +907,7 @@ def getLayerPointsCsv(request):
 		inPoly = GEOSGeometry(inBoundaryWkt, srid=4326) # create a polygon geometry object
 	
 		# get the point paths that match the input filters
-		pointPathsObj = models.point_paths.objects.select_related('season__name','frame__name').filter(location__name=inLocationName,season__name__in=inSeasons,segment__name__range=(inStartSeg,inStopSeg),path__within=inPoly).order_by('frame__name','gps_time').values_list('pk','gps_time','roll','pitch','heading','geom','season__name','frame__name')[:2000000]
+		pointPathsObj = models.point_paths.objects.select_related('season__name','frame__name').filter(location__name=inLocationName,season__name__in=inSeasons,segment__name__range=(inStartSeg,inStopSeg),geom__within=inPoly).order_by('frame__name','gps_time').values_list('pk','gps_time','roll','pitch','heading','geom','season__name','frame__name')[:2000000]
 		
 		# unzip the pointPathsObj into lists of values
 		ppIds,ppGpsTimes,ppRolls,ppPitchs,ppHeadings,ppPaths,ppSeasonNames,ppFrameNames = zip(*pointPathsObj)
@@ -1137,7 +1137,7 @@ def getLayerPointsKml(request):
 		inPoly = GEOSGeometry(inBoundaryWkt, srid=4326) # create a polygon geometry object
 	
 		# get the segments object
-		segmentsObj = models.segments.objects.filter(season_id__name__in=inSeasonNames,name__range=(inStartSeg,inStopSeg),path__within=inPoly).values_list('name','geom')
+		segmentsObj = models.segments.objects.filter(season_id__name__in=inSeasonNames,name__range=(inStartSeg,inStopSeg),geom__within=inPoly).values_list('name','geom')
 		
 		segmentNames,segmentPaths = zip(*segmentsObj) # unzip the segmentsObj
 		del segmentsObj

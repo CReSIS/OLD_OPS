@@ -530,12 +530,11 @@ fi
 
 # EXTRACT THE OPS GEOSERVER DATA DIR TO THE DIRECTORY
 cp -rf /vagrant/conf/geoserver/geoserver/* /cresis/snfs1/web/ops/geoserver/
-chown -R tomcat:tomcat /cresis/snfs1/web/ops/geoserver/
 
 # GET THE GEOSERVER REFERENCE DATA
 if [ -f /vagrant/data/geoserver/geoserver.zip ]; then
 
-	unzip /vagrant/data/geoserver/geoserver.zip -d /cresis/snfs1/web/ops/
+	unzip /vagrant/data/geoserver/geoserver.zip -d /cresis/snfs1/web/ops/geoserver/data/data/
 
 else
 
@@ -547,6 +546,11 @@ else
 
 fi
 
+# TEMPORARY HACK UNTIL THE GEOSERVER.ZIP STRUCTURE CHANGES
+mv /cresis/snfs1/web/ops/geoserver/data/data/geoserver/data/arctic /cresis/snfs1/web/ops/geoserver/data/data/
+mv /cresis/snfs1/web/ops/geoserver/data/data/geoserver/data/antarctic /cresis/snfs1/web/ops/geoserver/data/data/
+rm -rf /cresis/snfs1/web/ops/geoserver/data/data/geoserver/
+
 # COPY THE GEOSERVER WAR TO TOMCAT
 cp /vagrant/conf/geoserver/geoserver.war /var/lib/tomcat6/webapps
 
@@ -556,12 +560,6 @@ chown -R tomcat:tomcat /cresis/snfs1/web/ops/geoserver/
 
 # START APACHE TOMCAT
 service tomcat6 start
-
-# COPY OVER CUSTOM WEB.XML (SETTING CUSTOM DATA DIRECTORY
-#cp -f /vagrant/conf/geoserver/web.xml.ops /var/lib/tomcat6/webapps/geoserver/WEB-INF/web.xml
-
-# RESTART APACHE TOMCAT
-#service tomcat6 restart
 
 # --------------------------------------------------------------------
 # INSTALL AND CONFIGURE WEB APPLICATION
@@ -580,6 +578,9 @@ chmod 777 /cresis/snfs1/web/ops/data/kml/
 
 mkdir -p /cresis/snfs1/web/ops/data/mat/
 chmod 777 /cresis/snfs1/web/ops/data/mat/
+
+mkdir -p /cresis/snfs1/web/ops/datapacktmp/
+chmod 777 /cresis/snfs1/web/ops/datapacktmp/
 
 mkdir -p /var/profile_logs/txt/
 chmod 777 /var/profile_logs/txt/
