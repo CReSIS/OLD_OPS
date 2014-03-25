@@ -56,6 +56,33 @@ end
 	
 You can change the memory and/or cpu allocations by editing the ```--memory``` and ```--cpus``` parameters. You can also boot in "headless" mode (with no GUI) by setting ```vb.gui = false```.
 
+If you set ```vb.gui = false``` you can ssh into the VM at the address ```192.168.111.222:2222``` and login with user ```vagrant``` and password ```vagrant```.
+
+
+### Public OPS Authentication
+
+The distributed source code is meant for public use and therefore the username and password information is included here. Obviously these values have changed for the CReSIS hosted OPS system.
+
+**Linux OS**
+
+```username: vagrant
+password: vagrant```
+
+
+**GeoServer**
+
+```username: admin
+password: pubAdmin```
+
+```username: root
+password: pubMaster```
+
+
+**PostgreSQL**
+
+```username: admin
+password: pubAdmin```
+
 ### Adding CReSIS data to the system
 
 This can be done by plasing CReSIS "data packs" into the /data/postgresql/ directroy. Information on how and where to get these data packs is coming soon.
