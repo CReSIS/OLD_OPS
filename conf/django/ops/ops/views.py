@@ -1574,7 +1574,7 @@ def getInitialData(request):
 		# generate the output .tar.gz information
 		serverDir = '/cresis/snfs1/web/ops/data/datapacks/'
 		webDir = 'data/datapacks/'
-		tmpFn = 'OPS_CReSIS_%s_DATAPACK' % (app) + utility.randId(10) + '.tar.gz'
+		tmpFn = 'OPS_CReSIS_%s_DATAPACK' % (app.upper()) + '_' + utility.randId(10) + '.tar.gz'
 		webFn = webDir + tmpFn
 
 		# compress, copy, and delete source csv files

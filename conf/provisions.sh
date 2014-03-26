@@ -24,7 +24,7 @@ serverAdmin="root"; # REPLACE WITH AN EMAIL IF YOU WISH
 serverName="192.168.111.222"; # PROBABLY SHOULD NOT CHANGE THIS. (HAVE NOT TRACKED DOWN ALL DEPENDENCIES YET)
 
 # OPTIONAL INSTALLATIONS
-installPgData=0; # LOAD DATA FROM ./data/postgresql/* USING BULKLOAD
+installPgData=0; # LOAD DATA FROM ./data/postgresql/* USING BULKLOAD (CURRENTLY NOT WORKING)
 useCron=0; # SET UP CRON TO DO AUTOMATIC DELETION AND DATBASE MAINTNACE (REQUIRES SSMTP SETUP BELOW)
 installSsmtp=0; # INSTALL SSMTP FOR NOTIFICATION EMAILS (GMAIL ONLY FOR NOW)
 ssmtpUser=""; # YOUR GMAIL USERNAME (youremail DONT INCLUDE (@gmail.com))
@@ -53,6 +53,7 @@ printf "\n"
 
 startTime=$(date -u);
 appName="ops";
+dbName="ops"; # CHANGE WITH CAUTION (MANUAL UPDATES NEEDED TO GEOSERVER POSTGIS STORES)
 
 # --------------------------------------------------------------------
 # WRITE DNS ENTRY
@@ -328,9 +329,9 @@ if [ $useCron -eq 1 ]; then
 	# REMOVE MAT FILES OLDER THAN 7 DAYS AT 2 AM DAILY
 	0 2 * * * root fns=\$(find "$webDataDir"/mat/*.mat -mtime +7); if [ -n '\$fns' ]; then rm -f \$fns; printf '%s' \$fns | mail -s 'OPS MAT CLEANUP' "$ssmtpUser"@gmail.com; fi;
 	# VACUUM ANALYZE-ONLY THE ENTIRE OPS DATABASE AT 2 AM DAILY
-	0 2 * * * root su postgres -c '/usr/pgsql-9.3/bin/vacuumdb -v -Z "$appName"'
+	0 2 * * * root su postgres -c '/usr/pgsql-9.3/bin/vacuumdb -v -Z "$dbName"'
 	# VACUUM ANALYZE THE ENTIRE OPS DATABASE AT 2 AM ON THE 1ST OF EACH MONTH
-	0 2 1 * * root su postgres -c '/usr/pgsql-9.3/bin/vacuumdb -v -z "$appName"'"
+	0 2 1 * * root su postgres -c '/usr/pgsql-9.3/bin/vacuumdb -v -z "$dbName"'"
 
 	echo -n > /etc/crontab
 	echo "$cronStr" > /etc/crontab
@@ -451,7 +452,7 @@ if [ $newDb -eq 1 ]; then
 	psql -U postgres -d postgis_template -c "CREATE EXTENSION postgis; CREATE EXTENSION postgis_topology;"
 
 	# CREATE THE APP DATABASE
-	cmdstring="createdb "$appName" -O "$dbUser" -T postgis_template"
+	cmdstring="createdb "$dbName" -O "$dbUser" -T postgis_template"
 	su - postgres -c "$cmdstring"
 	
 fi
@@ -486,13 +487,16 @@ pip install Django==1.6.2
 mkdir -p /var/django/
 cp -rf /vagrant/conf/django/* /var/django/
 
+# MODIFY THE DATABASE NAME
+sed -i "s,		'NAME': 'ops',		'NAME': '$dbName',g" /var/django/ops/ops/settings.py
+
 if [ $newDb -eq 1 ]; then
 	# SYNC THE DJANGO DEFINED DATABASE
 	python /var/django/$appName/manage.py syncdb --noinput 
 fi
 
 # --------------------------------------------------------------------
-# BULKLOAD DATA TO POSTGRESQL
+# BULKLOAD DATA TO POSTGRESQL 
 
 if [ $installPgData -eq 1 ]; then
 	
@@ -582,6 +586,9 @@ chmod 777 /cresis/snfs1/web/ops/data/mat/
 mkdir -p /cresis/snfs1/web/ops/datapacktmp/
 chmod 777 /cresis/snfs1/web/ops/datapacktmp/
 
+mkdir -p  /cresis/snfs1/web/ops/data/datapacks/
+chmod 777 /cresis/snfs1/web/ops/data/datapacks/
+
 mkdir -p /var/profile_logs/txt/
 chmod 777 /var/profile_logs/txt/
 
@@ -597,12 +604,15 @@ if [ $newDb -eq 1 ]; then
 	# POSTGRESQL
 	su - postgres -c '/usr/pgsql-9.3/bin/pg_ctl start -D '$pgDir
 	sleep 5
-	
+
 fi
 
 # APACHE TOMCAT
 service tomcat6 start
 chkconfig tomcat6 on
+
+# UPDATE SYSTEM (FORCES UPDATES FOR ALL NEW INSTALLS)
+yum update -y
 
 # --------------------------------------------------------------------
 # PRINT OUT THE COMPLETION NOTICE
