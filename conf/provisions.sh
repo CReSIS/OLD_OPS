@@ -461,7 +461,7 @@ fi
 # INSTALL PYTHON PACKAGES / SCIPY / GEOS
 
 # INSTALL PACKAGES WITH PIP
-# pip install Cython 
+pip install Cython 
 pip install geojson
 pip install ujson 
 pip install django-extensions 
@@ -469,10 +469,10 @@ pip install simplekml
 pip install --pre line_profiler
 pip install pylint
 
-# INSTALL SCIPY 
-# yum -y install atlas-devel blas-devel
-# pip install numpy
-# pip install scipy
+# INSTALL NUMPY/SCIPY 
+yum -y install atlas-devel blas-devel
+pip install numpy
+pip install scipy
 
 # INSTALL GEOS
 yum -y install geos-devel
