@@ -1263,7 +1263,7 @@ def getCrossovers(request):
 	
 	Input:
 		location: (string)
-		lyr_id: (integer or list of integers)
+		lyr_name: (string or list of strings)
 		
 		point_path_id: (integer or list of integers)
 			OR
@@ -1279,8 +1279,8 @@ def getCrossovers(request):
 			layer_id: (list of integer/s) layer ids of the crossovers
 			frame_id: (list of integer/s) frame ids of the crossovers
 			twtt: (list of float/s) two-way travel time of the crossovers
-			angle: (list of float/s) angle (degrees) of the crossovers path
-			abs_error: (list of float/s) absolute difference (meters) between the source and crossover layer points
+			angle: (list of float/s) acute angle (degrees) of the crossovers path
+			abs_error: (list of float/s) absolute difference (twtt) between the source and crossover layer points
 		
 	"""
 	models,data,app = utility.getInput(request) # get the input and models
@@ -1288,8 +1288,8 @@ def getCrossovers(request):
 	# parse the data input
 	try:
 	
-		inLocationName = data['properties']['location']
-		inLayerIds = utility.forceTuple(data['properties']['location'])
+		inLocationName = utility.forceList(data['properties']['location'])
+		inLayerNames = utility.forceList(data['properties']['lyr_name'])
 	
 		try:
 		
@@ -1301,30 +1301,31 @@ def getCrossovers(request):
 			try:
 			
 				getPointPathIds = True
-				inFrameIds = utility.forceList(data['properties']['layer_id'])
+				inFrameNames = utility.forceList(data['properties']['frame'])
 			
 			except:
 			
-				return utility.response(0,'ERROR: EITHER POINT PATH OR FRAME IDS MUST BE GIVEN')
+				return utility.response(0,'ERROR: EITHER POINT PATH IDS OR FRAME NAMES MUST BE GIVEN')
 	
 	except:
 		return utility.errorCheck(sys)
 	
 	# perform the function logic
 	try:
+		#Get layer ids: 
+		layerIds = utility.forceTuple(list(models.layers.objects.filter(name__in=inLayerNames).values_list('pk',flat=True)))
 		
 		if getPointPathIds:
 		
 			# get the point path ids based on the given frames
-			inPointPathIds = utility.forceTuple(models.point_paths.objects.filter(frame_id__in=inFrameIds,location__name__in=inLocationName).values_list('pk',flat=True))
-		
+			inPointPathIds = utility.forceTuple(list(models.point_paths.objects.filter(frame_id__name__in=inFrameNames,location__name__in=inLocationName).values_list('pk',flat=True)))
+
 		cursor = connection.cursor() # create a database cursor
 		
 		# get all of the data needed for crossovers
 		try:
-		
-			cursor.execute("WITH cx AS (SELECT point_path_1_id, point_path_2_id, angle FROM %s_crossovers WHERE point_path_1_id IN %s OR point_path_2_id IN %s) SELECT pp1.id, pp2.id, lp1.id, lp2.id, lp1.twtt, lp2.twtt, ABS(lp1.twtt - lp2.twtt), cx.angle, ST_Z(pp1.geom), ST_Z(pp2.geom), pp1.frame_id, pp2.frame_id FROM cx, %s_layer_points AS lp1, %s_layer_points AS lp2, %s_point_paths AS pp1, %s_point_paths AS pp2 WHERE cx.point_path_1_id = lp1.point_path_id AND cx.point_path_2_id = lp2.point_path_id AND lp1.layer_id IN %s AND lp2.layer_id IN %s AND pp1.id = lp1.point_path_id AND pp2.id = lp2.point_path_id;",[app,inPointPathIds,inPointPathIds,app,app,app,app,inLayerIds,inLayerIds])
-			
+			sql_str = "WITH cx AS (SELECT point_path_1_id, point_path_2_id, angle FROM {app}_crossovers WHERE point_path_1_id IN %s OR point_path_2_id IN %s) SELECT pp1.id, pp2.id, lp1.layer_id, lp2.layer_id, lp1.twtt, lp2.twtt, ABS(lp1.twtt - lp2.twtt), cx.angle, ST_Z(pp1.geom), ST_Z(pp2.geom), pp1.frame_id, pp2.frame_id FROM cx, {app}_layer_points AS lp1, {app}_layer_points AS lp2, {app}_point_paths AS pp1, {app}_point_paths AS pp2 WHERE cx.point_path_1_id = lp1.point_path_id AND cx.point_path_2_id = lp2.point_path_id AND lp1.layer_id IN %s AND lp2.layer_id IN %s AND pp1.id = lp1.point_path_id AND pp2.id = lp2.point_path_id AND lp1.layer_id = lp2.layer_id;".format(app=app)
+			cursor.execute(sql_str,[inPointPathIds,inPointPathIds,layerIds,layerIds])
 			crossoverRows = cursor.fetchall() # get all of the data from the query
 			
 		except DatabaseError as dberror:
@@ -1332,10 +1333,9 @@ def getCrossovers(request):
 		
 		finally:
 			cursor.close() # close the cursor in case of exception
-		
 		if len(crossoverRows) == 0:
 			return utility.response(2,'WARNING: NO CROSSOVERS FOUND FOR THE GIVEN PARAMETERS.') # warning if no data is found
-			
+
 		crossoverData = zip(*crossoverRows) # extract all the elements
 		del crossoverRows
 			
@@ -1365,7 +1365,6 @@ def getCrossovers(request):
 				# point_path_1 is the crossover
 				crossPointPathIds.append(crossoverData[0][crossIdx])
 				crossElev.append(crossoverData[8][crossIdx])
-				crossElev.append(crossoverData[9][crossIdx])
 				crossTwtt.append(crossoverData[4][crossIdx])
 				crossAngle.append(crossoverData[7][crossIdx])
 				crossFrameId.append(crossoverData[10][crossIdx])
