@@ -89,6 +89,9 @@ def createPath(request):
 		if len(pointPathObjs) > 0:
 			_ = models.point_paths.objects.bulk_create(pointPathObjs) # bulk create the point paths objects
 		
+		# calculate and insert crossovers
+		utility.crossovers(app,models,segmentsObj.pk,inLocationName.lower())
+		
 		return utility.response(1,'SUCCESS: PATH INSERTION COMPLETED.')
 		
 	except:
@@ -1162,6 +1165,92 @@ def getLayerPointsKml(request):
 		
 		# return the output
 		return utility.response(1,webFn)
+	
+	except:
+		return utility.errorCheck(sys)
+
+def getLayerPointsMat(request):
+	""" Creates a MAT file of layer points and writes it to the server.
+	
+	Input:
+		bound: (WKT) well-known text polygon geometry
+		location: (string) name of the location to return points for
+		
+	Optional Inputs:
+		layers: (string or list of string) layers to include in the output (default = surface,bottom)
+		startseg: (string) a segment name to limit the output
+		stopseg: (string) a segment name to limit the output
+		season: (string or list of string) a/ season name to limit the output
+		
+	Output:
+		status: (integer) 0:error 1:success 2:warning
+		data:  url to [L2MAT].mat on the server
+		
+	Output is limited to 2 million points
+	All points will be returned (csv type) and there may be NaN values for layers.
+	
+	"""
+	models,data,app = utility.getInput(request) # get the input and models
+	
+	# parse the data input
+	try:
+	
+		# parse the optional input
+		try:
+		
+		except:
+	
+	except:
+		return utility.errorCheck(sys)
+	
+	# perform the function logic
+	try:
+		
+		# return the output
+		return utility.response(1,'Not Implemented Yet')
+	
+	except:
+		return utility.errorCheck(sys)
+
+def getLayerPointsNetcdf(request):
+	""" Creates a NetCDF file of layer points and writes it to the server.
+	
+	Input:
+		bound: (WKT) well-known text polygon geometry
+		location: (string) name of the location to return points for
+		
+	Optional Inputs:
+		layers: (string or list of string) layers to include in the output (default = surface,bottom)
+		startseg: (string) a segment name to limit the output
+		stopseg: (string) a segment name to limit the output
+		season: (string or list of string) a/ season name to limit the output
+		
+	Output:
+		status: (integer) 0:error 1:success 2:warning
+		data:  url to [L2NETCDF].nc on the server
+		
+	Output is limited to 2 million points
+	All points will be returned (csv type) and there may be NaN values for layers.
+	
+	"""
+	models,data,app = utility.getInput(request) # get the input and models
+	
+	# parse the data input
+	try:
+	
+		# parse the optional input
+		try:
+		
+		except:
+	
+	except:
+		return utility.errorCheck(sys)
+	
+	# perform the function logic
+	try:
+		
+		# return the output
+		return utility.response(1,'Not Implemented Yet')
 	
 	except:
 		return utility.errorCheck(sys)
