@@ -238,11 +238,14 @@ def forceTuple(var):
 		var: (any) any variable type that can be converted to a tuple
 		
 	Output:
-		var: (tuple) a list of the given object (or the object itself if it's already a tuple)
+		var: (tuple) a tuple of the given object (or the object itself if it's already a tuple)
 	
 	"""
 	if not isinstance(var,tuple):
-		return (var,)
+		if isinstance(var,list) or isinstance(var,set):
+			return tuple(var)
+		else:
+			return (var,)
 	else:
 		return var
 
