@@ -1168,7 +1168,7 @@ def getLayerPointsKml(request):
 	
 	except:
 		return utility.errorCheck(sys)
-
+	
 def getLayerPointsMat(request):
 	""" Creates a MAT file of layer points and writes it to the server.
 	
@@ -1197,15 +1197,15 @@ def getLayerPointsMat(request):
 	
 		# parse the optional input
 		try:
-		
+			pass
 		except:
-	
+			pass
 	except:
 		return utility.errorCheck(sys)
 	
 	# perform the function logic
 	try:
-		
+	
 		# return the output
 		return utility.response(1,'Not Implemented Yet')
 	
@@ -1240,15 +1240,15 @@ def getLayerPointsNetcdf(request):
 	
 		# parse the optional input
 		try:
-		
+			pass
 		except:
-	
+			pass
 	except:
 		return utility.errorCheck(sys)
 	
 	# perform the function logic
 	try:
-		
+	
 		# return the output
 		return utility.response(1,'Not Implemented Yet')
 	
@@ -1601,11 +1601,11 @@ def getInitialData(request):
 		seasonIds = utility.forceList(seasonIds)
 		radarIds = utility.forceList(set(radarIds))
 	
-		# get a layers object (exclude surface and bottom layers)
+		# get a layers object
 		if useAllLyr:
-			layersObj = models.layers.objects.exclude(name__in=['surface','bottom']).filter(deleted=False,layer_group__public=True).values_list('pk','layer_group_id')
+			layersObj = models.layers.objects.filter(deleted=False,layer_group__public=True).values_list('pk','layer_group_id')
 		else:
-			layersObj = models.layers.objects.exclude(name__in=['surface','bottom']).filter(name__in=inLyrNames,deleted=False,layer_group__public=True).values_list('pk','layer_group_id')
+			layersObj = models.layers.objects.filter(name__in=inLyrNames,deleted=False,layer_group__public=True).values_list('pk','layer_group_id')
 			
 		layerIds,layerGroupIds = zip(*layersObj) # extract all the elements
 		del layersObj
@@ -1625,14 +1625,14 @@ def getInitialData(request):
 		try:
 		
 			sqlStrings = []; # build raw strings (parameters wont work because non-column fields are dynamic)
-			sqlStrings.append("COPY (SELECT * FROM %s_layers WHERE id IN %s)\
+			sqlStrings.append("COPY (SELECT * FROM %s_layers WHERE id IN %s AND id NOT IN (1,2))\
 			TO '%s/%s_layers' WITH CSV" % (app,layerIds,tmpDir,app))
 			sqlStrings.append("COPY (SELECT * FROM %s_layer_links WHERE layer_1_id IN %s AND layer_2_id IN %s)\
 			TO '%s/%s_layer_links' WITH CSV" % (app,layerIds,layerIds,tmpDir,app))
 			sqlStrings.append("COPY (SELECT * FROM %s_layer_groups WHERE id IN %s AND id NOT IN (1,2))\
 			TO '%s/%s_layer_groups' WITH CSV" % (app,layerGroupIds,tmpDir,app))
 			sqlStrings.append("COPY (SELECT * FROM %s_crossovers WHERE point_path_1_id IN %s AND point_path_2_id IN %s)\
-			TO '%s/%s_crosovers' WITH CSV" % (app,pointPathIds,pointPathIds,tmpDir,app))
+			TO '%s/%s_crossovers' WITH CSV" % (app,pointPathIds,pointPathIds,tmpDir,app))
 			sqlStrings.append("COPY (SELECT * FROM %s_locations WHERE id IN %s AND id NOT IN (1,2))\
 			TO '%s/%s_layer_groups' WITH CSV" % (app,locationIds,tmpDir,app))
 			sqlStrings.append("COPY (SELECT * FROM %s_layer_points WHERE point_path_id IN %s)\
