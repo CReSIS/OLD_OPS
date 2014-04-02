@@ -2,7 +2,10 @@ from django.db import connection,DatabaseError
 from django.contrib.gis.geos import GEOSGeometry
 from utility import ipAuth
 from decimal import Decimal
-import utility,sys,os,datetime,line_profiler,simplekml,ujson,csv
+import utility,sys,os,datetime,line_profiler,simplekml,ujson,csv,time
+from scipy.io import savemat
+import numpy as np
+from collections import OrderedDict
 
 # =======================================
 # DATA INPUT/DELETE FUNCTIONS
@@ -926,7 +929,6 @@ def getLayerPointsCsv(request):
 		utility.forceList(ppSeasonNames)
 		utility.forceList(ppFrameNames)
 
-		
 		# get layer points (surface and bottom) for the filtered point path ids
 		layerPointsObj = models.layer_points.objects.filter(point_path_id__in=ppIds,layer_id__in=[1,2]).values_list('pk','layer_id','point_path_id','twtt','type','quality')
 		
@@ -947,7 +949,7 @@ def getLayerPointsCsv(request):
 		# build output lists
 		outLat = []; outLon = []; outElev = []; outRoll = []; outPitch = []; outHeading = []; outSeason = []; outFrame = [];
 		outSurface = []; outBottom = []; outSurfaceType = []; outBottomType = []; outSurfaceQuality = []; outBottomQuality = [];
-		outThickness = []; outUtcSod = [];
+		outThickness = []; outUtcSod = []; outUtcDate = [];
 		
 		for ppIdx,ppId in enumerate(ppIds):
 		
@@ -975,16 +977,20 @@ def getLayerPointsCsv(request):
 				outSeason.append(ppSeasonNames[ppIdx])
 				outFrame.append(ppFrameNames[ppIdx])
 				outSurface.append(lpTwtts[surfIdx])
-				outSurfaceType.append(lpTypes[surfIdx])
-				outSurfaceQuality.append(lpQualitys[surfIdx])
+				outSurfaceType.append(int(lpTypes[surfIdx]))
+				outSurfaceQuality.append(int(lpQualitys[surfIdx]))
 				outBottom.append(lpTwtts[bottIdx])
-				outBottomType.append(lpTypes[bottIdx])
-				outBottomQuality.append(lpQualitys[bottIdx])
+				outBottomType.append(int(lpTypes[bottIdx]))
+				outBottomQuality.append(int(lpQualitys[bottIdx]))
 				
 				# calculate surface and bottom elevation from twtt
-				surfElev,bottElev = utility.twttToElev(outSurface[-1],outBottom[-1])
-				outSurface[-1] = surfElev
-				outBottom[-1] = bottElev
+				try:
+					surfElev,bottElev = utility.twttToElev(outSurface[-1],outBottom[-1])
+					outSurface[-1] = surfElev
+					outBottom[-1] = bottElev
+				except:
+					return utility.response(0,[outSurface[-1],outBottom[-1],ppId])
+					
 				
 				# calculate ice thickness
 				outThick = outBottom[-1]-outSurface[-1]
@@ -993,9 +999,14 @@ def getLayerPointsCsv(request):
 					outBottom[-1] = outSurface[-1]
 				outThickness.append(outThick)
 				
+				# calculate utc date and seconds of day
+				utcDateStruct = time.gmtime(ppGpsTimes[ppIdx])
+				outUtcDate.append(time.strftime('%Y%m%d',utcDateStruct))
+				outUtcSod.append(float(utcDateStruct.tm_hour*3600.0 + utcDateStruct.tm_min*60.0 + utcDateStruct.tm_sec))
+				
 				# calculate utc seconds of day
-				utcTime = datetime.datetime.utcfromtimestamp(ppGpsTimes[ppIdx]) - datetime.datetime.strptime(ppFrameNames[ppIdx][:-7],'%Y%m%d')
-				outUtcSod.append(utcTime.seconds + (utcTime.microseconds/1000000.0))
+				#utcTime = datetime.datetime.utcfromtimestamp(ppGpsTimes[ppIdx]) - datetime.datetime.strptime(ppFrameNames[ppIdx][:-7],'%Y%m%d')
+				#outUtcSod.append(utcTime.seconds + (utcTime.microseconds/1000000.0))
 				
 			elif 1 in lyrIds and getAllPoints: # write surface values and fill in nodata
 				
@@ -1014,20 +1025,25 @@ def getLayerPointsCsv(request):
 				outSurface.append(lpTwtts[surfIdx])
 				outSurfaceType.append(lpTypes[surfIdx])
 				outSurfaceQuality.append(lpQualitys[surfIdx])
-				outBottom.append(-9999)
-				outBottomType.append(-9999)
-				outBottomQuality.append(-9999)
+				outBottom.append(np.nan)
+				outBottomType.append(np.nan)
+				outBottomQuality.append(np.nan)
 				
 				# calculate surface and bottom elevation from twtt
-				surfElev,_ = utility.twttToElev(outSurface[-1],outBottom[-1])
+				surfElev,_ = utility.twttToElev(outSurface[-1],outSurface[-1])
 				outSurface[-1] = surfElev
 				
 				# calculate ice thickness
-				outThickness.append(-9999)
+				outThickness.append(np.nan)
+				
+				# calculate utc date and seconds of day
+				utcDateStruct = time.gmtime(ppGpsTimes[ppIdx])
+				outUtcDate.append(time.strftime('%Y%m%d',utcDateStruct))
+				outUtcSod.append(float(utcDateStruct.tm_hour*3600.0 + utcDateStruct.tm_min*60.0 + utcDateStruct.tm_sec))
 				
 				# calculate utc seconds of day
-				utcTime = datetime.datetime.utcfromtimestamp(ppGpsTimes[ppIdx]) - datetime.datetime.strptime(ppFrameNames[ppIdx][:-7],'%Y%m%d')
-				outUtcSod.append(utcTime.seconds + (utcTime.microseconds/1000000.0))
+				#utcTime = datetime.datetime.utcfromtimestamp(ppGpsTimes[ppIdx]) - datetime.datetime.strptime(ppFrameNames[ppIdx][:-7],'%Y%m%d')
+				#outUtcSod.append(utcTime.seconds + (utcTime.microseconds/1000000.0))
 				
 			elif 2 in lyrIds:
 				# bottom found with no surface
@@ -1053,7 +1069,7 @@ def getLayerPointsCsv(request):
 		serverFn  = serverDir + tmpFn
 		
 		# create the csv header
-		csvHeader = ['LAT','LON','ELEVATION','ROLL','PITCH','HEADING','UTCSOD','SURFACE','BOTTOM','THICKNESS',\
+		csvHeader = ['LAT','LON','ELEVATION','ROLL','PITCH','HEADING','UTCSOD','UTCDATE','SURFACE','BOTTOM','THICKNESS',\
 		'SURFACE_TYPE','BOTTOM_TYPE','SURFACE_QUALITY','BOTTOM_QUALITY','SEASON','FRAME']
 		
 		# write the csv file
@@ -1069,13 +1085,14 @@ def getLayerPointsCsv(request):
 					"%.5f" % outPitch[outIdx],
 					"%.5f" % outHeading[outIdx],
 					"%.3f" % outUtcSod[outIdx],
+					outUtcDate[outIdx],
 					"%.3f" % outSurface[outIdx],
 					"%.3f" % outBottom[outIdx],
 					"%.3f" % outThickness[outIdx],
-					int(outSurfaceType[outIdx]),
-					int(outBottomType[outIdx]),
-					int(outSurfaceQuality[outIdx]),
-					int(outBottomQuality[outIdx]),
+					outSurfaceType[outIdx],
+					outBottomType[outIdx],
+					outSurfaceQuality[outIdx],
+					outBottomQuality[outIdx],
 					outSeason[outIdx],
 					outFrame[outIdx],
 				])
@@ -1140,7 +1157,7 @@ def getLayerPointsKml(request):
 		inPoly = GEOSGeometry(inBoundaryWkt, srid=4326) # create a polygon geometry object
 	
 		# get the segments object
-		segmentsObj = models.segments.objects.filter(season_id__name__in=inSeasonNames,name__range=(inStartSeg,inStopSeg),geom__within=inPoly).values_list('name','geom')
+		segmentsObj = models.segments.objects.filter(season_id__name__in=inSeasonNames,name__range=(inStartSeg,inStopSeg),geom__intersects=inPoly).values_list('name','geom')
 		
 		segmentNames,segmentPaths = zip(*segmentsObj) # unzip the segmentsObj
 		del segmentsObj
@@ -1194,20 +1211,169 @@ def getLayerPointsMat(request):
 	
 	# parse the data input
 	try:
-	
-		# parse the optional input
-		try:
+		inLocationName = data['properties']['location']
+		inBoundaryWkt = data['properties']['bound']
 		
+		# parse the optional data input
+		try:
+			inStartSeg = data['properties']['startseg']
+			inStopSeg = data['properties']['stopseg']
 		except:
-	
+			inStartSeg = '00000000_00'
+			inStopSeg = '99999999_99'
+		
+		try:
+			inLayers = utility.forceList(data['properties']['layers'])
+		except:
+			inLayers = models.layers.objects.filter(layer_group__public=True,name='surface').values_list('name',flat=True)
+
+		try:
+			inSeasons = utility.forceList(data['properties']['season'])
+		except:
+			inSeasons = models.seasons.objects.filter(public=True).values_list('name',flat=True)
+		
 	except:
 		return utility.errorCheck(sys)
 	
 	# perform the function logic
 	try:
+	
+		# make sure surface and bottom are in the layers list
+		if 'surface' not in inLayers:
+			inLayers.append('surface')
+			
+		inPoly = GEOSGeometry(inBoundaryWkt, srid=4326) # create a polygon geometry object
+	
+		# get the point paths that match the input filters
+		pointPathsObj = models.point_paths.objects.select_related('season__name','frame__name').filter(location__name=inLocationName,season__name__in=inSeasons,segment__name__range=(inStartSeg,inStopSeg),geom__within=inPoly).order_by('frame__name','gps_time').values_list('pk','gps_time','roll','pitch','heading','geom','season__name','frame__name')[:2000000]
+		
+		# unzip the pointPathsObj into lists of values
+		ppIds,ppGpsTimes,ppRolls,ppPitchs,ppHeadings,ppPaths,ppSeasonNames,ppFrameNames = zip(*pointPathsObj)
+		del pointPathsObj
+		
+		# force the outputs to be lists (handles single element results)
+		ppIds = utility.forceList(ppIds)
+		ppGpsTimes = utility.forceList(ppGpsTimes)
+		ppRolls = utility.forceList(ppRolls)
+		ppPitchs = utility.forceList(ppPitchs)
+		ppHeadings = utility.forceList(ppHeadings)
+		ppPaths = utility.forceList(ppPaths)
+		ppSeasonNames = utility.forceList(ppSeasonNames)
+		ppFrameNames = utility.forceList(ppFrameNames)
+		
+		# get layer points (surface and bottom) for the filtered point path ids
+		layerPointsObj = models.layer_points.objects.select_related('layer__name').filter(point_path_id__in=ppIds,layer_id__name__in=inLayers).values_list('pk','layer_id','point_path_id','twtt','type','quality','layer__name')
+		
+		# unzip the layerPointsObj into lists of values
+		lpIds,lpLyrIds,lpPpIds,lpTwtts,lpTypes,lpQualitys,lpLyrNames = zip(*layerPointsObj)
+		del layerPointsObj
+		
+		# force the outputs to be lists (handles single element results)
+		lpIds = utility.forceList(lpIds)
+		lpLyrIds = utility.forceList(lpLyrIds)
+		lpPpIds = utility.forceList(lpPpIds)
+		lpTwtts = utility.forceList(lpTwtts)
+		lpTypes = utility.forceList(lpTypes)
+		lpQualitys = utility.forceList(lpQualitys)
+		lpLyrNames = utility.forceList(lpLyrNames)
+		
+		# create output data structure
+		outLayers = OrderedDict()
+		
+		# write surface and bottom to output structure
+		outLayers['surface'] = {'name':'surface','elev':np.empty(0,dtype='float64'),'type':np.empty(0,dtype='float16'),'quality':np.empty(0,dtype='float16')}
+		
+		# write the rest of the layers to the output structure
+		for lyrName in list(set(lpLyrNames)):
+			if lyrName not in ['surface']:
+				outLayers[str(lyrName)] = {'name':str(lyrName),'elev':np.empty(0,dtype='float64'),'type':np.empty(0,dtype='float16'),'quality':np.empty(0,dtype='float16')}
+		
+		# create additional output arrays
+		outLat = np.empty(0,dtype='float64'); outLon = np.empty(0,dtype='float64'); outElev = np.empty(0,dtype='float64'); outRoll = np.empty(0,dtype='float64'); outPitch = np.empty(0,dtype='float64'); outHeading = np.empty(0,dtype='float64'); outSeason = np.empty(0,dtype=object); outFrame = np.empty(0,dtype=object); outUtcSod = np.empty(0,dtype='float64'); outUtcDate = np.empty(0,dtype=object)
+		
+		# set up count for point paths with no surface
+		noSurfaceCount = 0
+		
+		# process the data for each point path
+		for ppIdx,ppId in enumerate(ppIds):
+		
+			# find the layer points for the current point path
+			lpPpIdxs = [idx for idx in range(len(lpPpIds)) if lpPpIds[idx] == ppId]
+			
+			if not lpPpIdxs: # make sure there are layer points for the point path
+				continue
+				
+			# get the layer names, and layer point indexes for each layer point found
+			lpPpLyrNames,lpIdx = zip(*[[lpLyrNames[idx],idx] for idx in lpPpIdxs])
+			
+			# if there is a surface in the found layer names write the output
+			if 'surface' in lpPpLyrNames:
+			
+				# append point path information to the output arrays
+				outLat = np.append(outLat,float(ppPaths[ppIdx].x))
+				outLon = np.append(outLon,float(ppPaths[ppIdx].y))
+				outElev = np.append(outElev,float(ppPaths[ppIdx].z))
+				outRoll = np.append(outRoll,float(ppRolls[ppIdx]))
+				outPitch = np.append(outPitch,float(ppPitchs[ppIdx]))
+				outHeading = np.append(outHeading,float(ppHeadings[ppIdx]))
+				outSeason = np.append(outSeason,ppSeasonNames[ppIdx])
+				outFrame = np.append(outFrame,ppFrameNames[ppIdx])
+				
+				# calculate utc date and seconds of day
+				utcDateStruct = time.gmtime(ppGpsTimes[ppIdx])
+				outUtcDate = np.append(outUtcDate,time.strftime('%Y%m%d',utcDateStruct))
+				outUtcSod = np.append(outUtcSod,float(utcDateStruct.tm_hour*3600.0 + utcDateStruct.tm_min*60.0 + utcDateStruct.tm_sec))
+				
+				# write the surface record to the output layers structure
+				surfTwtt = lpTwtts[lpIdx[lpPpLyrNames.index('surface')]]
+				_,surfElev = utility.twttToElev(surfTwtt,surfTwtt)
+				outLayers['surface']['elev'] = np.append(outLayers['surface']['elev'],float(surfElev))
+				outLayers['surface']['type'] = np.append(outLayers['surface']['type'],lpTypes[lpPpLyrNames.index('surface')])
+				outLayers['surface']['quality'] = np.append(outLayers['surface']['quality'],lpQualitys[lpPpLyrNames.index('surface')])
+				
+				# write each additional (non-surface) records to the output layers structure
+				for lyrName in set(lpLyrNames):
+					if lyrName not in ['surface']: # write the records (data or nans)
+						if lyrName in lpPpLyrNames:
+							lyrTwtt = lpTwtts[lpIdx[lpPpLyrNames.index(lyrName)]]
+							_,lyrElev = utility.twttToElev(surfTwtt,lyrTwtt)
+							outLayers[lyrName]['elev'] = np.append(outLayers[lyrName]['elev'],float(lyrElev))
+							outLayers[lyrName]['type'] = np.append(outLayers[lyrName]['type'],lpTypes[lpPpLyrNames.index(lyrName)])
+							outLayers[lyrName]['quality'] = np.append(outLayers[lyrName]['quality'],lpQualitys[lpPpLyrNames.index(lyrName)])
+						else:
+							outLayers[lyrName]['elev'] = np.append(outLayers[lyrName]['elev'],np.nan)
+							outLayers[lyrName]['type'] = np.append(outLayers[lyrName]['type'],np.nan)
+							outLayers[lyrName]['quality'] = np.append(outLayers[lyrName]['quality'],np.nan)
+			else:
+				noSurfaceCount += 1 # no surface exists
+						
+		# make sure there was some data
+		if noSurfaceCount == len(ppIds):
+			return utility.response(0,'ERROR: NO DATA FOUND THAT MATCHES THE SEARCH PARAMETERS')
+		
+		# clear some memory
+		del lpIds,lpLyrIds,lpPpIds,lpTwtts,lpTypes,lpQualitys,ppIds,ppGpsTimes,ppRolls,ppPitchs,ppHeadings,ppPaths,ppSeasonNames,ppFrameNames,lpLyrNames,lpPpLyrNames
+		
+		# generate the output mat information
+		serverDir = '/cresis/snfs1/web/ops/data/mat/'
+		webDir = 'data/mat/'
+		tmpFn = 'OPS_CReSIS_L2_MAT_' + utility.randId(10) + '.mat'
+		webFn = webDir + tmpFn
+		serverFn  = serverDir + tmpFn
+		
+		# format outLayers
+		outLayerList = []
+		for key in outLayers:
+			outLayerList.append(outLayers[key])
+		
+		# create the mat python dictionary
+		outMatData = {'lat':outLat,'lon':outLon,'elev':outElev,'roll':outRoll,'pitch':outPitch,'heading':outHeading,'season':outSeason,'frame':outFrame,'utcsod':outUtcSod,'utcdate':outUtcDate,'layers':outLayerList}
+		
+		# write the mat file
+		savemat(serverFn,outMatData,True,'5',False,True,'row')
 		
 		# return the output
-		return utility.response(1,'Not Implemented Yet')
+		return utility.response(1,webFn)
 	
 	except:
 		return utility.errorCheck(sys)
@@ -1233,24 +1399,9 @@ def getLayerPointsNetcdf(request):
 	All points will be returned (csv type) and there may be NaN values for layers.
 	
 	"""
-	models,data,app = utility.getInput(request) # get the input and models
-	
-	# parse the data input
 	try:
 	
-		# parse the optional input
-		try:
-		
-		except:
-	
-	except:
-		return utility.errorCheck(sys)
-	
-	# perform the function logic
-	try:
-		
-		# return the output
-		return utility.response(1,'Not Implemented Yet')
+		return utility.response(1,'NetCDF Output Is Not Implemented')
 	
 	except:
 		return utility.errorCheck(sys)
