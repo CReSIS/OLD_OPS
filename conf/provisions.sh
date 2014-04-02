@@ -69,6 +69,7 @@ echo -e "$dnsStr" > /etc/resolv.conf
 # WRITE ~/.bashrc ENVIRONMENT VARIABLES
 
 echo 'GEOSERVER_DATA_DIR="/cresis/snfs1/web/ops/geoserver"' >> ~/.bashrc # GEOSERVER DATA DIRECTORY
+#echo 'PGDATA="/cresis/snfs1/web/ops/pgsql/9.3/"' >> ~/.bashrc # GEOSERVER DATA DIRECTORY
 . ~/.bashrc # RELOAD VARIABLES
 
 # --------------------------------------------------------------------
@@ -403,6 +404,8 @@ rm -f ~/jai_imageio-1_1-lib-linux-amd64-jre.bin
 
 if [ $newDb -eq 1 ]; then
 
+	pgDir='/cresis/snfs1/web/ops/pgsql/9.3/'
+
 	# EXCLUDE POSTGRESQL FROM THE BASE CentOS RPM
 	sed -i -e '/^\[base\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
 	sed -i -e '/^\[updates\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
@@ -413,34 +416,41 @@ if [ $newDb -eq 1 ]; then
 	# INSTALL PYTHON PSYCOPG2 MODULE FOR POSTGRES
 	export PATH=/usr/pgsql-9.3/bin:"$PATH"
 	pip install psycopg2
-
+	
 	# MAKE THE SNFS1 MOCK DIRECTORY IF IT DOESNT EXIST
-	if [ ! -d "/cresis/snfs1/web/ops/pgsql/9.3/" ]
+	if [ ! -d "/cresis/snfs1/web/ops/pgsql" ]
 		then
-			mkdir -p /cresis/snfs1/web/ops/pgsql/9.3/
-			chown postgres:postgres /cresis/snfs1/web/ops/pgsql/9.3/
-			chmod 700 /cresis/snfs1/web/ops/pgsql/9.3/
+			mkdir -p /cresis/snfs1/web/ops/pgsql/
+			chown postgres:postgres /cresis/snfs1/web/ops/pgsql/
+			chmod 700 /cresis/snfs1/web/ops/pgsql/
 	fi
-
+	
+	# INITIALIZE THE DATABASE CLUSTER
+	cmdStr='/usr/pgsql-9.3/bin/initdb -D '$pgDir
+	su - postgres -c "$cmdStr"
+	
+	# WRITE PGDATA and PGLOG TO SERVICE CONFIG FILE 
+	sed -i "s,PGDATA=/var/lib/pgsql/9.3/data,PGDATA=$pgDir,g" /etc/rc.d/init.d/postgresql-9.3
+	sed -i "s,PGLOG=/var/lib/pgsql/9.3/pgstartup.log,PGLOG=$pgDir/pgstartup.log,g" /etc/rc.d/init.d/postgresql-9.3
+	
+	# CREATE STARTUP LOG
+	touch /cresis/snfs1/web/ops/pgsql/9.3/pgstartup.log
+	chown postgres:postgres /cresis/snfs1/web/ops/pgsql/9.3/pgstartup.log
+	chmod 700 /cresis/snfs1/web/ops/pgsql/9.3/pgstartup.log
+	
 	# SET THE DEVELOPMENT USERNAME AND PASSWORD
 	dbUser='admin'
 	dbPswd='pubAdmin'
 
-	# INITIALIZE THE DATABASE CLUSTER
-	pgDir='/cresis/snfs1/web/ops/pgsql/9.3/'
-	cmdStr='/usr/pgsql-9.3/bin/initdb -D '$pgDir
-	su - postgres -c "$cmdStr"
-	pgConfDir=$pgDir"postgresql.conf"
-
 	# SET UP THE POSTGRESQL CONFIG FILES
+	pgConfDir=$pgDir"postgresql.conf"
 	sed -i "s,#port = 5432,port = 5432,g" $pgConfDir
 	sed -i "s,#track_counts = on,track_counts = on,g" $pgConfDir
 	sed -i "s,#autovacuum = on,autovacuum = on,g" $pgConfDir
 	sed -i "s,local   all             all                                     peer,local   all             all                                     trust,g" $pgConfDir
 
 	# START UP THE POSTGRESQL SERVER
-	su - postgres -c '/usr/pgsql-9.3/bin/pg_ctl start -D '$pgDir
-	sleep 5
+	service postgresql-9.3 start
 
 	# CREATE THE ADMIN ROLE
 	cmdstring="CREATE ROLE "$dbUser" WITH SUPERUSER LOGIN PASSWORD '"$dbPswd"';"
@@ -602,8 +612,10 @@ chkconfig httpd on
 if [ $newDb -eq 1 ]; then
 
 	# POSTGRESQL
-	su - postgres -c '/usr/pgsql-9.3/bin/pg_ctl start -D '$pgDir
-	sleep 5
+	service postgresql-9.3 start
+	chkconfig postgresql-9.3 on
+	#su - postgres -c '/usr/pgsql-9.3/bin/pg_ctl start -D '$pgDir
+	#sleep 5
 
 fi
 
