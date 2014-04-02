@@ -421,6 +421,10 @@ def bulk_delete(request):
     #BEGIN DELETION PROCESS
     try:
         if type == 'full':
+		
+			if not segments or len(segments)==0:
+				segments = models.segments.objects.filter(season_id__season_name=season).values_list('segment_name',flat=True)
+		
             #Delete everything w/ relationships to the segments table. 
             models.segments.objects.filter(season_id__season_name=season,segment_name__in=segments).delete()
             
