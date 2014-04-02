@@ -4,7 +4,7 @@
 </h2>
 <p>
     <strong>System</strong>
-    : Sets the active system, this controls what data is download and selected on the map.
+    : Sets the active system, this controls what data is downloaded and selected on the map. Changing the selection in "Map Layer Selection" DOES NOT change this.
 </p>
 <p>
     <strong>Date</strong>
@@ -14,10 +14,6 @@
     <strong>Seasons/s:</strong>
     Controls the selection of seasons shown on the map.
 </p>
-<!--<p>
-    <strong>Layer/s:</strong>
-    Controls what layers are downloaded. This feature is currently not in use and defaults to surface/bottom.
-</p>-->
 <h2>
     Applying Basic Selection Filters
 </h2>
@@ -37,14 +33,35 @@
 </h2>
 <p>
     To download data (1) Set Basic Selection Filters (2) Set Spatial Filters (3) Select the output format and (4) click &#8220;Download File&#8221;. 
-	This could take a few minutes so please be pations. You can still interact with the portal while you are waiting for downloads to be ready.
+	This could take a few minutes so please be patient. You will be notified when the download is finished and can check the 'Downloads' tab for 
+	the current status. You can submit any number of downloads before others have completed and can continue to interact with the interface while
+	waiting for downloads to complete.
 </p>
 <p>
+    <strong>Layer/s:</strong>
+    Selects layers (in addition to the surface) for download. Only the MAT file format supports this selection.
+</p>
+<h3>
+    Output Formats
+</h3>
+<p>
     <strong>CSV Format</strong>
-    : The CSV download option includes "good" CReSIS data, where there is a bed present. The CSV file format is self explnatory.
+    : The CSV download option includes "all" CReSIS data, where there is a surface present (bed cat be -9999). The CSV file format is self explanatory.
+</p>
+<p>
+    <strong>CSV GOOD Format</strong>
+    : The CSV GOOD download option includes "good" CReSIS data, where there is a bed present. The CSV file format is self explanatory.
 </p>
 <p>
     <strong>KML Format</strong>
     : The KML format downloads the entire path in the selected area in KML format.
+</p>
+<p>
+    <strong>MAT Format</strong>
+    : The MAT format downloads the surface, bottom, and any additional layers from (Output Layer/s) and stores them in the MATLAB file format.
+</p>
+<p>
+    <strong>NetCDF Format</strong>
+    : The NetCDF format is not currently available from the OPS.
 </p>
 </div>
