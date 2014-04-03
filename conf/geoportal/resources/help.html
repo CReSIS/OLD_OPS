@@ -4,7 +4,7 @@
 </h2>
 <p>
     <strong>System</strong>
-    : Sets the active system, this controls what data is downloaded and selected on the map. Changing the selection in "Map Layer Selection" DOES NOT change this.
+    : Sets the active system, this controls what data is downloaded and selected on the map. Changing the selection in 'Map Layer Selection' DOES NOT change this.
 </p>
 <p>
     <strong>Date</strong>
@@ -18,47 +18,47 @@
     Applying Basic Selection Filters
 </h2>
 <p>
-    To apply the section filters above click &#8220;Apply Filters to Map&#8221;. Make sure to change the layer in the &#8220;Map Layer Selection&#8221; panel
-    to match what you&#8217;ve selected.
+    To apply the section filters above click 'Apply Filters to Map'. Make sure to change the layer in the 'Map Layer Selection' panel
+    to match what you have selected.
 </p>
 <h2>
     Setting Spatial Filters
 </h2>
 <p>
-    For more information about drawing a polygon click the &#8220;map help&#8221; button above the map. To enter a polygon manually paste the WKT and select
-    the projection then click &#8220;Render WKT Text&#8221;.
+    For more information about drawing a polygon click the 'map help' button above the map. To enter a polygon manually paste the WKT and select
+    the projection then click 'Render WKT Text'.
 </p>
 <h2>
     Downloading Data
 </h2>
 <p>
-    To download data (1) Set Basic Selection Filters (2) Set Spatial Filters (3) Select the output format and (4) click &#8220;Download File&#8221;. 
+    To download data (1) Set Basic Selection Filters (2) Set Spatial Filters (3) Select the output format and (4) click 'Download File'. 
 	This could take a few minutes so please be patient. You will be notified when the download is finished and can check the 'Downloads' tab for 
 	the current status. You can submit any number of downloads before others have completed and can continue to interact with the interface while
 	waiting for downloads to complete.
 </p>
 <p>
     <strong>Layer/s:</strong>
-    Selects layers (in addition to the surface) for download. Only the MAT file format supports this selection.
+    Selects layers (in addition to the radar surface) for download. Only the MAT file format supports this selection.
 </p>
 <h3>
     Output Formats
 </h3>
 <p>
     <strong>CSV Format</strong>
-    : The CSV download option includes "all" CReSIS data, where there is a surface present (bed cat be -9999). The CSV file format is self explanatory.
+    : The CSV download option includes 'all' CReSIS data, where there is a surface present (bed can be nan). The CSV file format is self explanatory.
 </p>
 <p>
     <strong>CSV GOOD Format</strong>
-    : The CSV GOOD download option includes "good" CReSIS data, where there is a bed present. The CSV file format is self explanatory.
+    : The CSV GOOD download option includes 'good' CReSIS data, where there is a bed present. The CSV file format is self explanatory.
 </p>
 <p>
     <strong>KML Format</strong>
-    : The KML format downloads the entire path in the selected area in KML format.
+    : The KML format downloads the entire path in the selected area in KML format. Complete segments are returned (even if they go outside of the selected area).
 </p>
 <p>
     <strong>MAT Format</strong>
-    : The MAT format downloads the surface, bottom, and any additional layers from (Output Layer/s) and stores them in the MATLAB file format.
+    : The MAT format downloads the radar surface, and any additional layers from (Output Layer/s) and stores them in the MATLAB m-file format.
 </p>
 <p>
     <strong>NetCDF Format</strong>
