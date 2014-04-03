@@ -352,7 +352,7 @@ def crossovers(app,models, path_id, location):
 				coord_idx = 1 #Start after the crossover point. 
 				while lines[idx2][coord_idx][2] not in pt_ids:
 					coord_idx += 1
-					if coord_idx > len(lines[idx2].coords):
+					if coord_idx >= len(lines[idx2].coords):
 						coord_idx = 0
 						idx2 += 1
 				pt_2 = lines[idx2][coord_idx]
