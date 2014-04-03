@@ -1401,12 +1401,8 @@ def getLayerPointsNetcdf(request):
 	"""
 	try:
 	
-<<<<<<< .mine		return utility.response(1,'NetCDF Output Is Not Implemented')
-=======		# parse the optional input
-		try:
-			pass
-		except:
->>>>>>> .theirs			pass
+		return utility.response(1,'NetCDF Output Is Not Implemented')
+
 	except:
 		return utility.errorCheck(sys)
 
