@@ -504,7 +504,13 @@ if [ $newDb -eq 1 ]; then
 	# SYNC THE DJANGO DEFINED DATABASE
 	python /var/django/$appName/manage.py syncdb --noinput 
 fi
-
+# --------------------------------------------------------------------
+# CREATE DATABASE VIEWS FOR CROSSOVER ERRORS
+viewstr='psql -U postgres -d ops -c "CREATE VIEW app_crossover_errors AS SELECT pt_pths1.location_id, cx.geom,lyr_pts1.layer_id, pt_pths1.frame_id AS frame_id1, pt_pths2.frame_id AS frame_id2,cx.point_path_1_id, cx.point_path_2_id,ST_Z(pt_pths1.geom) AS elev1,ST_Z(pt_pths2.geom) AS elev2, lyr_pts1.twtt AS twtt1, lyr_pts2.twtt AS twtt2, CASE WHEN lyr_pts1.layer_id = 1 THEN ABS(((ST_Z(pt_pths1.geom) - lyr_pts1.twtt*299792458.0003452/2) - (ST_Z(pt_pths2.geom) - lyr_pts2.twtt*299792458.0003452/2))) ELSE  ABS(((ST_Z(pt_pths1.geom) - (SELECT twtt FROM app_layer_points WHERE layer_id=1 AND point_path_id = pt_pths1.id)*299792458.0003452/2 - (lyr_pts1.twtt - (SELECT twtt FROM app_layer_points WHERE layer_id = 1 AND point_path_id = pt_pths1.id))*299792458.0003452/2/sqrt(3.15)) - (ST_Z(pt_pths2.geom) - (SELECT twtt FROM app_layer_points WHERE layer_id = 1 AND point_path_id = pt_pths2.id)*299792458.0003452/2 - (lyr_pts2.twtt - (SELECT twtt FROM app_layer_points WHERE layer_id = 1 AND point_path_id = pt_pths2.id))*299792458.0003452/2/sqrt(3.15)))) END AS error FROM app_crossovers AS cx, app_point_paths AS pt_pths1, app_point_paths AS pt_pths2, app_layer_points AS lyr_pts1, app_layer_points AS lyr_pts2 WHERE lyr_pts1.layer_id = lyr_pts2.layer_id AND  lyr_pts1.point_path_id = pt_pths1.id AND lyr_pts2.point_path_id = pt_pths2.id AND cx.point_path_1_id = pt_pths1.id AND cx.point_path_2_id = pt_pths2.id;"'
+eval ${viewstr//app/rds}
+eval ${viewstr//app/snow}
+eval ${viewstr//app/accum}
+eval ${viewstr//app/kuband}
 # --------------------------------------------------------------------
 # BULKLOAD DATA TO POSTGRESQL 
 
