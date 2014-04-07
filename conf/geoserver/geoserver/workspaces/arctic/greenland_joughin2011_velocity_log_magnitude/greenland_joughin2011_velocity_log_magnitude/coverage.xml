@@ -5,7 +5,7 @@
   <namespace>
     <id>NamespaceInfoImpl--4dd02097:1405ef0542e:-7fff</id>
   </namespace>
-  <title>greenland_joughin2011_velocity_log_magnitude</title>
+  <title>velocity</title>
   <description>Generated from GeoTIFF</description>
   <keywords>
     <string>WCS</string>
@@ -22,7 +22,7 @@
     AXIS[&quot;Geodetic longitude&quot;, EAST], 
     AXIS[&quot;Geodetic latitude&quot;, NORTH], 
     AUTHORITY[&quot;EPSG&quot;,&quot;4326&quot;]], 
-  PROJECTION[&quot;Polar Stereographic (variant B)&quot;], 
+  PROJECTION[&quot;Polar Stereographic (variant B)&quot;, AUTHORITY[&quot;EPSG&quot;,&quot;9829&quot;]], 
   PARAMETER[&quot;central_meridian&quot;, -45.0], 
   PARAMETER[&quot;Standard_Parallel_1&quot;, 70.0], 
   PARAMETER[&quot;false_easting&quot;, 0.0], 

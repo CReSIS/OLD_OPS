@@ -1,0 +1,15 @@
+<layer>
+  <name>arctic_rds_crossover_errors</name>
+  <id>LayerInfoImpl--406bdaba:1452e0ca4db:-7ffa</id>
+  <type>VECTOR</type>
+  <defaultStyle>
+    <id>StyleInfoImpl--406bdaba:1452e0ca4db:-7ffe</id>
+  </defaultStyle>
+  <resource class="featureType">
+    <id>FeatureTypeInfoImpl--406bdaba:1452e0ca4db:-7ffb</id>
+  </resource>
+  <attribution>
+    <logoWidth>0</logoWidth>
+    <logoHeight>0</logoHeight>
+  </attribution>
+</layer>

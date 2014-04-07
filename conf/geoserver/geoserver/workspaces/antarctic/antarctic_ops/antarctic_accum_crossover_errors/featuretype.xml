@@ -1,0 +1,70 @@
+<featureType>
+  <id>FeatureTypeInfoImpl--406bdaba:1452e0ca4db:-46da</id>
+  <name>antarctic_accum_crossover_errors</name>
+  <nativeName>accum_crossover_errors</nativeName>
+  <namespace>
+    <id>NamespaceInfoImpl--4dd02097:1405ef0542e:-7ffd</id>
+  </namespace>
+  <title>accum_crossover_errors</title>
+  <keywords>
+    <string>features</string>
+    <string>accum_crossover_errors</string>
+  </keywords>
+  <nativeCRS>GEOGCS[&quot;WGS 84&quot;, 
+  DATUM[&quot;World Geodetic System 1984&quot;, 
+    SPHEROID[&quot;WGS 84&quot;, 6378137.0, 298.257223563, AUTHORITY[&quot;EPSG&quot;,&quot;7030&quot;]], 
+    AUTHORITY[&quot;EPSG&quot;,&quot;6326&quot;]], 
+  PRIMEM[&quot;Greenwich&quot;, 0.0, AUTHORITY[&quot;EPSG&quot;,&quot;8901&quot;]], 
+  UNIT[&quot;degree&quot;, 0.017453292519943295], 
+  AXIS[&quot;Geodetic longitude&quot;, EAST], 
+  AXIS[&quot;Geodetic latitude&quot;, NORTH], 
+  AUTHORITY[&quot;EPSG&quot;,&quot;4326&quot;]]</nativeCRS>
+  <srs>EPSG:3031</srs>
+  <nativeBoundingBox>
+    <minx>-3400000.0</minx>
+    <maxx>3400000.0</maxx>
+    <miny>-3400000.0</miny>
+    <maxy>3400000.0</maxy>
+  </nativeBoundingBox>
+  <latLonBoundingBox>
+    <minx>-180.0</minx>
+    <maxx>180.0</maxx>
+    <miny>-90.0</miny>
+    <maxy>-47.70029579909533</maxy>
+    <crs>GEOGCS[&quot;WGS84(DD)&quot;, 
+  DATUM[&quot;WGS84&quot;, 
+    SPHEROID[&quot;WGS84&quot;, 6378137.0, 298.257223563]], 
+  PRIMEM[&quot;Greenwich&quot;, 0.0], 
+  UNIT[&quot;degree&quot;, 0.017453292519943295], 
+  AXIS[&quot;Geodetic longitude&quot;, EAST], 
+  AXIS[&quot;Geodetic latitude&quot;, NORTH]]</crs>
+  </latLonBoundingBox>
+  <projectionPolicy>REPROJECT_TO_DECLARED</projectionPolicy>
+  <enabled>true</enabled>
+  <metadata>
+    <entry key="JDBC_VIRTUAL_TABLE">
+      <virtualTable>
+        <name>accum_crossover_errors</name>
+        <sql>SELECT geom, error FROM accum_crossover_errors WHERE error IS NOT NULL AND layer_id = %layer_id% AND location_id = 2
+</sql>
+        <escapeSql>false</escapeSql>
+        <geometry>
+          <name>geom</name>
+          <type>Point</type>
+          <srid>4326</srid>
+        </geometry>
+        <parameter>
+          <name>layer_id</name>
+          <defaultValue>2</defaultValue>
+          <regexpValidator>[0-9]</regexpValidator>
+        </parameter>
+      </virtualTable>
+    </entry>
+    <entry key="cachingEnabled">false</entry>
+  </metadata>
+  <store class="dataStore">
+    <id>DataStoreInfoImpl--4235bd10:144fae283cd:-7eb8</id>
+  </store>
+  <maxFeatures>0</maxFeatures>
+  <numDecimals>0</numDecimals>
+</featureType>
