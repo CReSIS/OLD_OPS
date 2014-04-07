@@ -8,7 +8,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
 	# VAGRANT BASE BOX
 	config.vm.box = "centos-6.5-x86_64-vagrant"
-	config.vm.box_url = "https://www.dropbox.com/s/nivkqir49mk4glb/centos-6.5-x86_64-vagrant.box"
+	config.vm.box_url = "https://db.tt/WJ2WsxVq"
 
 	# FORWARDED PORT MAPPING
 	config.vm.network :forwarded_port, guest: 80, host: 80
