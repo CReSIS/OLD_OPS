@@ -7,8 +7,8 @@ VAGRANTFILE_API_VERSION = "2"
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
 	# VAGRANT BASE BOX
-	config.vm.box = "CentOS65"
-	config.vm.box_url = "https://dl.dropboxusercontent.com/u/101242742/v2/CentOS65.box" # KYLE PURDON CUSTOM BOX (kylepurdon@gmail.com)
+	config.vm.box = "centos-6.5-x86_64-vagrant"
+	config.vm.box_url = "https://www.dropbox.com/s/nivkqir49mk4glb/centos-6.5-x86_64-vagrant.box"
 
 	# FORWARDED PORT MAPPING
 	config.vm.network :forwarded_port, guest: 80, host: 80
@@ -26,8 +26,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 		vb.name = "OpenPolarServer"
 
 		# CHANGE THE HARDWARE ALLOTMENT
-		vb.customize ["modifyvm", :id, "--memory", "1024"]
-		vb.customize ["modifyvm", :id, "--cpus", "1"]
+		vb.customize ["modifyvm", :id, "--memory", "1536"]
+		vb.customize ["modifyvm", :id, "--cpus", "2"]
 
 	end
 
