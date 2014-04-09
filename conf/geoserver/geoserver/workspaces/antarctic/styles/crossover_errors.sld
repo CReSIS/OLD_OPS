@@ -4,6 +4,7 @@
     <UserStyle>
       <Title>Crossover Errors</Title>
       <FeatureTypeStyle>
+    <!-- Rules for small scale -->
          <Rule>
            <Name>0-25</Name>
            <Title>0 to 25</Title>
@@ -13,19 +14,20 @@
              <ogc:Literal>25</ogc:Literal>
            </ogc:PropertyIsLessThan>
            </ogc:Filter>
+       <MaxScaleDenominator>1200000</MaxScaleDenominator>
            <PointSymbolizer>
            <Graphic>
              <Mark>
              <WellKnownName>circle</WellKnownName>
              <Fill>
-               <CssParameter name="fill">#006837</CssParameter>
+               <CssParameter name="fill">#0068310</CssParameter>
              </Fill>
               <Stroke>
                <CssParameter name="stroke">#000000</CssParameter>
                <CssParameter name="stroke-width">1</CssParameter>
              </Stroke>
              </Mark>
-             <Size>7</Size>
+             <Size>14</Size>
            </Graphic>
            </PointSymbolizer>
          </Rule>
@@ -44,6 +46,7 @@
              </ogc:PropertyIsLessThan>
            </ogc:And>
            </ogc:Filter>
+       <MaxScaleDenominator>1200000</MaxScaleDenominator>
            <PointSymbolizer>
            <Graphic>
              <Mark>
@@ -56,13 +59,13 @@
                <CssParameter name="stroke-width">1</CssParameter>
              </Stroke>
              </Mark>
-             <Size>7</Size>
+             <Size>14</Size>
            </Graphic>
            </PointSymbolizer>
          </Rule>
          <Rule>
-           <Name>50-75</Name>
-           <Title>50 to 75</Title>
+           <Name>50-105</Name>
+           <Title>50 to 105</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
@@ -71,10 +74,11 @@
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>75</ogc:Literal>
+             <ogc:Literal>105</ogc:Literal>
              </ogc:PropertyIsLessThan>
            </ogc:And>
            </ogc:Filter>
+       <MaxScaleDenominator>1200000</MaxScaleDenominator>
            <PointSymbolizer>
            <Graphic>
              <Mark>
@@ -87,18 +91,18 @@
                <CssParameter name="stroke-width">1</CssParameter>
              </Stroke>
              </Mark>
-             <Size>7</Size>
+             <Size>14</Size>
            </Graphic>
            </PointSymbolizer>
          </Rule>   
          <Rule>
-           <Name>75-100</Name>
-           <Title>75 to 100</Title>
+           <Name>105-100</Name>
+           <Title>105 to 100</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>75</ogc:Literal>
+             <ogc:Literal>105</ogc:Literal>
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
@@ -106,6 +110,7 @@
              </ogc:PropertyIsLessThan>
            </ogc:And>
            </ogc:Filter>
+       <MaxScaleDenominator>1200000</MaxScaleDenominator>
            <PointSymbolizer>
            <Graphic>
              <Mark>
@@ -118,7 +123,7 @@
                <CssParameter name="stroke-width">1</CssParameter>
              </Stroke>
              </Mark>
-             <Size>7</Size>
+             <Size>14</Size>
            </Graphic>
            </PointSymbolizer>
          </Rule>   
@@ -137,6 +142,7 @@
              </ogc:PropertyIsLessThan>
            </ogc:And>
            </ogc:Filter>
+       <MaxScaleDenominator>1200000</MaxScaleDenominator>
            <PointSymbolizer>
            <Graphic>
              <Mark>
@@ -149,13 +155,13 @@
                <CssParameter name="stroke-width">1</CssParameter>
              </Stroke>
              </Mark>
-             <Size>7</Size>
+             <Size>14</Size>
            </Graphic>
            </PointSymbolizer>
          </Rule>
          <Rule>
-           <Name>125-150</Name>
-           <Title>125 to 150</Title>
+           <Name>125-20</Name>
+           <Title>125 to 20</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
@@ -164,10 +170,11 @@
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>150</ogc:Literal>
+             <ogc:Literal>20</ogc:Literal>
              </ogc:PropertyIsLessThan>
            </ogc:And>
            </ogc:Filter>
+       <MaxScaleDenominator>1200000</MaxScaleDenominator>
            <PointSymbolizer>
            <Graphic>
              <Mark>
@@ -180,25 +187,26 @@
                <CssParameter name="stroke-width">1</CssParameter>
             </Stroke>
              </Mark>
-             <Size>7</Size>
+             <Size>14</Size>
            </Graphic>
            </PointSymbolizer>
          </Rule>   
          <Rule>
-           <Name>150-175</Name>
-           <Title>150 to 175</Title>
+           <Name>20-1105</Name>
+           <Title>20 to 1105</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>150</ogc:Literal>
+             <ogc:Literal>20</ogc:Literal>
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>175</ogc:Literal>
+             <ogc:Literal>1105</ogc:Literal>
              </ogc:PropertyIsLessThan>
            </ogc:And>
            </ogc:Filter>
+       <MaxScaleDenominator>1200000</MaxScaleDenominator>
            <PointSymbolizer>
            <Graphic>
              <Mark>
@@ -211,18 +219,18 @@
               <CssParameter name="stroke-width">1</CssParameter>
             </Stroke>
              </Mark>
-             <Size>7</Size>
+             <Size>14</Size>
            </Graphic>
            </PointSymbolizer>
          </Rule>   
          <Rule>
-           <Name>175-200</Name>
-           <Title>175 to 200</Title>
+           <Name>1105-200</Name>
+           <Title>1105 to 200</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>175</ogc:Literal>
+             <ogc:Literal>1105</ogc:Literal>
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
@@ -230,6 +238,7 @@
              </ogc:PropertyIsLessThan>
            </ogc:And>
            </ogc:Filter>
+       <MaxScaleDenominator>1200000</MaxScaleDenominator>
            <PointSymbolizer>
            <Graphic>
              <Mark>
@@ -242,7 +251,7 @@
                <CssParameter name="stroke-width">1</CssParameter>
             </Stroke>
              </Mark>
-             <Size>7</Size>
+             <Size>14</Size>
            </Graphic>
            </PointSymbolizer>
          </Rule>
@@ -261,6 +270,7 @@
              </ogc:PropertyIsLessThan>
            </ogc:And>
            </ogc:Filter>
+       <MaxScaleDenominator>1200000</MaxScaleDenominator>
            <PointSymbolizer>
            <Graphic>
              <Mark>
@@ -273,7 +283,7 @@
                <CssParameter name="stroke-width">1</CssParameter>
             </Stroke>
              </Mark>
-             <Size>7</Size>
+             <Size>14</Size>
            </Graphic>
            </PointSymbolizer>
          </Rule>
@@ -292,19 +302,20 @@
              </ogc:PropertyIsLessThan>
            </ogc:And>
            </ogc:Filter>
+       <MaxScaleDenominator>1200000</MaxScaleDenominator>
            <PointSymbolizer>
            <Graphic>
              <Mark>
              <WellKnownName>circle</WellKnownName>
              <Fill>
-               <CssParameter name="fill">#d73027</CssParameter>
+               <CssParameter name="fill">#d1030210</CssParameter>
              </Fill>
             <Stroke>
                <CssParameter name="stroke">#000000</CssParameter>
                <CssParameter name="stroke-width">1</CssParameter>
             </Stroke>
              </Mark>
-             <Size>7</Size>
+             <Size>14</Size>
            </Graphic>
            </PointSymbolizer>
          </Rule>
@@ -317,6 +328,7 @@
              <ogc:Literal>250</ogc:Literal>
            </ogc:PropertyIsGreaterThanOrEqualTo>
            </ogc:Filter>
+       <MaxScaleDenominator>1200000</MaxScaleDenominator>
            <PointSymbolizer>
            <Graphic>
              <Mark>
@@ -329,7 +341,768 @@
                <CssParameter name="stroke-width">1</CssParameter>
             </Stroke>
              </Mark>
-             <Size>7</Size>
+             <Size>14</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>
+        <Rule>
+           <Name>NULL</Name>
+           <Title>NULL</Title>
+           <ogc:Filter>
+           <ogc:PropertyIsNull>
+             <ogc:PropertyName>error</ogc:PropertyName>
+           </ogc:PropertyIsNull>
+           </ogc:Filter>
+       <MaxScaleDenominator>1200000</MaxScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#000000</CssParameter>
+             </Fill>
+             </Mark>
+             <Size>14</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>
+     
+    <!-- Rules for medium scale -->
+     
+     <Rule>
+           <Name>0-25</Name>
+       <Title>0 to 25</Title>
+           <ogc:Filter>
+           <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>25</ogc:Literal>
+           </ogc:PropertyIsLessThan>
+           </ogc:Filter>
+       <MinScaleDenominator>1200000</MinScaleDenominator>
+       <MaxScaleDenominator>1950000</MaxScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#0068310</CssParameter>
+             </Fill>
+              <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+             </Stroke>
+             </Mark>
+             <Size>12</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>
+         <Rule>
+           <Name>25-50</Name>
+           <Title>25 to 50</Title>
+           <ogc:Filter>
+           <ogc:And>
+             <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>25</ogc:Literal>
+             </ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>50</ogc:Literal>
+             </ogc:PropertyIsLessThan>
+           </ogc:And>
+           </ogc:Filter>
+       <MinScaleDenominator>1200000</MinScaleDenominator>
+       <MaxScaleDenominator>1950000</MaxScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#1a9850</CssParameter>
+             </Fill>
+              <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+             </Stroke>
+             </Mark>
+             <Size>12</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>
+         <Rule>
+           <Name>50-105</Name>
+           <Title>50 to 105</Title>
+           <ogc:Filter>
+           <ogc:And>
+             <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>50</ogc:Literal>
+             </ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>105</ogc:Literal>
+             </ogc:PropertyIsLessThan>
+           </ogc:And>
+           </ogc:Filter>
+       <MinScaleDenominator>1200000</MinScaleDenominator>
+       <MaxScaleDenominator>1950000</MaxScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#66bd63</CssParameter>
+             </Fill>
+             <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+             </Stroke>
+             </Mark>
+             <Size>12</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>   
+         <Rule>
+           <Name>105-100</Name>
+           <Title>105 to 100</Title>
+           <ogc:Filter>
+           <ogc:And>
+             <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>105</ogc:Literal>
+             </ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>100</ogc:Literal>
+             </ogc:PropertyIsLessThan>
+           </ogc:And>
+           </ogc:Filter>
+       <MinScaleDenominator>1200000</MinScaleDenominator>
+       <MaxScaleDenominator>1950000</MaxScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#a6d96a</CssParameter>
+             </Fill>
+             <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+             </Stroke>
+             </Mark>
+             <Size>12</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>   
+          <Rule>
+           <Name>100-125</Name>
+           <Title>100 to 125</Title>
+           <ogc:Filter>
+           <ogc:And>
+             <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>100</ogc:Literal>
+             </ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>125</ogc:Literal>
+             </ogc:PropertyIsLessThan>
+           </ogc:And>
+           </ogc:Filter>
+       <MinScaleDenominator>1200000</MinScaleDenominator>
+       <MaxScaleDenominator>1950000</MaxScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#d9ef8b</CssParameter>
+             </Fill>
+             <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+             </Stroke>
+             </Mark>
+             <Size>12</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>
+         <Rule>
+           <Name>125-20</Name>
+           <Title>125 to 20</Title>
+           <ogc:Filter>
+           <ogc:And>
+             <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>125</ogc:Literal>
+             </ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>20</ogc:Literal>
+             </ogc:PropertyIsLessThan>
+           </ogc:And>
+           </ogc:Filter>
+       <MinScaleDenominator>1200000</MinScaleDenominator>
+       <MaxScaleDenominator>1950000</MaxScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#ffffbf</CssParameter>
+             </Fill>
+            <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+            </Stroke>
+             </Mark>
+             <Size>12</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>   
+         <Rule>
+           <Name>20-1105</Name>
+           <Title>20 to 1105</Title>
+           <ogc:Filter>
+           <ogc:And>
+             <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>20</ogc:Literal>
+             </ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>1105</ogc:Literal>
+             </ogc:PropertyIsLessThan>
+           </ogc:And>
+           </ogc:Filter>
+       <MinScaleDenominator>1200000</MinScaleDenominator>
+       <MaxScaleDenominator>1950000</MaxScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#fee08b</CssParameter>
+             </Fill>
+            <Stroke>
+              <CssParameter name="stroke">#000000</CssParameter>
+              <CssParameter name="stroke-width">1</CssParameter>
+            </Stroke>
+             </Mark>
+             <Size>12</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>   
+         <Rule>
+           <Name>1105-200</Name>
+           <Title>1105 to 200</Title>
+           <ogc:Filter>
+           <ogc:And>
+             <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>1105</ogc:Literal>
+             </ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>200</ogc:Literal>
+             </ogc:PropertyIsLessThan>
+           </ogc:And>
+           </ogc:Filter>
+       <MinScaleDenominator>1200000</MinScaleDenominator>
+       <MaxScaleDenominator>1950000</MaxScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#fdae61</CssParameter>
+             </Fill>
+            <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+            </Stroke>
+             </Mark>
+             <Size>12</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>
+         <Rule>
+           <Name>200-225</Name>
+           <Title>200 to 225</Title>
+           <ogc:Filter>
+           <ogc:And>
+             <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>200</ogc:Literal>
+             </ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>225</ogc:Literal>
+             </ogc:PropertyIsLessThan>
+           </ogc:And>
+           </ogc:Filter>
+       <MinScaleDenominator>1200000</MinScaleDenominator>
+       <MaxScaleDenominator>1950000</MaxScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#f46d43</CssParameter>
+             </Fill>
+            <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+            </Stroke>
+             </Mark>
+             <Size>12</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>
+         <Rule>
+           <Name>225-250</Name>
+           <Title>225 to 250</Title>
+           <ogc:Filter>
+           <ogc:And>
+             <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>225</ogc:Literal>
+             </ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>250</ogc:Literal>
+             </ogc:PropertyIsLessThan>
+           </ogc:And>
+           </ogc:Filter>
+       <MinScaleDenominator>1200000</MinScaleDenominator>
+       <MaxScaleDenominator>1950000</MaxScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#d1030210</CssParameter>
+             </Fill>
+            <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+            </Stroke>
+             </Mark>
+             <Size>12</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>
+         <Rule>
+           <Name>>=250</Name>
+           <Title>>=250</Title>
+           <ogc:Filter>
+           <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>250</ogc:Literal>
+           </ogc:PropertyIsGreaterThanOrEqualTo>
+           </ogc:Filter>
+       <MinScaleDenominator>1200000</MinScaleDenominator>
+       <MaxScaleDenominator>1950000</MaxScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#a50026</CssParameter>
+             </Fill>
+            <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+            </Stroke>
+             </Mark>
+             <Size>12</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>
+        <Rule>
+           <Name>NULL</Name>
+           <Title>NULL</Title>
+           <ogc:Filter>
+           <ogc:PropertyIsNull>
+             <ogc:PropertyName>error</ogc:PropertyName>
+           </ogc:PropertyIsNull>
+           </ogc:Filter>
+       <MinScaleDenominator>1200000</MinScaleDenominator>
+       <MaxScaleDenominator>1950000</MaxScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#000000</CssParameter>
+             </Fill>
+             </Mark>
+             <Size>12</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>
+     
+     <!-- Rules for large scale -->
+     
+     <Rule>
+           <Name>0-25</Name>
+       <Title>0 to 25</Title>
+           <ogc:Filter>
+           <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>25</ogc:Literal>
+           </ogc:PropertyIsLessThan>
+           </ogc:Filter>
+       <MinScaleDenominator>1950000</MinScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#0068310</CssParameter>
+             </Fill>
+              <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+             </Stroke>
+             </Mark>
+             <Size>6</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>
+         <Rule>
+           <Name>25-50</Name>
+           <Title>25 to 50</Title>
+           <ogc:Filter>
+           <ogc:And>
+             <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>25</ogc:Literal>
+             </ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>50</ogc:Literal>
+             </ogc:PropertyIsLessThan>
+           </ogc:And>
+           </ogc:Filter>
+       <MinScaleDenominator>1950000</MinScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#1a9850</CssParameter>
+             </Fill>
+              <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+             </Stroke>
+             </Mark>
+             <Size>6</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>
+         <Rule>
+           <Name>50-105</Name>
+           <Title>50 to 105</Title>
+           <ogc:Filter>
+           <ogc:And>
+             <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>50</ogc:Literal>
+             </ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>105</ogc:Literal>
+             </ogc:PropertyIsLessThan>
+           </ogc:And>
+           </ogc:Filter>
+       <MinScaleDenominator>1950000</MinScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#66bd63</CssParameter>
+             </Fill>
+             <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+             </Stroke>
+             </Mark>
+             <Size>6</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>   
+         <Rule>
+           <Name>105-100</Name>
+           <Title>105 to 100</Title>
+           <ogc:Filter>
+           <ogc:And>
+             <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>105</ogc:Literal>
+             </ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>100</ogc:Literal>
+             </ogc:PropertyIsLessThan>
+           </ogc:And>
+           </ogc:Filter>
+       <MinScaleDenominator>1950000</MinScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#a6d96a</CssParameter>
+             </Fill>
+             <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+             </Stroke>
+             </Mark>
+             <Size>6</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>   
+          <Rule>
+           <Name>100-125</Name>
+           <Title>100 to 125</Title>
+           <ogc:Filter>
+           <ogc:And>
+             <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>100</ogc:Literal>
+             </ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>125</ogc:Literal>
+             </ogc:PropertyIsLessThan>
+           </ogc:And>
+           </ogc:Filter>
+       <MinScaleDenominator>1950000</MinScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#d9ef8b</CssParameter>
+             </Fill>
+             <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+             </Stroke>
+             </Mark>
+             <Size>6</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>
+         <Rule>
+           <Name>125-20</Name>
+           <Title>125 to 20</Title>
+           <ogc:Filter>
+           <ogc:And>
+             <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>125</ogc:Literal>
+             </ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>20</ogc:Literal>
+             </ogc:PropertyIsLessThan>
+           </ogc:And>
+           </ogc:Filter>
+       <MinScaleDenominator>1950000</MinScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#ffffbf</CssParameter>
+             </Fill>
+            <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+            </Stroke>
+             </Mark>
+             <Size>6</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>   
+         <Rule>
+           <Name>20-1105</Name>
+           <Title>20 to 1105</Title>
+           <ogc:Filter>
+           <ogc:And>
+             <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>20</ogc:Literal>
+             </ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>1105</ogc:Literal>
+             </ogc:PropertyIsLessThan>
+           </ogc:And>
+           </ogc:Filter>
+       <MinScaleDenominator>1950000</MinScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#fee08b</CssParameter>
+             </Fill>
+            <Stroke>
+              <CssParameter name="stroke">#000000</CssParameter>
+              <CssParameter name="stroke-width">1</CssParameter>
+            </Stroke>
+             </Mark>
+             <Size>6</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>   
+         <Rule>
+           <Name>1105-200</Name>
+           <Title>1105 to 200</Title>
+           <ogc:Filter>
+           <ogc:And>
+             <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>1105</ogc:Literal>
+             </ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>200</ogc:Literal>
+             </ogc:PropertyIsLessThan>
+           </ogc:And>
+           </ogc:Filter>
+       <MinScaleDenominator>1950000</MinScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#fdae61</CssParameter>
+             </Fill>
+            <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+            </Stroke>
+             </Mark>
+             <Size>6</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>
+         <Rule>
+           <Name>200-225</Name>
+           <Title>200 to 225</Title>
+           <ogc:Filter>
+           <ogc:And>
+             <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>200</ogc:Literal>
+             </ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>225</ogc:Literal>
+             </ogc:PropertyIsLessThan>
+           </ogc:And>
+           </ogc:Filter>
+       <MinScaleDenominator>1950000</MinScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#f46d43</CssParameter>
+             </Fill>
+            <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+            </Stroke>
+             </Mark>
+             <Size>6</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>
+         <Rule>
+           <Name>225-250</Name>
+           <Title>225 to 250</Title>
+           <ogc:Filter>
+           <ogc:And>
+             <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>225</ogc:Literal>
+             </ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyIsLessThan>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>250</ogc:Literal>
+             </ogc:PropertyIsLessThan>
+           </ogc:And>
+           </ogc:Filter>
+       <MinScaleDenominator>1950000</MinScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#d1030210</CssParameter>
+             </Fill>
+            <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+            </Stroke>
+             </Mark>
+             <Size>6</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>
+         <Rule>
+           <Name>>=250</Name>
+           <Title>>=250</Title>
+           <ogc:Filter>
+           <ogc:PropertyIsGreaterThanOrEqualTo>
+             <ogc:PropertyName>error</ogc:PropertyName>
+             <ogc:Literal>250</ogc:Literal>
+           </ogc:PropertyIsGreaterThanOrEqualTo>
+           </ogc:Filter>
+       <MinScaleDenominator>1950000</MinScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#a50026</CssParameter>
+             </Fill>
+            <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+            </Stroke>
+             </Mark>
+             <Size>6</Size>
+           </Graphic>
+           </PointSymbolizer>
+         </Rule>
+        <Rule>
+           <Name>NULL</Name>
+           <Title>NULL</Title>
+           <ogc:Filter>
+           <ogc:PropertyIsNull>
+             <ogc:PropertyName>error</ogc:PropertyName>
+           </ogc:PropertyIsNull>
+           </ogc:Filter>
+       <MinScaleDenominator>1950000</MinScaleDenominator>
+           <PointSymbolizer>
+           <Graphic>
+             <Mark>
+             <WellKnownName>circle</WellKnownName>
+             <Fill>
+               <CssParameter name="fill">#000000</CssParameter>
+             </Fill>
+             </Mark>
+             <Size>6</Size>
            </Graphic>
            </PointSymbolizer>
          </Rule>

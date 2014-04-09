@@ -45,7 +45,7 @@
     <entry key="JDBC_VIRTUAL_TABLE">
       <virtualTable>
         <name>kuband_crossover_errors</name>
-        <sql>SELECT geom, error FROM kuband_crossover_errors WHERE error IS NOT NULL AND layer_id = %layer_id% AND location_id = 1
+        <sql>SELECT geom, error FROM kuband_crossover_errors WHERE layer_id = %layer_id% AND location_id = 1
 </sql>
         <escapeSql>false</escapeSql>
         <geometry>

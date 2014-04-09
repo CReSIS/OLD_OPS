@@ -47,7 +47,7 @@
     <entry key="JDBC_VIRTUAL_TABLE">
       <virtualTable>
         <name>rds_crossover_errors</name>
-        <sql>SELECT geom, error FROM rds_crossover_errors WHERE error IS NOT NULL AND layer_id = %layer_id% AND location_id = 1
+        <sql>SELECT geom, error FROM rds_crossover_errors WHERE  layer_id = %layer_id% AND location_id = 1
 </sql>
         <escapeSql>false</escapeSql>
         <geometry>
