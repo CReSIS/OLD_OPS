@@ -83,8 +83,8 @@ def createPath(request):
 			pointPathGeom = GEOSGeometry('POINT Z ('+repr(ptGeom[0])+' '+repr(ptGeom[1])+' '+str(inElevation[ptIdx])+')',srid=4326) # create a point geometry object
 			
 			# query for current point path (checking if it already exists)
-			pointPathObj = models.point_paths.objects.filter(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=inGpsTime[ptIdx].quantize(Decimal('.000001'))).values_list('pk',flat=True)
-			
+			pointPathObj = models.point_paths.objects.filter(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=Decimal(inGpsTime[ptIdx]).quantize(Decimal('.000001'))).values_list('pk',flat=True)
+
 			if len(pointPathObj) < 1:
 				
 				# add a point path object to the output list
