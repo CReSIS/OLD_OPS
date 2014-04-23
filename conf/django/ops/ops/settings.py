@@ -35,7 +35,7 @@ INSTALLED_APPS = (
 	#'django.contrib.admin',
 	'django.contrib.auth',
 	'django.contrib.contenttypes',
-	'django.contrib.sessions',
+	#'django.contrib.sessions',
 	'django.contrib.messages',
 	'django.contrib.staticfiles',
 	'django.contrib.gis',
@@ -44,11 +44,19 @@ INSTALLED_APPS = (
 	'accum',
 	'snow',
 	'kuband',
+	'opsuser',
 )
 
-# Set up sessions for multiple Django Applications
+AUTH_PROFILE_MODULE = 'opsuser.UserProfile'
+
+# Sessions
+# https://docs.djangoproject.com/en/dev/ref/settings/#sessions
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 SESSION_COOKIE_NAME = 'opssession'
-SESSION_COOKIE_PATH = '/opssession'
+SESSION_COOKIE_PATH = '/ops'
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_HTTPONLY = True
 
 MIDDLEWARE_CLASSES = (
 	'django.contrib.sessions.middleware.SessionMiddleware',
@@ -62,7 +70,6 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'ops.urls'
 
 WSGI_APPLICATION = 'ops.wsgi.application'
-
 
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases

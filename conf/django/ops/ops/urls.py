@@ -14,6 +14,9 @@ urlpatterns = patterns('',
 	# [ACTION]/[TABLE]/[*] -> ops.views.actionTable*
 	
 	# UTILITY VIEWS
+	url(r'^login/user$','ops.views.loginUser'),
+	url(r'^logout/user$','ops.views.logoutUser'),
+	url(r'^create/user$','ops.views.createUser'),
 	url(r'^query$','ops.views.query'),
 	url(r'^profile$','ops.views.profile'),
 	url(r'^analyze$','ops.views.analyze'),
@@ -27,7 +30,6 @@ urlpatterns = patterns('',
 	url(r'^delete/bulk$','ops.views.deleteBulk'),
 	url(r'^delete/bulk$','ops.views.deleteBulk'),
 	url(r'^release/layer/group$','ops.views.releaseLayerGroup'),
-	url(r'^release/season$','ops.views.releaseSeason'),
 	
 	# OUPUT VIEWS
 	url(r'^get/path$','ops.views.getPath'),
@@ -43,4 +45,5 @@ urlpatterns = patterns('',
 	url(r'^get/crossovers','ops.views.getCrossovers'),
 	url(r'^get/frame/search$','ops.views.getFrameSearch'),
 	url(r'^get/initial/data$','ops.views.getInitialData'),
+	url(r'^get/user/profile/data$','ops.views.getUserProfileData'),
 )

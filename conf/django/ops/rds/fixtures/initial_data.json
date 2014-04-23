@@ -14,6 +14,24 @@
 			}
 	},
 	{
+		"model": "rds.season_groups",
+		"pk": 1,
+		"fields": {
+			"name": "cresis_public",
+			"description": "public cresis seasons",
+			"public": true
+			}
+	},
+	{
+		"model": "rds.season_groups",
+		"pk": 2,
+		"fields": {
+			"name": "cresis_private",
+			"description": "private cresis seasons",
+			"public": false
+			}
+	},
+	{
 		"model": "rds.layer_groups",
 		"pk": 1,
 		"fields": {

@@ -1,22 +1,27 @@
 from django.http import HttpResponse
 from django.db.models import get_model
 from authip import *
+from django.contrib.auth.models import User
 from functools import wraps
 from decimal import Decimal
 import math,collections,string,random,traceback,sys,ujson,json
 
-def response(status,data):
+def response(status,data,cookies):
 	""" Creates an HttpResponse with OPS formatted JSON data.
 	
 	Input:
 		status: (integer) 0:failure 1:success 2:warning
 		data: (dictionary) a dictionary of key value pairs
+		cookies: (dictionary) a dictionary of key value pairs of cookies
 		
 	Output:
 		HttpResponse: http response object returned to web server
 	
 	"""
-	return HttpResponse(ujson.dumps({'status':status,'data':data}),content_type='application/json')
+	outResponse = HttpResponse(ujson.dumps({'status':status,'data':data}),content_type='application/json')
+	for key,value in cookies.iteritems():
+		outResponse.set_cookie(key,value,max_age=3600)
+	return outResponse
 
 def ipAuth():
 	""" Creates a Django decorator for validating the remote address on a list of valid IPs.
@@ -59,9 +64,9 @@ def errorCheck(sys):
 		errorFile = traceback.extract_tb(error[2])[0][0]
 		errorMod = traceback.extract_tb(error[2])[0][2]
 		errorOut = str(errorType)+' ERROR IN '+errorFile+'/'+ errorMod+' AT LINE '+str(errorLine)+':: ERROR: '+errorStr
-		return response(0, ujson.dumps(errorOut))
+		return response(0, ujson.dumps(errorOut),{})
 	except:
-		return response(0, 'ERROR: ERROR CHECK FAILED ON EXCEPTION.')
+		return response(0, 'ERROR: ERROR CHECK FAILED ON EXCEPTION.',{})
 
 def epsgFromLocation(locationName):
 	""" Gets an epsg code based on a mapped string location name.
@@ -80,7 +85,7 @@ def epsgFromLocation(locationName):
 	elif locationName == 'antarctic':
 		return 3031
 	else:
-		return response(0,'ERROR. ONLY MAPPED FOR (antarctic or arctic).')
+		return response(0,'ERROR. ONLY MAPPED FOR (antarctic or arctic).',{})
 
 def twttToElev(surfTwtt,layerTwtt):
 	""" Convert a layers two-way travel time to wgs1984 elevation in meters.
@@ -124,15 +129,16 @@ def getQuery(request):
 	if request.method == 'POST':
 		try:
 			query = request.POST.get('query')
+			cookies = request.COOKIES
 
 			if query is not None:
-				return query
+				return query,cookies
 			else:
-				response(0,'VALUE ''query'' IS NOT VALID OR EMPTY')
+				response(0,'VALUE ''query'' IS NOT VALID OR EMPTY',{})
 		except:
 			return errorCheck(sys)
 	else:
-		response(0,'method must be POST')
+		response(0,'method must be POST',{})
 
 def getData(request):
 	""" Gets data from POST.
@@ -147,16 +153,38 @@ def getData(request):
 	"""
 	if request.method == 'POST':
 		try:
+			
 			app = request.POST.get('app')
-			data = request.POST.get('data')
+			jsonData = request.POST.get('data')
+			
+			if jsonData is not None:
+				try:
+					data = json.loads(jsonData,parse_float=Decimal)
+				except:
+					errorCheck(sys)
+			
+			# parse for MATLAB specific input (build "cookies")
+			try:
+				outCookies = {}
+				isMat = data['properties']['mat']
+				outCookies['userName'] = data['properties']['userName']
+				outCookies['isAuthenticated'] = data['properties']['isAuthenticated']
+				outCookies['isMat'] = True
+			except:
+				outCookies = {}
+				cookies = request.COOKIES
+				outCookies['userName'] = cookies.get('userName')
+				outCookies['isAuthenticated'] = cookies.get('isAuthenticated')
+				outCookies['isMat'] = False
+			
 			if data is not None and app is not None:
-				return app,data
+				return app,data,outCookies
 			else:
-				response(0,'ERROR: INPUT VARIABLE ''data'' OR ''app'' IS EMPTY'),''
+				response(0,'ERROR: INPUT VARIABLE ''data'' OR ''app'' IS EMPTY',{}),''
 		except:
-			response(0,'ERROR: COULD NOT GET POST'),''
+			response(0,'ERROR: COULD NOT GET POST',{}),''
 	else:
-		response(0,'ERROR: METHOD MUST BE POST'),''
+		response(0,'ERROR: METHOD MUST BE POST',{}),''
 
 def getAppModels(app):
 	""" Gets the Django models for a specified application.
@@ -168,10 +196,11 @@ def getAppModels(app):
 		models: (named tuple) django model objects for the given application
 
 	"""
-	models = collections.namedtuple('model',['locations','seasons','radars','segments','frames','point_paths','crossovers','layer_groups','layers','layer_links','layer_points','landmarks'])
+	models = collections.namedtuple('model',['locations','seasons','season_groups','radars','segments','frames','point_paths','crossovers','layer_groups','layers','layer_links','layer_points','landmarks'])
 	
 	locations = get_model(app,'locations')
 	seasons = get_model(app,'seasons')
+	season_groups = get_model(app,'season_groups')
 	radars = get_model(app,'radars')
 	segments = get_model(app,'segments')
 	frames = get_model(app,'frames')
@@ -183,7 +212,7 @@ def getAppModels(app):
 	layer_points = get_model(app,'layer_points')
 	landmarks = get_model(app,'landmarks')
 
-	return models(locations,seasons,radars,segments,frames,point_paths,crossovers,layer_groups,layers,layer_links,layer_points,landmarks)
+	return models(locations,seasons,season_groups,radars,segments,frames,point_paths,crossovers,layer_groups,layers,layer_links,layer_points,landmarks)
 
 def getInput(request):
 	""" Wrapper for getData that gets the application models and decodes the JSON
@@ -197,16 +226,11 @@ def getInput(request):
 		app: (string) application name
 	
 	"""
-	app,jsonData = getData(request)
+	app,data,cookies = getData(request)
 
 	models = getAppModels(app)
-
-	try:
-		data = json.loads(jsonData,parse_float=Decimal)
-	except:
-		return errorCheck(sys)
 	
-	return models,data,app
+	return models,data,app,cookies
 
 def forceList(var):
 	""" Forces a variable to be a list.
@@ -259,4 +283,32 @@ def buildEchogramList(app,seasonName,frameName):
 	
 	"""
 	baseEchoURl = 'ftp://data.cresis.ku.edu/data/'+app+'/'+seasonName+'/images/'+frameName[:-4]+'/'+frameName
-	return [baseEchoURl+'_1echo.jpg',baseEchoURl+'_2echo_pics.jpg']
+	return [baseEchoURl+'_1echo.jpg',baseEchoURl+'_2echo_picks.jpg']
+
+def getUserProfile(cookies):
+	""" Get a user profile based on input user and authentication
+	
+	Input:
+		cookies: (dict) cookies output from getInput()
+		
+	Output:
+		userProfileObj: (dict) Django user profile object
+	
+	"""
+	
+	# get user information from cookies
+	userName = cookies['userName']
+	isAuthenticated = cookies['isAuthenticated']
+
+	if userName == 'anonymous':
+		# get the user profile
+		userObj = User.objects.get(username__exact=userName)
+		userProfileObj = userObj.get_profile()
+	else:
+		if not isAuthenticated:
+			response(0,'ERROR: NON-ANONOMOUS USERS MUST LOGIN FIRST.',{});
+		# get the user profile
+		userObj = User.objects.get(username__exact=userName)
+		userProfileObj = userObj.get_profile()
+		
+	return userProfileObj

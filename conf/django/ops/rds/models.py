@@ -10,7 +10,16 @@ class locations(models.Model):
 class seasons(models.Model):
 
 	location = models.ForeignKey('locations')
+	season_group = models.ForeignKey('season_groups') 
 	name = models.CharField(max_length=50)
+
+	def __unicode__(self):
+		return "%s"%(self.name)
+
+class season_groups(models.Model):
+
+	name = models.CharField(max_length=200)
+	description = models.CharField(max_length=200,blank=True)
 	public = models.BooleanField(default=False)
 
 	def __unicode__(self):

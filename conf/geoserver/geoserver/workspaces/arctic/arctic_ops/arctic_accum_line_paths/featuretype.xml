@@ -46,7 +46,15 @@
     <entry key="JDBC_VIRTUAL_TABLE">
       <virtualTable>
         <name>arctic_accum_line_paths</name>
-        <sql>select segs.*, seasons.name from accum_segments as segs INNER JOIN accum_seasons as seasons ON segs.season_id=seasons.id where seasons.location_id=%location_id% and seasons.name IN (%season_name%) and seasons.public IN (%status%) and segs.name &gt; %start_seg% and segs.name &lt; %stop_seg%
+        <sql>select segs.*, ss.name FROM accum_segments AS segs &#xd;
+	INNER JOIN accum_seasons AS ss ON segs.season_id=ss.id &#xd;
+	INNER JOIN accum_season_groups AS sgs ON ss.season_group_id=sgs.id&#xd;
+	WHERE&#xd;
+		ss.location_id=%location_id% AND&#xd;
+		ss.name IN (%season_name%) AND&#xd;
+		sgs.id IN (%season_group_ids%) AND&#xd;
+		segs.name &gt; %start_seg% AND&#xd;
+		segs.name &lt; %stop_seg%
 </sql>
         <escapeSql>false</escapeSql>
         <geometry>
@@ -70,14 +78,14 @@
           <regexpValidator>^[\w\d\s\&apos;\,]+$</regexpValidator>
         </parameter>
         <parameter>
+          <name>season_group_ids</name>
+          <defaultValue>1</defaultValue>
+          <regexpValidator>^[\w\d\s\&apos;\,]+$</regexpValidator>
+        </parameter>
+        <parameter>
           <name>location_id</name>
           <defaultValue>1</defaultValue>
           <regexpValidator>^[\d]+$</regexpValidator>
-        </parameter>
-        <parameter>
-          <name>status</name>
-          <defaultValue>True</defaultValue>
-          <regexpValidator>^[\w\d\s\&apos;\,]+$</regexpValidator>
         </parameter>
       </virtualTable>
     </entry>
