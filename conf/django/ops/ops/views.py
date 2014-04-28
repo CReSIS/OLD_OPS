@@ -1618,8 +1618,8 @@ def getSegmentInfo(request):
 		stopGpsTimes = []
 		for frmId in frameIds:
 			pointPathGpsTimes = models.point_paths.objects.filter(frame_id=frmId).values_list('gps_time',flat=True)
-			startGpsTimes.append(max(pointPathGpsTimes))
-			stopGpsTimes.append(min(pointPathGpsTimes))
+			startGpsTimes.append(min(pointPathGpsTimes))
+			stopGpsTimes.append(max(pointPathGpsTimes))
 		
 		# return the output
 		return utility.response(1,{'season':seasonNames[0],'segment':segmentNames[0],'frame':frameNames,'start_gps_time':startGpsTimes,'stop_gps_time':stopGpsTimes},{})
