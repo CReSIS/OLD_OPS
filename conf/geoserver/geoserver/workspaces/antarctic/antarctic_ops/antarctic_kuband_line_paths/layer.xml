@@ -1,0 +1,15 @@
+<layer>
+  <name>antarctic_kuband_line_paths</name>
+  <id>LayerInfoImpl--4235bd10:144fae283cd:-7eb0</id>
+  <type>VECTOR</type>
+  <defaultStyle>
+    <id>StyleInfoImpl--570ae188:124761b8d78:-7fe3</id>
+  </defaultStyle>
+  <resource class="featureType">
+    <id>FeatureTypeInfoImpl--4235bd10:144fae283cd:-7eb1</id>
+  </resource>
+  <attribution>
+    <logoWidth>0</logoWidth>
+    <logoHeight>0</logoHeight>
+  </attribution>
+</layer>

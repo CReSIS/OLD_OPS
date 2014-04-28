@@ -16,16 +16,15 @@ framework.
 import os
 import sys
 import site
-
-
-# Use the monitor to restart
 import ops.monitor
+
+#Use the monitor to restart the Daemon WSGI process on changes
 ops.monitor.start(interval=1.0)
 
 #Add the site-packages of the OPS virtualenv
 site.addsitedir('/usr/bin/venv/lib/python2.7/site-packages')
 
-#Add ops' directory to the PYTHONPATH
+#Add ops directory to the PYTHONPATH
 sys.path.append('/var/django/ops/')
 sys.path.append('/var/django/ops/ops/')
 

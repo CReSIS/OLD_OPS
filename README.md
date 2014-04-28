@@ -28,9 +28,9 @@ Vagrant(1.4.3+): http://www.vagrantup.com/downloads.html
 Creating your own standalone installation of the OPS system is simple!
 
 1. Install VirtualBox and Vagrant (See Requirements above)
-2. Download a release or pull a GitHub branch
-2. Open a Command Prompt / Terminal and move (cd) into the root directory of the project
-3. Type ```vagrant up``` to start the installation process (~30 minutes)
+2. Download a release or pull the GitHub development branch
+2. Open a Command Promt / Terminal and move (cd) into the root directory of the project
+3. Type ```vagrant up``` to start the installation process (~30-40 minutes)
 4. Visit 192.168.111.222 in your browser when it's done!
 
 
@@ -55,6 +55,33 @@ end
 ```
 	
 You can change the memory and/or cpu allocations by editing the ```--memory``` and ```--cpus``` parameters. You can also boot in "headless" mode (with no GUI) by setting ```vb.gui = false```.
+
+If you set ```vb.gui = false``` you can ssh into the VM at the address ```192.168.111.222:2222``` and login with user ```vagrant``` and password ```vagrant```.
+
+
+### Public OPS Authentication
+
+The distributed source code is meant for public use and therefore the username and password information is included here. Obviously these values have changed for the CReSIS hosted OPS system.
+
+**Linux OS**
+
+```username: vagrant
+password: vagrant```
+
+
+**GeoServer**
+
+```username: admin
+password: pubAdmin```
+
+```username: root
+password: pubMaster```
+
+
+**PostgreSQL**
+
+```username: admin
+password: pubAdmin```
 
 ### Adding CReSIS data to the system
 

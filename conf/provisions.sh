@@ -13,14 +13,14 @@
 #
 # PRIMARY SOFTWARE INSTALLED AND CONFIGURED
 #	- APACHE HTTPD, APACHE TOMCAT, POSTGRESQL, POSTGIS, GEOSERVER(WAR), DJANGO FRAMEWORK, PYTHON27(VIRTUALENV)
-#
 
 # =================================================================================
 # USER SETUP PARAMETERS
 
+newDb=1 # CREATE A NEW DATABASE SERVER (THIS SHOULD BE ON FOR DEV BOXES, OFF FOR OPS-TEMP)
+
 # BASIC SYSTEM INFORMATION
 serverAdmin="root"; # REPLACE WITH AN EMAIL IF YOU WISH
-
 serverName="192.168.111.222"; # PROBABLY SHOULD NOT CHANGE THIS. (HAVE NOT TRACKED DOWN ALL DEPENDENCIES YET)
 
 # OPTIONAL INSTALLATIONS
@@ -53,6 +53,24 @@ printf "\n"
 
 startTime=$(date -u);
 appName="ops";
+dbName="ops"; # CHANGE WITH CAUTION (MANUAL UPDATES NEEDED TO GEOSERVER POSTGIS STORES)
+
+# --------------------------------------------------------------------
+# WRITE DNS ENTRY
+
+dnsStr="
+nameserver 8.8.8.8
+nameserver 8.8.4.4";
+
+echo -n > /etc/resolv.conf
+echo -e "$dnsStr" > /etc/resolv.conf
+
+# --------------------------------------------------------------------
+# WRITE ~/.bashrc ENVIRONMENT VARIABLES
+
+echo 'GEOSERVER_DATA_DIR="/cresis/snfs1/web/ops/geoserver"' >> ~/.bashrc # GEOSERVER DATA DIRECTORY
+#echo 'PGDATA="/cresis/snfs1/web/ops/pgsql/9.3/"' >> ~/.bashrc # GEOSERVER DATA DIRECTORY
+. ~/.bashrc # RELOAD VARIABLES
 
 # --------------------------------------------------------------------
 # UPDATE THE SYSTEM AND INSTALL REPOS AND UTILITY PACKAGES
@@ -312,9 +330,9 @@ if [ $useCron -eq 1 ]; then
 	# REMOVE MAT FILES OLDER THAN 7 DAYS AT 2 AM DAILY
 	0 2 * * * root fns=\$(find "$webDataDir"/mat/*.mat -mtime +7); if [ -n '\$fns' ]; then rm -f \$fns; printf '%s' \$fns | mail -s 'OPS MAT CLEANUP' "$ssmtpUser"@gmail.com; fi;
 	# VACUUM ANALYZE-ONLY THE ENTIRE OPS DATABASE AT 2 AM DAILY
-	0 2 * * * root su postgres -c '/usr/pgsql-9.3/bin/vacuumdb -v -Z "$appName"'
+	0 2 * * * root su postgres -c '/usr/pgsql-9.3/bin/vacuumdb -v -Z "$dbName"'
 	# VACUUM ANALYZE THE ENTIRE OPS DATABASE AT 2 AM ON THE 1ST OF EACH MONTH
-	0 2 1 * * root su postgres -c '/usr/pgsql-9.3/bin/vacuumdb -v -z "$appName"'"
+	0 2 1 * * root su postgres -c '/usr/pgsql-9.3/bin/vacuumdb -v -z "$dbName"'"
 
 	echo -n > /etc/crontab
 	echo "$cronStr" > /etc/crontab
@@ -355,94 +373,116 @@ fi
 # --------------------------------------------------------------------
 # INSTALL JAVA JRE, JAI, JAI I/O
 
-cd ~ && wget --no-check-certificate --no-cookies --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com" "http://download.oracle.com/otn-pub/java/jdk/7/jre-7-linux-x64.rpm"
-rpm -Uvh jre*
+# OLD DOWLOAD LINKS
+#cd ~ && wget --no-check-certificate --no-cookies --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com" "http://download.oracle.com/otn-pub/java/jdk/7/jre-7-linux-x64.rpm"
+#cd ~ && wget http://download.java.net/media/jai/builds/release/1_1_3/jai-1_1_3-lib-linux-amd64-jre.bin
+#cd ~ && wget http://download.java.net/media/jai-imageio/builds/release/1.1/jai_imageio-1_1-lib-linux-amd64-jre.bin
+
+# COPY INSTALLATION FILES
+cp -r /vagrant/conf/java/* ~/
+
+# INSTALL JAVA JRE
+cd ~ && rpm -Uvh jre*
 alternatives --install /usr/bin/java java /usr/java/latest/bin/java 200000
-rm -f ~/jre-7-linux-x64.rpm
+rm -f ~/jre-8-linux-x64.rpm
 
-cd ~ && wget http://download.java.net/media/jai/builds/release/1_1_3/jai-1_1_3-lib-linux-amd64-jre.bin
-cd ~ && wget http://download.java.net/media/jai-imageio/builds/release/1.1/jai_imageio-1_1-lib-linux-amd64-jre.bin
+# INSTALL JAI
+cd /usr/java/jre1.8.0/
+chmod u+x ~/jai-1_1_3-lib-linux-amd64-jre.bin
+echo "yes" | ~/jai-1_1_3-lib-linux-amd64-jre.bin
+rm -f ~/jai-1_1_3-lib-linux-amd64-jre.bin
 
-cd /usr/java/jre1.7.0/
-chmod u+x ~/jai-1_1_3-lib-linux-amd64-jre.bin 
-echo "yes" | ~/jai-1_1_3-lib-linux-amd64-jre.bin 
-rm -f ~/jai-1_1_3-lib-linux-amd64-jre.bin 
-
+# INSTALL JAI-IO
 export _POSIX2_VERSION=199209 
 chmod u+x ~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
 echo "yes" | ~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
 rm -f ~/jai_imageio-1_1-lib-linux-amd64-jre.bin
 
+
 # --------------------------------------------------------------------
 # INSTALL AND CONFIGURE POSTGRESQL + POSTGIS
 
-# EXCLUDE POSTGRESQL FROM THE BASE CentOS RPM
-sed -i -e '/^\[base\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
-sed -i -e '/^\[updates\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
+if [ $newDb -eq 1 ]; then
 
-# INSTALL POSTGRESQL
-yum install -y postgresql93* postgis2_93* 
+	pgDir='/cresis/snfs1/web/ops/pgsql/9.3/'
 
-# INSTALL PYTHON PSYCOPG2 MODULE FOR POSTGRES
-export PATH=/usr/pgsql-9.3/bin:"$PATH"
-pip install psycopg2
+	# EXCLUDE POSTGRESQL FROM THE BASE CentOS RPM
+	sed -i -e '/^\[base\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
+	sed -i -e '/^\[updates\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
 
-# MAKE THE SNFS1 MOCK DIRECTORY IF IT DOESNT EXIST
-if [ ! -d "/cresis/snfs1/web/ops/pgsql/9.3/" ]
-	then
-		mkdir -p /cresis/snfs1/web/ops/pgsql/9.3/
-		chown postgres:postgres /cresis/snfs1/web/ops/pgsql/9.3/
-		chmod 700 /cresis/snfs1/web/ops/pgsql/9.3/
+	# INSTALL POSTGRESQL
+	yum install -y postgresql93* postgis2_93* 
+
+	# INSTALL PYTHON PSYCOPG2 MODULE FOR POSTGRES
+	export PATH=/usr/pgsql-9.3/bin:"$PATH"
+	pip install psycopg2
+	
+	# MAKE THE SNFS1 MOCK DIRECTORY IF IT DOESNT EXIST
+	if [ ! -d "/cresis/snfs1/web/ops/pgsql" ]
+		then
+			mkdir -p /cresis/snfs1/web/ops/pgsql/
+			chown postgres:postgres /cresis/snfs1/web/ops/pgsql/
+			chmod 700 /cresis/snfs1/web/ops/pgsql/
+	fi
+	
+	# INITIALIZE THE DATABASE CLUSTER
+	cmdStr='/usr/pgsql-9.3/bin/initdb -D '$pgDir
+	su - postgres -c "$cmdStr"
+	
+	# WRITE PGDATA and PGLOG TO SERVICE CONFIG FILE 
+	sed -i "s,PGDATA=/var/lib/pgsql/9.3/data,PGDATA=$pgDir,g" /etc/rc.d/init.d/postgresql-9.3
+	sed -i "s,PGLOG=/var/lib/pgsql/9.3/pgstartup.log,PGLOG=$pgDir/pgstartup.log,g" /etc/rc.d/init.d/postgresql-9.3
+	
+	# CREATE STARTUP LOG
+	touch /cresis/snfs1/web/ops/pgsql/9.3/pgstartup.log
+	chown postgres:postgres /cresis/snfs1/web/ops/pgsql/9.3/pgstartup.log
+	chmod 700 /cresis/snfs1/web/ops/pgsql/9.3/pgstartup.log
+	
+	# SET THE DEVELOPMENT USERNAME AND PASSWORD
+	dbUser='admin'
+	dbPswd='pubAdmin'
+
+	# SET UP THE POSTGRESQL CONFIG FILES
+	pgConfDir=$pgDir"postgresql.conf"
+	sed -i "s,#port = 5432,port = 5432,g" $pgConfDir
+	sed -i "s,#track_counts = on,track_counts = on,g" $pgConfDir
+	sed -i "s,#autovacuum = on,autovacuum = on,g" $pgConfDir
+	sed -i "s,local   all             all                                     peer,local   all             all                                     trust,g" $pgConfDir
+
+	# START UP THE POSTGRESQL SERVER
+	service postgresql-9.3 start
+
+	# CREATE THE ADMIN ROLE
+	cmdstring="CREATE ROLE "$dbUser" WITH SUPERUSER LOGIN PASSWORD '"$dbPswd"';"
+	psql -U postgres -d postgres -c "$cmdstring"
+
+	# CREATE THE POSTGIS TEMPLATE
+	cmdstring="createdb postgis_template -O "$dbUser 
+	su - postgres -c "$cmdstring"
+	psql -U postgres -d postgis_template -c "CREATE EXTENSION postgis; CREATE EXTENSION postgis_topology;"
+
+	# CREATE THE APP DATABASE
+	cmdstring="createdb "$dbName" -O "$dbUser" -T postgis_template"
+	su - postgres -c "$cmdstring"
+	
 fi
-
-# SET THE DEVELOPMENT USERNAME AND PASSWORD
-dbUser='admin'
-dbPswd='pubAdmin'
-
-# INITIALIZE THE DATABASE CLUSTER
-pgDir='/cresis/snfs1/web/ops/pgsql/9.3/'
-cmdStr='/usr/pgsql-9.3/bin/initdb -D '$pgDir
-su - postgres -c "$cmdStr"
-pgConfDir=$pgDir"postgresql.conf"
-
-# SET UP THE POSTGRESQL CONFIG FILES
-sed -i "s,#port = 5432,port = 5432,g" $pgConfDir
-sed -i "s,#track_counts = on,track_counts = on,g" $pgConfDir
-sed -i "s,#autovacuum = on,autovacuum = on,g" $pgConfDir
-sed -i "s,local   all             all                                     peer,local   all             all                                     trust,g" $pgConfDir
-
-# START UP THE POSTGRESQL SERVER
-su - postgres -c '/usr/pgsql-9.3/bin/pg_ctl start -D '$pgDir
-sleep 5
-
-# CREATE THE ADMIN ROLE
-cmdstring="CREATE ROLE "$dbUser" WITH SUPERUSER LOGIN PASSWORD '"$dbPswd"';"
-psql -U postgres -d postgres -c "$cmdstring"
-
-# CREATE THE POSTGIS TEMPLATE
-cmdstring="createdb postgis_template -O "$dbUser 
-su - postgres -c "$cmdstring"
-psql -U postgres -d postgis_template -c "CREATE EXTENSION postgis; CREATE EXTENSION postgis_topology;"
-
-# CREATE THE APP DATABASE
-cmdstring="createdb "$appName" -O "$dbUser" -T postgis_template"
-su - postgres -c "$cmdstring"
 
 # --------------------------------------------------------------------
 # INSTALL PYTHON PACKAGES / SCIPY / GEOS
 
 # INSTALL PACKAGES WITH PIP
 pip install Cython 
-pip install geojson 
+pip install geojson
 pip install ujson 
 pip install django-extensions 
 pip install simplekml
 pip install --pre line_profiler
+pip install pylint
 
-# INSTALL SCIPY 
+# INSTALL NUMPY/SCIPY 
 yum -y install atlas-devel blas-devel
 pip install numpy
-pip install scipy 
+pip install scipy
 
 # INSTALL GEOS
 yum -y install geos-devel
@@ -457,11 +497,25 @@ pip install Django==1.6.2
 mkdir -p /var/django/
 cp -rf /vagrant/conf/django/* /var/django/
 
-# SYNC THE DJANGO DEFINED DATABASE
-python /var/django/$appName/manage.py syncdb --noinput 
+# MODIFY THE DATABASE NAME
+sed -i "s,		'NAME': 'ops',		'NAME': '$dbName',g" /var/django/ops/ops/settings.py
+
+if [ $newDb -eq 1 ]; then
+
+	# SYNC THE DJANGO DEFINED DATABASE
+	python /var/django/$appName/manage.py syncdb --noinput 
+
+	# CREATE DATABASE VIEWS FOR CROSSOVER ERRORS
+	viewstr='psql -U postgres -d ops -c "CREATE VIEW app_crossover_errors AS SELECT pt_pths1.season_id AS season_1_id, pt_pths2.season_id AS season_2_id, cx.angle,pt_pths1.geom AS point_path_1_geom, pt_pths2.geom AS point_path_2_geom, pt_pths1.gps_time AS gps_time_1, pt_pths2.gps_time AS gps_time_2, pt_pths1.heading AS heading_1,pt_pths2.heading AS heading_2,pt_pths1.roll AS roll_1,pt_pths2.roll AS roll_2, pt_pths1.pitch AS pitch_1,pt_pths2.pitch AS pitch_2,pt_pths1.location_id, cx.geom,lyr_pts1.layer_id, pt_pths1.frame_id AS frame_1_id, pt_pths2.frame_id AS frame_2_id,cx.point_path_1_id, cx.point_path_2_id,lyr_pts1.twtt AS twtt_1, lyr_pts2.twtt AS twtt_2, CASE WHEN lyr_pts1.layer_id = 1 THEN ABS((ST_Z(pt_pths1.geom) - lyr_pts1.twtt*299792458.0003452/2)) ELSE ABS((ST_Z(pt_pths1.geom) - (SELECT twtt FROM rds_layer_points WHERE layer_id=1 AND point_path_id = pt_pths1.id)*299792458.0003452/2 - (lyr_pts1.twtt - (SELECT twtt FROM rds_layer_points WHERE layer_id = 1 AND point_path_id = pt_pths1.id))*299792458.0003452/2/sqrt(3.15))) END AS layer_elev_1, CASE WHEN lyr_pts1.layer_id = 1 THEN ABS((ST_Z(pt_pths2.geom) - lyr_pts2.twtt*299792458.0003452/2)) ELSE ABS((ST_Z(pt_pths2.geom) - (SELECT twtt FROM rds_layer_points WHERE layer_id = 1 AND point_path_id = pt_pths2.id)*299792458.0003452/2 - (lyr_pts2.twtt - (SELECT twtt FROM rds_layer_points WHERE layer_id = 1 AND point_path_id = pt_pths2.id))*299792458.0003452/2/sqrt(3.15))) END AS layer_elev_2 FROM rds_crossovers AS cx, rds_point_paths AS pt_pths1, rds_point_paths AS pt_pths2, rds_layer_points AS lyr_pts1, rds_layer_points AS lyr_pts2 WHERE lyr_pts1.layer_id = lyr_pts2.layer_id AND  lyr_pts1.point_path_id = pt_pths1.id AND lyr_pts2.point_path_id = pt_pths2.id AND cx.point_path_1_id = pt_pths1.id AND cx.point_path_2_id = pt_pths2.id AND pt_pths1.location_id = 1 AND lyr_pts1.layer_id = 2;"'
+	eval ${viewstr//app/rds}
+	eval ${viewstr//app/snow}
+	eval ${viewstr//app/accum}
+	eval ${viewstr//app/kuband}
+
+fi
 
 # --------------------------------------------------------------------
-# BULKLOAD DATA TO POSTGRESQL
+# BULKLOAD DATA TO POSTGRESQL 
 
 if [ $installPgData -eq 1 ]; then
 	
@@ -487,30 +541,47 @@ fi
 # INSALL APACHE TOMCAT
 yum install -y tomcat6
 
-# INSTALL GEOSERVER WAR
-cd ~ && wget https://ops.cresis.ku.edu/data/geoserver/geoserver.pub.war
-mv ./geoserver.pub.war /var/lib/tomcat6/webapps/geoserver.war
+# CONFIGURE TOMCAT6
+echo 'JAVA_HOME="/usr/java/jre1.8.0/"' >> /etc/tomcat6/tomcat6.conf
+echo 'JAVA_OPTS="-server -Xms512m -Xmx512m -XX:+UseParallelGC -XX:+UseParallelOldGC"' >> /etc/tomcat6/tomcat6.conf # SHOULD BE MODIFIED FOR MORE RAM
+echo 'CATALINA_OPTS="-DGEOSERVER_DATA_DIR=/cresis/snfs1/web/ops/geoserver"' >> /etc/tomcat6/tomcat6.conf
 
-# MAKE THE DIRECTORY FOR DATA
-mkdir -p /cresis/web/
+# MAKE THE EXTERNAL GEOSERVER DATA DIRECTORY (IF IT DOESNT EXIST)
+if [ ! -d "/cresis/snfs1/web/ops/geoserver/" ]; then
+	mkdir -p /cresis/snfs1/web/ops/geoserver/
+fi
 
-# GET/UNZIP THE DATA
+# EXTRACT THE OPS GEOSERVER DATA DIR TO THE DIRECTORY
+cp -rf /vagrant/conf/geoserver/geoserver/* /cresis/snfs1/web/ops/geoserver/
+
+# GET THE GEOSERVER REFERENCE DATA
 if [ -f /vagrant/data/geoserver/geoserver.zip ]; then
 
-	# UNZIP THE EXISTING DATA PACK
-	unzip /vagrant/data/geoserver/geoserver.zip -d /cresis/web
+	unzip /vagrant/data/geoserver/geoserver.zip -d /cresis/snfs1/web/ops/geoserver/data/
 
-else 
+else
 
 	# DOWNLOAD THE DATA PACK FROM CReSIS (MINIMAL LAYERS)
 	cd /vagrant/data/geoserver/ && wget https://ops.cresis.ku.edu/data/geoserver/geoserver.zip
 	
 	# UNZIP THE DOWNLOADED DATA PACK
-	unzip /vagrant/data/geoserver/geoserver.zip -d /cresis/web
+	unzip /vagrant/data/geoserver/geoserver.zip -d /cresis/snfs1/web/ops/geoserver/data/
 
 fi
 
-# START APACHE TOMCAT (UNPACKS GEOSERVER WEB ARCHIVE)
+# TEMPORARY HACK UNTIL THE GEOSERVER.ZIP STRUCTURE CHANGES
+mv /cresis/snfs1/web/ops/geoserver/data/geoserver/data/arctic /cresis/snfs1/web/ops/geoserver/data/
+mv /cresis/snfs1/web/ops/geoserver/data/geoserver/data/antarctic /cresis/snfs1/web/ops/geoserver/data/
+rm -rf /cresis/snfs1/web/ops/geoserver/data/geoserver/
+
+# COPY THE GEOSERVER WAR TO TOMCAT
+cp /vagrant/conf/geoserver/geoserver.war /var/lib/tomcat6/webapps
+
+# SET OWNERSHIP/PERMISSIONS OF GEOSERVER DATA DIRECTORY
+chmod -R u=rwX,g=rwX,o=rX /cresis/snfs1/web/ops/geoserver/
+chown -R tomcat:tomcat /cresis/snfs1/web/ops/geoserver/
+
+# START APACHE TOMCAT
 service tomcat6 start
 
 # --------------------------------------------------------------------
@@ -518,8 +589,8 @@ service tomcat6 start
 
 cp -rf /vagrant/conf/geoportal/* /var/www/html/ # COPY THE APPLICATION
 
-# WRITE THE BASE URL TO globals.js
-sed -i "s,	 baseUrl: ""http://192.168.111.222"",	 baseUrl: ""$serverName"",g" /var/www/html/app/Global.js
+# WRITE THE BASE URL TO app.js
+# sed -i "s,	 baseUrl: ""http://192.168.111.222"",	 baseUrl: ""$serverName"",g" /var/www/html/app.js
 
 # CREATE AND CONFIGURE ALL THE OUTPUT DIRECTORIES
 mkdir -p /cresis/snfs1/web/ops/data/csv/
@@ -531,6 +602,15 @@ chmod 777 /cresis/snfs1/web/ops/data/kml/
 mkdir -p /cresis/snfs1/web/ops/data/mat/
 chmod 777 /cresis/snfs1/web/ops/data/mat/
 
+mkdir -p /cresis/snfs1/web/ops/datapacktmp/
+chmod 777 /cresis/snfs1/web/ops/datapacktmp/
+
+mkdir -p  /cresis/snfs1/web/ops/data/datapacks/
+chmod 777 /cresis/snfs1/web/ops/data/datapacks/
+
+mkdir -p /cresis/snfs1/web/ops/data/reports/
+chmod 777 /cresis/snfs1/web/ops/data/reports/
+
 mkdir -p /var/profile_logs/txt/
 chmod 777 /var/profile_logs/txt/
 
@@ -541,13 +621,22 @@ chmod 777 /var/profile_logs/txt/
 service httpd start
 chkconfig httpd on
 
-# POSTGRESQL
-su - postgres -c '/usr/pgsql-9.3/bin/pg_ctl start -D '$pgDir
-sleep 5
+if [ $newDb -eq 1 ]; then
+
+	# POSTGRESQL
+	service postgresql-9.3 start
+	chkconfig postgresql-9.3 on
+	#su - postgres -c '/usr/pgsql-9.3/bin/pg_ctl start -D '$pgDir
+	#sleep 5
+
+fi
 
 # APACHE TOMCAT
 service tomcat6 start
 chkconfig tomcat6 on
+
+# UPDATE SYSTEM (FORCES UPDATES FOR ALL NEW INSTALLS)
+yum update -y
 
 # --------------------------------------------------------------------
 # PRINT OUT THE COMPLETION NOTICE
