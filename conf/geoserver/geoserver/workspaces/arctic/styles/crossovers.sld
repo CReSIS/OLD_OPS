@@ -308,7 +308,7 @@
              <Mark>
              <WellKnownName>circle</WellKnownName>
              <Fill>
-               <CssParameter name="fill">#d1030210</CssParameter>
+               <CssParameter name="fill">#d73027</CssParameter>
              </Fill>
             <Stroke>
                <CssParameter name="stroke">#000000</CssParameter>
@@ -360,7 +360,12 @@
              <WellKnownName>circle</WellKnownName>
              <Fill>
                <CssParameter name="fill">#000000</CssParameter>
+               <CssParameter name="fill-opacity">0</CssParameter>
              </Fill>
+              <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+             </Stroke>
              </Mark>
              <Size>14</Size>
            </Graphic>
@@ -682,7 +687,7 @@
              <Mark>
              <WellKnownName>circle</WellKnownName>
              <Fill>
-               <CssParameter name="fill">#d1030210</CssParameter>
+               <CssParameter name="fill">#d73027</CssParameter>
              </Fill>
             <Stroke>
                <CssParameter name="stroke">#000000</CssParameter>
@@ -736,7 +741,12 @@
              <WellKnownName>circle</WellKnownName>
              <Fill>
                <CssParameter name="fill">#000000</CssParameter>
+               <CssParameter name="fill-opacity">0</CssParameter>
              </Fill>
+              <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+             </Stroke>
              </Mark>
              <Size>12</Size>
            </Graphic>
@@ -1048,7 +1058,7 @@
              <Mark>
              <WellKnownName>circle</WellKnownName>
              <Fill>
-               <CssParameter name="fill">#d1030210</CssParameter>
+               <CssParameter name="fill">#d73027</CssParameter>
              </Fill>
             <Stroke>
                <CssParameter name="stroke">#000000</CssParameter>
@@ -1100,7 +1110,12 @@
              <WellKnownName>circle</WellKnownName>
              <Fill>
                <CssParameter name="fill">#000000</CssParameter>
+               <CssParameter name="fill-opacity">0</CssParameter>
              </Fill>
+              <Stroke>
+               <CssParameter name="stroke">#000000</CssParameter>
+               <CssParameter name="stroke-width">1</CssParameter>
+             </Stroke>
              </Mark>
              <Size>6</Size>
            </Graphic>

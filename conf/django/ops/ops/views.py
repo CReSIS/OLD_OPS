@@ -1646,7 +1646,8 @@ def getCrossovers(request):
 			source_elev: (list of float/s) aircraft elevation of the source points
 			cross_elev: (list of float/s) aircraft elevation of the crossovers
 			layer_id: (list of integer/s) layer ids of the crossovers
-			frame_id: (list of integer/s) frame ids of the crossovers
+			season_name: (list of string/s) season names of the crossovers
+			frame_name: (list of string/s) frame names of the crossovers
 			twtt: (list of float/s) two-way travel time of the crossovers
 			angle: (list of float/s) acute angle (degrees) of the crossovers path
 			abs_error: (list of float/s) absolute difference (twtt) between the source and crossover layer points
@@ -1656,26 +1657,17 @@ def getCrossovers(request):
 	
 	# parse the data input
 	try:
-	
 		inLocationName = utility.forceList(data['properties']['location'])
 		inLayerNames = utility.forceList(data['properties']['lyr_name'])
-	
 		try:
-		
 			getPointPathIds = False
 			inPointPathIds = utility.forceTuple(data['properties']['point_path_id'])
-		
 		except:
-		
 			try:
-			
 				getPointPathIds = True
 				inFrameNames = utility.forceList(data['properties']['frame'])
-			
 			except:
-			
 				return utility.response(0,'ERROR: EITHER POINT PATH IDS OR FRAME NAMES MUST BE GIVEN',{})
-	
 	except:
 		return utility.errorCheck(sys)
 	
@@ -1693,8 +1685,8 @@ def getCrossovers(request):
 		
 		# get all of the data needed for crossovers
 		try:
-			sql_str = "WITH cx AS (SELECT point_path_1_id, point_path_2_id, angle FROM {app}_crossovers WHERE point_path_1_id IN %s OR point_path_2_id IN %s) SELECT pp1.id, pp2.id, lp1.layer_id, lp2.layer_id, lp1.twtt, lp2.twtt, ABS(lp1.twtt - lp2.twtt), cx.angle, ST_Z(pp1.geom), ST_Z(pp2.geom), pp1.frame_id, pp2.frame_id FROM cx, {app}_layer_points AS lp1, {app}_layer_points AS lp2, {app}_point_paths AS pp1, {app}_point_paths AS pp2 WHERE cx.point_path_1_id = lp1.point_path_id AND cx.point_path_2_id = lp2.point_path_id AND lp1.layer_id IN %s AND lp2.layer_id IN %s AND pp1.id = lp1.point_path_id AND pp2.id = lp2.point_path_id AND lp1.layer_id = lp2.layer_id;".format(app=app)
-			cursor.execute(sql_str,[inPointPathIds,inPointPathIds,layerIds,layerIds])
+			sql_str = "SELECT point_path_1_id, point_path_2_id, ST_Z(point_path_1_geom), ST_Z(point_path_2_geom),layer_id, frame_1_name, frame_2_name, (SELECT segment_id FROM {app}_point_paths WHERE id = point_path_1_id), (SELECT segment_id FROM {app}_point_paths WHERE id = point_path_2_id), twtt_1, twtt_2, angle, ABS(twtt_1-twtt_2),season_1_name,season_2_name FROM {app}_crossover_errors WHERE (point_path_1_id IN %s OR point_path_2_id IN %s) AND (layer_id IN %s OR layer_id IS NULL);".format(app=app)
+			cursor.execute(sql_str,[inPointPathIds,inPointPathIds,layerIds])
 			crossoverRows = cursor.fetchall() # get all of the data from the query
 			
 		except DatabaseError as dberror:
@@ -1703,50 +1695,175 @@ def getCrossovers(request):
 		finally:
 			cursor.close() # close the cursor in case of exception
 		if len(crossoverRows) == 0:
-			return utility.response(2,'WARNING: NO CROSSOVERS FOUND FOR THE GIVEN PARAMETERS.',{}) # warning if no data is found
-
-		crossoverData = zip(*crossoverRows) # extract all the elements
-		del crossoverRows
+			#No crossovers found. Return empty response. 
+			return utility.response(1,{'source_point_path_id':[],'cross_point_path_id':[],'source_elev':[],'cross_elev':[],'layer_id':[],'season_name':[],'frame_name':[],'twtt':crossTwtt,'angle':[],'abs_error':[]},{}) 
 			
 		# set up for the creation of outputs
 		sourcePointPathIds = []; crossPointPathIds = []; sourceElev = []; crossElev = []; 
-		crossTwtt = []; crossAngle = []; crossFrameId = []; crossLayerId = []; crossAbsError = [];
+		crossTwtt = []; crossAngle = []; crossFrameName = []; layerId = []; absError = [];
+		crossSeasonName = [];
 		
-		for crossIdx in range(len(crossoverData[0])): # parse each output row and sort it into either source or crossover outputs
+		for crossoverData in crossoverRows: # parse each output row and sort it into either source or crossover outputs
 		
-			if any(crossoverData[0][crossIdx] == inPid for inPid in inPointPathIds):
+			if crossoverData[0] in inPointPathIds:
 			
 				# point_path_1 is the source
-				sourcePointPathIds.append(crossoverData[0][crossIdx])
-				sourceElev.append(crossoverData[8][crossIdx])
+				sourcePointPathIds.append(crossoverData[0])
+				sourceElev.append(crossoverData[2])
 				
 				# point_path_2 is the crossover
-				crossPointPathIds.append(crossoverData[1][crossIdx])
-				crossElev.append(crossoverData[9][crossIdx])
-				crossTwtt.append(crossoverData[5][crossIdx])
-				crossAngle.append(crossoverData[7][crossIdx])
-				crossFrameId.append(crossoverData[11][crossIdx])
-				crossLayerId.append(crossoverData[3][crossIdx])
-				crossAbsError.append(crossoverData[6][crossIdx])
+				crossPointPathIds.append(crossoverData[1])
+				crossElev.append(crossoverData[3])
+				crossTwtt.append(crossoverData[10])
+				crossAngle.append(crossoverData[11])
+				crossSeasonName.append(crossoverData[14])
+				crossFrameName.append(crossoverData[6])
+				layerId.append(crossoverData[4])
+				absError.append(crossoverData[12])
 			
 			else:
 			
 				# point_path_1 is the crossover
-				crossPointPathIds.append(crossoverData[0][crossIdx])
-				crossElev.append(crossoverData[8][crossIdx])
-				crossTwtt.append(crossoverData[4][crossIdx])
-				crossAngle.append(crossoverData[7][crossIdx])
-				crossFrameId.append(crossoverData[10][crossIdx])
-				crossLayerId.append(crossoverData[2][crossIdx])
-				crossAbsError.append(crossoverData[6][crossIdx])
+				crossPointPathIds.append(crossoverData[0])
+				crossElev.append(crossoverData[2])
+				crossTwtt.append(crossoverData[9])
+				crossAngle.append(crossoverData[11])
+				crossSeasonName.append(crossoverData[13])
+				crossFrameName.append(crossoverData[5])
+				layerId.append(crossoverData[4])
+				absError.append(crossoverData[12])
 				
 				# point_path_2 is the source
-				sourcePointPathIds.append(crossoverData[1][crossIdx])
-				sourceElev.append(crossoverData[9][crossIdx])
+				sourcePointPathIds.append(crossoverData[1])
+				sourceElev.append(crossoverData[3])
 		
 		# return the output
-		return utility.response(1,{'source_point_path_id':sourcePointPathIds,'cross_point_path_id':crossPointPathIds,'source_elev':sourceElev,'cross_elev':crossElev,'layer_id':crossLayerId,'frame_id':crossFrameId,'twtt':crossTwtt,'angle':crossAngle,'abs_error':crossAbsError},{})
+		return utility.response(1,{'source_point_path_id':sourcePointPathIds,'cross_point_path_id':crossPointPathIds,'source_elev':sourceElev,'cross_elev':crossElev,'layer_id':layerId,'season_name':crossSeasonName,'frame_name':crossFrameName,'twtt':crossTwtt,'angle':crossAngle,'abs_error':absError},{})
 		
+	except:
+		return utility.errorCheck(sys)
+
+def getCrossoversReport(request):
+	""" Get crossover error report from the OPS.
+	
+	Input:
+		location: (string)
+		lyr_name: (string or list of strings)
+		
+		seasons: (string or list of strings)
+			OR
+		point_path_id: (integer or list of integers)
+			OR
+		frame: (string or list of strings)
+		
+	Output:
+		status: (integer) 0:error 1:success 2:warning
+		data: url to crossover report .csv on the server
+	"""
+	models,data,app,cookies = utility.getInput(request) # get the input and models
+	
+	# parse the data input
+	try:
+	
+		inLocationName = utility.forceList(data['properties']['location'])
+		inLayerNames = utility.forceList(data['properties']['lyr_name'])
+		try:
+			getPointPathIds = False
+			inSeasonNames = utility.forceTuple(data['properties']['seasons'])
+		except:
+			inSeasonNames = False
+			try:
+				getPointPathIds = False
+				inPointPathIds = utility.forceTuple(data['properties']['point_path_id'])
+		
+			except:
+			
+				try:
+				
+					getPointPathIds = True
+					inFrameNames = utility.forceList(data['properties']['frame'])
+				
+				except:
+				
+					return utility.response(0,'ERROR: POINT PATH IDS, FRAME NAMES, OR SEASON NAMES MUST BE GIVEN',{})
+	
+	except:
+		return utility.errorCheck(sys)
+	
+	# perform the function logic
+	try:
+	#Get layer ids: 
+		layerIds = utility.forceTuple(list(models.layers.objects.filter(name__in=inLayerNames).values_list('pk',flat=True)))
+			
+		if getPointPathIds:
+		
+			# get the point path ids based on the given frames
+			inPointPathIds = utility.forceTuple(list(models.point_paths.objects.filter(frame_id__name__in=inFrameNames,location__name__in=inLocationName).values_list('pk',flat=True)))
+
+		cursor = connection.cursor() # create a database cursor
+		try:
+			#Create, execute, and retrieve results from query to get crossover error information. 
+			if inSeasonNames:
+				sql_str = "SELECT ABS(layer_elev_1-layer_elev_2), layer_elev_1, layer_elev_2, twtt_1, twtt_2, angle, (SELECT name FROM {app}_layers WHERE id = layer_id), season_1_name, season_2_name,frame_1_name,frame_2_name, gps_time_1, gps_time_2, ST_X(point_path_1_geom), ST_X(point_path_2_geom), ST_Y(point_path_1_geom), ST_Y(point_path_2_geom), ST_Z(point_path_1_geom), ST_Z(point_path_2_geom), ST_X(geom), ST_Y(geom) FROM {app}_crossover_errors WHERE layer_elev_1 IS NOT NULL AND layer_elev_2 IS NOT NULL AND layer_id IN %s AND (season_1_name IN %s OR season_2_name IN %s);".format(app=app)
+				cursor.execute(sql_str,[layerIds,inSeasonNames,inSeasonNames])
+			else:
+				sql_str = "SELECT ABS(layer_elev_1-layer_elev_2), layer_elev_1, layer_elev_2, twtt_1, twtt_2, angle, (SELECT name FROM {app}_layers WHERE id = layer_id), season_1_name,season_2_name,frame_1_name, frame_2_name, gps_time_1, gps_time_2, ST_X(point_path_1_geom), ST_X(point_path_2_geom), ST_Y(point_path_1_geom), ST_Y(point_path_2_geom), ST_Z(point_path_1_geom), ST_Z(point_path_2_geom), ST_X(geom), ST_Y(geom) FROM {app}_crossover_errors WHERE layer_elev_1 IS NOT NULL AND layer_elev_2 IS NOT NULL AND layer_id IN %s AND (point_path_1_id IN %s OR point_path_2_id IN %s);".format(app=app)
+				cursor.execute(sql_str,[layerIds,inPointPathIds,inPointPathIds])
+			crossoverRows = cursor.fetchall()
+			
+		except DatabaseError as dberror:
+			return utility.response(0,dberror[0],{})
+		finally:
+			cursor.close()
+		
+		if len(crossoverRows) > 0:
+		
+			# generate the output report information
+			serverDir = '/cresis/snfs1/web/ops/data/reports/'
+			webDir = 'data/reports/'
+			tmpFn = 'OPS_CReSIS_Crossovers_Report_' + utility.randId(10) + '.csv'
+			webFn = webDir + tmpFn
+			serverFn  = serverDir + tmpFn
+			
+			#Construct the csv header
+			csvHeader = ['ERROR','LAYER_ELEV1', 'LAYER_ELEV2','TWTT1','TWTT2', 'CROSS_ANGLE','LAYER_NAME', 'SEASON1',\
+			'SEASON2','FRAME1','FRAME2','UTCSOD1','UTCSOD2','UTCDATE1','UTCDATE2', 'LON1','LON2','LAT1','LAT2','ELEV1','ELEV2','CROSS_LON','CROSS_LAT']
+			
+			# write the csv file
+			with open(serverFn,'wb') as csvFile:
+				csvWriter = csv.writer(csvFile,delimiter=',',quoting=csv.QUOTE_NONE)
+				csvWriter.writerow(csvHeader)
+				for row in crossoverRows:
+					csvWriter.writerow([
+						"%.5f" % row[0], 
+						"%.5f" % row[1],
+						"%.5f" % row[2],
+						"%.8f" % row[3],
+						"%.8f" % row[4],
+						"%.3f" % row[5],
+						row[6], 
+						row[7],
+						row[8],
+						row[9],
+						row[10],
+						"%.3f" % (float(time.gmtime(row[11]).tm_hour*3600.0 + time.gmtime(row[11]).tm_min*60.0 + time.gmtime(row[11]).tm_sec)),
+						"%.3f" % (float(time.gmtime(row[12]).tm_hour*3600.0 + time.gmtime(row[12]).tm_min*60.0 + time.gmtime(row[12]).tm_sec)),
+						(time.strftime('%Y%m%d',time.gmtime(row[11]))),
+						(time.strftime('%Y%m%d',time.gmtime(row[12]))),
+						"%.8f" % row[13],
+						"%.8f" % row[14],
+						"%.5f" % row[15],
+						"%.8f" % row[16],
+						"%.8f" % row[17],
+						"%.5f" % row[18],
+						"%.8f" % row[19],
+						"%.8f" % row[20]
+					])
+			
+			# return the output
+			return utility.response(1,webFn,{})
+		else: 
+			return utility.response(2, "No crossover errors found with specified parameters.",{})
 	except:
 		return utility.errorCheck(sys)
 

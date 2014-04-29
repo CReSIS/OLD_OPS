@@ -46,7 +46,7 @@
     <entry key="JDBC_VIRTUAL_TABLE">
       <virtualTable>
         <name>snow_crossover_errors</name>
-        <sql>SELECT geom, ABS(layer_elev_1-layer_elev_2) AS error FROM snow_crossover_errors WHERE layer_id = %layer_id% AND location_id = 1
+        <sql>SELECT geom, ABS(layer_elev_1-layer_elev_2) AS error FROM snow_crossover_errors WHERE (layer_id = %layer_id% OR layer_id IS NULL) AND location_id = 1
 </sql>
         <escapeSql>false</escapeSql>
         <geometry>
