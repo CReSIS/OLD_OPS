@@ -1,40 +1,19 @@
 #!/bin/sh
 #
-# VAGRANT SHELL PROVISIONING
-#
-# SYSTEM: OpenPolarServer (public)
+# OpenPolarServer (Public) Build Tools
 #
 # CONTACT: cresis_data@cresis.ku.edu
 #
-# AUTHOR: Kyle W. Purdon, Trey Stafford
-#
-# SYSTEM DESCRIPTION AND NOTES
-# 	- This file installs and configures the complete OPS SDI.
-#
-# PRIMARY SOFTWARE INSTALLED AND CONFIGURED
-#	- APACHE HTTPD, APACHE TOMCAT, POSTGRESQL, POSTGIS, GEOSERVER(WAR), DJANGO FRAMEWORK, PYTHON27(VIRTUALENV)
-
-# =================================================================================
-# USER SETUP PARAMETERS
-
-newDb=1 # CREATE A NEW DATABASE SERVER (THIS SHOULD BE ON FOR DEV BOXES, OFF FOR OPS-TEMP)
-
-# BASIC SYSTEM INFORMATION
-serverAdmin="root"; # REPLACE WITH AN EMAIL IF YOU WISH
-serverName="192.168.111.222"; # PROBABLY SHOULD NOT CHANGE THIS. (HAVE NOT TRACKED DOWN ALL DEPENDENCIES YET)
-
-# OPTIONAL INSTALLATIONS
-installPgData=0; # LOAD DATA FROM ./data/postgresql/* USING BULKLOAD
-useCron=0; # SET UP CRON TO DO AUTOMATIC DELETION AND DATBASE MAINTNACE (REQUIRES SSMTP SETUP BELOW)
-installSsmtp=0; # INSTALL SSMTP FOR NOTIFICATION EMAILS (GMAIL ONLY FOR NOW)
-ssmtpUser=""; # YOUR GMAIL USERNAME (youremail DONT INCLUDE (@gmail.com))
-ssmtpPasswd=""; # YOUR GMAIL PASSWORD (don't share this with others, stored in plain text)
+# AUTHORS: Kyle W. Purdon, Trey Stafford
 
 # =================================================================================
 # ---------------------------------------------------------------------------------
 # ****************** DO NOT MODIFY ANYTHING BELOW THIS LINE ***********************
 # ---------------------------------------------------------------------------------
 # =================================================================================
+
+notify-send "Now building OpenPolarServer"
+notify-send "Please watch for more prompts (there will only be one you need to act on). Thank you."
 
 printf "\n\n"
 printf "#########################################################################\n"
@@ -52,83 +31,48 @@ printf "########################################################################
 printf "\n"
 
 startTime=$(date -u);
+
+# --------------------------------------------------------------------
+# SET SOME STATIC INPUTS
+newDb=1;
+serverName="192.168.111.222";
+serverAdmin="root"; 
 appName="ops";
-dbName="ops"; # CHANGE WITH CAUTION (MANUAL UPDATES NEEDED TO GEOSERVER POSTGIS STORES)
+dbName="ops";
+installPgData=0;
+webDataDir="/cresis/snfs1/web/ops/data";
 
 # --------------------------------------------------------------------
-# WRITE DNS ENTRY
+# WRITE GEOSERVER_DATA_DIR TO ~/.bashrc
 
-dnsStr="
-nameserver 8.8.8.8
-nameserver 8.8.4.4";
-
-echo -n > /etc/resolv.conf
-echo -e "$dnsStr" > /etc/resolv.conf
+echo 'GEOSERVER_DATA_DIR="/cresis/snfs1/web/ops/geoserver"' >> ~/.bashrc
+. ~/.bashrc
 
 # --------------------------------------------------------------------
-# WRITE ~/.bashrc ENVIRONMENT VARIABLES
-
-echo 'GEOSERVER_DATA_DIR="/cresis/snfs1/web/ops/geoserver"' >> ~/.bashrc # GEOSERVER DATA DIRECTORY
-#echo 'PGDATA="/cresis/snfs1/web/ops/pgsql/9.3/"' >> ~/.bashrc # GEOSERVER DATA DIRECTORY
-. ~/.bashrc # RELOAD VARIABLES
-
-# --------------------------------------------------------------------
-# UPDATE THE SYSTEM AND INSTALL REPOS AND UTILITY PACKAGES
+# UPDATE THE SYSTEM AND INSTALL PGDG REPO
 
 # UPDATE SYSTEM
 yum update -y
 
-# INSTALL UTILITY PACKAGES
-yum install -y gzip gcc unzip rsync wget 
-
-# INSTALL THE EPEL REPO
-wget  http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm 
-rpm -Uvh epel-release-6*.rpm 
-
 # INSTALL THE PGDG REPO
-wget http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-centos93-9.3-1.noarch.rpm
+cd ~ && cp -f /vagrant/conf/software/pgdg-centos93-9.3-1.noarch.rpm ./
 rpm -Uvh pgdg-centos93-9.3-1.noarch.rpm
+rm -f pgdg-centos93-9.3-1.noarch.rpm
 
 # --------------------------------------------------------------------
-# CONFIGURE IPTABLES
-
-# FLUSH CURRENT RULES
-iptables -F 
-
-# SET NEW PORT RULES
-iptables -A INPUT -p tcp --dport 22 -j ACCEPT #SSH ON TCP 22
-iptables -A INPUT -p tcp --dport 80 -j ACCEPT #HTTP ON TCP 80
-iptables -A INPUT -p tcp --dport 443 -j ACCEPT #HTTPS ON TCP 443
-
-# SET I/O POLICIES
-iptables -P INPUT DROP 
-iptables -P FORWARD DROP 
-iptables -P OUTPUT ACCEPT 
-
-# OPEN LOCALHOST
-iptables -A INPUT -i lo -j ACCEPT 
-
-# ACCEPT ESTABLISHED/RELATED (ALREADY OPEN CONNECTIONS)
-iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT 
-
-# SAVE NEW RULES AND RESTART SERVICE
-/sbin/service iptables save 
-/sbin/service iptables restart 
-
-# --------------------------------------------------------------------
-# INSTALL PYTHON 2.7 AND VIRTUALENV WITH DEPENDENCIES
+# INSTALL PYTHON 2.7 WITH DEPENDENCIES IN A VIRTUALENV
 
 # INSTALL DEPENDENCIES
-yum groupinstall -y "Development tools"
-yum install -y wget python-pip zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel
+yum install -y python-pip zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel
 python-pip install --upgrade nose
 
-# DOWNLOAD AND INSTALL PYTHON 2.7.6
-wget http://www.python.org/ftp/python/2.7.6/Python-2.7.6.tar.xz
+# INSTALL PYTHON 2.7.6
+cd ~ && cp -f /vagrant/conf/software/Python-2.7.6.tar.xz ./
 tar xf Python-2.7.6.tar.xz
 cd Python-2.7.6
 ./configure --prefix=/usr --enable-shared LDFLAGS="-Wl,-rpath /usr/lib"
 make && make altinstall
+cd ~ && rm -rf Python-2.7.6 && rm -f Python-2.7.6.tar.xz
 
 # INSTALL AND ACTIVATE VIRTUALENV
 pip install virtualenv
@@ -139,24 +83,22 @@ source /usr/bin/venv/bin/activate
 # INSTALL APACHE WEB SERVER AND MOD_WSGI
 
 # INSTALL APACHE HTTPD
-yum install -y httpd httpd-devel
+yum install -y httpd-devel
 
-# DOWNLOAD AND INSTALL MOD_WSGI (COMPILE WITH Python27)
-cd ~ && wget https://modwsgi.googlecode.com/files/mod_wsgi-3.4.tar.gz
+# INSTALL MOD_WSGI (COMPILE WITH Python27)
+cd ~ && cp -f /vagrant/conf/software/mod_wsgi-3.4.tar.gz ./
 tar xvfz mod_wsgi-3.4.tar.gz
 cd mod_wsgi-3.4/
 ./configure --with-python=/usr/bin/python2.7
 LD_RUN_PATH=/usr/lib make && make install
-rm -f ~/mod_wsgi-3.4.tar.gz
-rm -f ~/mod_wsgi-3.4
-
-# INCLUDE THE SITE CONFIGURATION FOR HTTPD
-echo "Include /var/www/sites/"$serverName"/conf/"$appName".conf" >> /etc/httpd/conf/httpd.conf
+cd ~ && rm -f mod_wsgi-3.4.tar.gz && rm -rf mod_wsgi-3.4
 
 # --------------------------------------------------------------------
 # WRITE CONFIG FILES FOR HTTPD
 
-webDataDir="/cresis/snfs1/web/ops/data";
+# INCLUDE THE SITE CONFIGURATION FOR HTTPD
+echo "Include /var/www/sites/"$serverName"/conf/"$appName".conf" >> /etc/httpd/conf/httpd.conf
+
 mkdir -p $webDataDir
 chmod 777 $webDataDir
 
@@ -316,88 +258,58 @@ chmod +x /var/www/sites/$serverName/cgi-bin/proxy.cgi
 # --------------------------------------------------------------------
 # WRITE CRONTAB CONFIGURATION
 
-if [ $useCron -eq 1 ]; then
+cronStr="
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=''
+HOME=/
 
-	cronStr="
-	SHELL=/bin/bash
-	PATH=/sbin:/bin:/usr/sbin:/usr/bin
-	MAILTO=''
-	HOME=/
-	# REMOVE CSV FILES OLDER THAN 7 DAYS AT 2 AM DAILY
-	0 2 * * * root fns=\$(find "$webDataDir"/csv/*.csv -mtime +7); if [ -n '\$fns' ]; then rm -f \$fns; printf '%s' \$fns | mail -s 'OPS CSV CLEANUP' "$ssmtpUser"@gmail.com; fi;
-	# REMOVE KML FILES OLDER THAN 7 DAYS AT 2 AM DAILY
-	0 2 * * * root fns=\$(find "$webDataDir"/kml/*.kml -mtime +7); if [ -n '\$fns' ]; then rm -f \$fns; printf '%s' \$fns | mail -s 'OPS KML CLEANUP'"$ssmtpUser"@gmail.com; fi;
-	# REMOVE MAT FILES OLDER THAN 7 DAYS AT 2 AM DAILY
-	0 2 * * * root fns=\$(find "$webDataDir"/mat/*.mat -mtime +7); if [ -n '\$fns' ]; then rm -f \$fns; printf '%s' \$fns | mail -s 'OPS MAT CLEANUP' "$ssmtpUser"@gmail.com; fi;
-	# VACUUM ANALYZE-ONLY THE ENTIRE OPS DATABASE AT 2 AM DAILY
-	0 2 * * * root su postgres -c '/usr/pgsql-9.3/bin/vacuumdb -v -Z "$dbName"'
-	# VACUUM ANALYZE THE ENTIRE OPS DATABASE AT 2 AM ON THE 1ST OF EACH MONTH
-	0 2 1 * * root su postgres -c '/usr/pgsql-9.3/bin/vacuumdb -v -z "$dbName"'"
+# REMOVE CSV FILES OLDER THAN 7 DAYS AT 2 AM DAILY
+0 2 * * * root rm -f $(find "$webDataDir"/csv/*.csv -mtime +7);
+0 2 * * * root rm -f $(find "$webDataDir"/kml/*.kml -mtime +7); 
+0 2 * * * root rm -f $(find "$webDataDir"/mat/*.mat -mtime +7);
 
-	echo -n > /etc/crontab
-	echo "$cronStr" > /etc/crontab
-	
-fi
+# VACUUM ANALYZE-ONLY THE ENTIRE OPS DATABASE AT 2 AM DAILY
+0 2 * * * root su postgres -c '/usr/pgsql-9.3/bin/vacuumdb -v -Z "$dbName"'
 
-# --------------------------------------------------------------------
-# WRITE SSMTP CONFIGURATION
+# VACUUM ANALYZE THE ENTIRE OPS DATABASE AT 2 AM ON THE 1ST OF EACH MONTH
+0 2 1 * * root su postgres -c '/usr/pgsql-9.3/bin/vacuumdb -v -z "$dbName"'"
 
-if [ $installSsmtp -eq 1 ]; then
-	
-	yum install -y ssmtp
-	
-	ssmtpStr="
-	root="$ssmtpUser"@gmail.com
-	mailhub=smtp.gmail.com:587
-	rewriteDomain=gmail.com
-	hostname=localhost
-	UseTLS=Yes
-	UseSTARTTLS=Yes
-	AuthUser="$ssmtpUser"
-	AuthPass="$ssmtpPasswd"
-	FromLineOverride=yes"
-	
-	echo -n > /etc/ssmtp/ssmtp.conf
-	echo -e "$ssmtpStr" > /etc/ssmtp/ssmtp.conf
-	chown root:mail /etc/ssmtp/ssmtp.conf
-	
-	gpasswd -a vagrant mail
-	gpasswd -a root mail
-	
-	echo -n > /etc/ssmtp/revaliases
-	echo "root:"$ssmtpUser"@gmail.com:smtp.gmail.com:587" > /etc/ssmtp/revaliases
-	echo "vagrant:"$ssmtpUser"@gmail.com:smtp.gmail.com:587" > /etc/ssmtp/revaliases
-	
-fi
+echo -n > /etc/crontab
+echo "$cronStr" > /etc/crontab
+
+service crond start
+chkconfig crond on
 
 # --------------------------------------------------------------------
 # INSTALL JAVA JRE, JAI, JAI I/O
 
-# OLD DOWLOAD LINKS
-#cd ~ && wget --no-check-certificate --no-cookies --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com" "http://download.oracle.com/otn-pub/java/jdk/7/jre-7-linux-x64.rpm"
-#cd ~ && wget http://download.java.net/media/jai/builds/release/1_1_3/jai-1_1_3-lib-linux-amd64-jre.bin
-#cd ~ && wget http://download.java.net/media/jai-imageio/builds/release/1.1/jai_imageio-1_1-lib-linux-amd64-jre.bin
+notify-send "Installing JAVA. Please manually accept the two license agreements in the terminal."
 
 # COPY INSTALLATION FILES
-cp -r /vagrant/conf/java/* ~/
+cd ~
+cp /vagrant/conf/software/jre-8-linux-x64.rpm ./
+cp /vagrant/conf/software/jai-1_1_3-lib-linux-amd64-jre.bin ./
+cp /vagrant/conf/software/jai_imageio-1_1-lib-linux-amd64-jre.bin ./
 
 # INSTALL JAVA JRE
-cd ~ && rpm -Uvh jre*
+rpm -Uvh jre*
 alternatives --install /usr/bin/java java /usr/java/latest/bin/java 200000
-rm -f ~/jre-8-linux-x64.rpm
+rm -f jre-8-linux-x64.rpm
 
 # INSTALL JAI
 cd /usr/java/jre1.8.0/
 chmod u+x ~/jai-1_1_3-lib-linux-amd64-jre.bin
-echo "yes" | ~/jai-1_1_3-lib-linux-amd64-jre.bin
+~/jai-1_1_3-lib-linux-amd64-jre.bin
 rm -f ~/jai-1_1_3-lib-linux-amd64-jre.bin
 
 # INSTALL JAI-IO
 export _POSIX2_VERSION=199209 
 chmod u+x ~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
-echo "yes" | ~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
-rm -f ~/jai_imageio-1_1-lib-linux-amd64-jre.bin
+~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
+rm -f ~/jai_imageio-1_1-lib-linux-amd64-jre.bin && cd ~
 
+notify-send "Thank you for your input. The installation will now automatically continue."
 
 # --------------------------------------------------------------------
 # INSTALL AND CONFIGURE POSTGRESQL + POSTGIS
@@ -468,16 +380,12 @@ if [ $newDb -eq 1 ]; then
 fi
 
 # --------------------------------------------------------------------
-# INSTALL PYTHON PACKAGES / SCIPY / GEOS
+# INSTALL PYTHON PACKAGES
 
 # INSTALL PACKAGES WITH PIP
 pip install Cython 
-pip install geojson
-pip install ujson 
-pip install django-extensions 
-pip install simplekml
+pip install geojson ujson django-extensions simplekml pylint
 pip install --pre line_profiler
-pip install pylint
 
 # INSTALL NUMPY/SCIPY 
 yum -y install atlas-devel blas-devel
@@ -491,7 +399,7 @@ yum -y install geos-devel
 # INSTALL AND CONFIGURE DJANGO
 
 # INSTALL DJANGO
-pip install Django==1.6.2
+pip install Django==1.6.4
 
 # CREATE DIRECTORY AND COPY PROJECT
 mkdir -p /var/django/
@@ -518,14 +426,16 @@ fi
 # BULKLOAD DATA TO POSTGRESQL 
 
 if [ $installPgData -eq 1 ]; then
-	
-	if [ "$(ls -A /vagrant/data/postgresql)" ]; then
+	fCount=$(ls -A /vagrant/data/postgresql/ | wc -l);
+	if [ $fCount -gt 1 ]; then
 		
 		# INSTALL pg_bulkload AND DEPENDENCIES
-		cd ~ && wget "http://pgfoundry.org/frs/download.php/3568/pg_bulkload-3.1.5-1.pg93.rhel6.x86_64.rpm"
+		cd ~ && cp -f /vagrant/conf/software/pg_bulkload-3.1.5-1.pg93.rhel6.x86_64.rpm ./
+		cd ~ && cp -f /vagrant/conf/software/compat-libtermcap-2.0.8-49.el6.x86_64.rpm ./
 		yum install -y openssl098e;
-		rpm -Uvh ftp://rpmfind.net/linux/centos/6/os/x86_64/Packages/compat-libtermcap-2.0.8-49.el6.x86_64.rpm;
-		rpm -ivh ~/pg_bulkload-3.1.5-1.pg93.rhel6.x86_64.rpm;
+		rpm -Uvh ./compat-libtermcap-2.0.8-49.el6.x86_64.rpm;
+		rpm -ivh ./pg_bulkload-3.1.5-1.pg93.rhel6.x86_64.rpm;
+		rm -f compat-libtermcap-2.0.8-49.el6.x86_64.rpm && rm -f pg_bulkload-3.1.5-1.pg93.rhel6.x86_64.rpm
 		
 		# ADD pg_bulkload FUNCTION TO THE DATABASE
 		su postgres -c "psql -f /usr/pgsql-9.3/share/contrib/pg_bulkload.sql "$appName"";
@@ -543,7 +453,7 @@ yum install -y tomcat6
 
 # CONFIGURE TOMCAT6
 echo 'JAVA_HOME="/usr/java/jre1.8.0/"' >> /etc/tomcat6/tomcat6.conf
-echo 'JAVA_OPTS="-server -Xms512m -Xmx512m -XX:+UseParallelGC -XX:+UseParallelOldGC"' >> /etc/tomcat6/tomcat6.conf # SHOULD BE MODIFIED FOR MORE RAM
+echo 'JAVA_OPTS="-server -Xms512m -Xmx512m -XX:+UseParallelGC -XX:+UseParallelOldGC"' >> /etc/tomcat6/tomcat6.conf
 echo 'CATALINA_OPTS="-DGEOSERVER_DATA_DIR=/cresis/snfs1/web/ops/geoserver"' >> /etc/tomcat6/tomcat6.conf
 
 # MAKE THE EXTERNAL GEOSERVER DATA DIRECTORY (IF IT DOESNT EXIST)
@@ -626,8 +536,6 @@ if [ $newDb -eq 1 ]; then
 	# POSTGRESQL
 	service postgresql-9.3 start
 	chkconfig postgresql-9.3 on
-	#su - postgres -c '/usr/pgsql-9.3/bin/pg_ctl start -D '$pgDir
-	#sleep 5
 
 fi
 
@@ -664,7 +572,8 @@ printf "#\n"
 printf "# The system is now ready for use!\n"
 printf "#\n"
 printf "# INSTRUCTIONS:\n"
-printf "#  - Open a web browser (Google Chrome recommended)\n"
+printf "#  - Open a web browser (inside or outside of the VM)\n"
+printf "#  		- Google Chrome recommended.\n"
 printf "#  - Enter %s as the url.\n" $serverName
 printf "#  - Welcome the the OPS web interface!.\n"
 printf "#\n"	
@@ -673,3 +582,5 @@ printf "########################################################################
 printf "\n"
 echo "Started at:" $startTime
 echo "Finished at:" $stopTime
+
+notify-send "OpenPolarServer build complete. See terminal for details."
