@@ -2,14 +2,17 @@
 #
 # OpenPolarServer Public Build Wrapper
 
-# clone the OPS repo
-sudo -i;
-mkdir /vagrant && cd /vagrant;
-git clone https://github.com/cresis/OPS.git .;
+sudo -i <<EOF
 
-# let the user download any data packs
-printf "If you want to place custom datapacks (from the OPS) in the /vagrant/data/postgresql/ directory do so now.";
-read -p "Press enter to continue ... ";
+notify-send "Preparing to build the OpenPolarServer"
 
-# run the ops build tool
-sh conf/provisions.sh;
+mkdir /vagrant && cd /vagrant
+git clone https://github.com/cresis/OPS.git .
+
+printf "If you want to place custom datapacks (from the OPS) in the /vagrant/data/postgresql/ directory do so now.\n\n"
+
+read -p "Press enter to continue ... "
+
+sh conf/provisions.sh
+
+EOF

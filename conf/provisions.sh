@@ -284,8 +284,6 @@ chkconfig crond on
 # --------------------------------------------------------------------
 # INSTALL JAVA JRE, JAI, JAI I/O
 
-notify-send "Installing JAVA. Please manually accept the two license agreements in the terminal."
-
 # COPY INSTALLATION FILES
 cd ~
 cp /vagrant/conf/software/jre-8-linux-x64.rpm ./
@@ -297,19 +295,23 @@ rpm -Uvh jre*
 alternatives --install /usr/bin/java java /usr/java/latest/bin/java 200000
 rm -f jre-8-linux-x64.rpm
 
+# NOT INSTALLING JAI/JAIIO UNTIL WE FIGURE OUT HOW TO MAKE THEM USER FRIENDLY INSTALLS.
+
+#notify-send "Installing JAVA. Please manually accept the two license agreements in the terminal."
+
 # INSTALL JAI
-cd /usr/java/jre1.8.0/
-chmod u+x ~/jai-1_1_3-lib-linux-amd64-jre.bin
-~/jai-1_1_3-lib-linux-amd64-jre.bin
-rm -f ~/jai-1_1_3-lib-linux-amd64-jre.bin
+#cd /usr/java/jre1.8.0/
+#chmod u+x ~/jai-1_1_3-lib-linux-amd64-jre.bin
+#~/jai-1_1_3-lib-linux-amd64-jre.bin
+#rm -f ~/jai-1_1_3-lib-linux-amd64-jre.bin
 
 # INSTALL JAI-IO
-export _POSIX2_VERSION=199209 
-chmod u+x ~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
-~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
-rm -f ~/jai_imageio-1_1-lib-linux-amd64-jre.bin && cd ~
+#export _POSIX2_VERSION=199209 
+#chmod u+x ~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
+#~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
+#rm -f ~/jai_imageio-1_1-lib-linux-amd64-jre.bin && cd ~
 
-notify-send "Thank you for your input. The installation will now automatically continue."
+#notify-send "Thank you for your input. The installation will now automatically continue."
 
 # --------------------------------------------------------------------
 # INSTALL AND CONFIGURE POSTGRESQL + POSTGIS
