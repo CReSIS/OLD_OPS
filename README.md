@@ -13,7 +13,6 @@ The OpenPolarServer (OPS) is a complete spatial data infrastructure (SDI) built 
 * Django Web Framework
 * ExtJS + GeoEXT + OpenLayers GeoPortal web application
 * Optional CRON and SSMTP configuration
-* Vagrant SHELL provisioning script
  
 ##Requirements
 
