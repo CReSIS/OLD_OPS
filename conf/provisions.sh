@@ -12,8 +12,8 @@
 # ---------------------------------------------------------------------------------
 # =================================================================================
 
-notify-send "Now building OpenPolarServer"
-notify-send "Please watch for more prompts (there will only be one you need to act on). Thank you."
+#notify-send "Now building OpenPolarServer"
+#notify-send "Please watch for more prompts (there will only be one you need to act on). Thank you."
 
 printf "\n\n"
 printf "#########################################################################\n"
@@ -34,18 +34,52 @@ startTime=$(date -u);
 
 # --------------------------------------------------------------------
 # SET SOME STATIC INPUTS
+preProv=1;
 newDb=1;
 serverName="192.168.111.222";
 serverAdmin="root"; 
 appName="ops";
 dbName="ops";
 installPgData=0;
-webDataDir="/cresis/snfs1/web/ops/data";
+snfsBasePath="/cresis/snfs1/web/ops2/";
+webDataDir=$snfsBasePath"data";
+
+# --------------------------------------------------------------------
+# GET SOME INPUTS FROM THE USER
+
+	read -s -p "Database Password (default=admin): " dbUser && printf "\n";
+	read -s -p "Database Password (default=pubAdmin): " dbPswd && printf "\n";
+	echo -e $dbPswd > /etc/db_pswd.txt;
+
+# --------------------------------------------------------------------
+# PRE-PROVISION THE OPS (NEED FOR CRESIS VM TEMPLATE)
+
+if [ $preProv -eq 1 ]; then
+
+	wget  http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm 
+	rpm -Uvh epel-release-6*.rpm 
+	yum update -y
+	yum groupinstall -y "Development Tools"
+	yum install -y gzip gcc unzip rsync wget git
+	iptables -F 
+	iptables -A INPUT -p tcp --dport 22 -j ACCEPT #SSH ON TCP 22
+	iptables -A INPUT -p tcp --dport 80 -j ACCEPT #HTTP ON TCP 80
+	iptables -A INPUT -p tcp --dport 443 -j ACCEPT #HTTPS ON TCP 443
+	iptables -P INPUT DROP 
+	iptables -P FORWARD DROP 
+	iptables -P OUTPUT ACCEPT 
+	iptables -A INPUT -i lo -j ACCEPT 
+	iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT 
+	/sbin/service iptables save 
+	/sbin/service iptables restart 
+
+fi
 
 # --------------------------------------------------------------------
 # WRITE GEOSERVER_DATA_DIR TO ~/.bashrc
 
-echo 'GEOSERVER_DATA_DIR="/cresis/snfs1/web/ops/geoserver"' >> ~/.bashrc
+geoServerStr="GEOSERVER_DATA_DIR="$snfsBasePath"geoserver"
+echo $geoServerStr >> ~/.bashrc
 . ~/.bashrc
 
 # --------------------------------------------------------------------
@@ -83,7 +117,7 @@ source /usr/bin/venv/bin/activate
 # INSTALL APACHE WEB SERVER AND MOD_WSGI
 
 # INSTALL APACHE HTTPD
-yum install -y httpd-devel
+yum install -y httpd httpd-devel
 
 # INSTALL MOD_WSGI (COMPILE WITH Python27)
 cd ~ && cp -f /vagrant/conf/software/mod_wsgi-3.4.tar.gz ./
@@ -99,8 +133,7 @@ cd ~ && rm -f mod_wsgi-3.4.tar.gz && rm -rf mod_wsgi-3.4
 # INCLUDE THE SITE CONFIGURATION FOR HTTPD
 echo "Include /var/www/sites/"$serverName"/conf/"$appName".conf" >> /etc/httpd/conf/httpd.conf
 
-mkdir -p $webDataDir
-chmod 777 $webDataDir
+mkdir -m 777 -p $webDataDir
 
 # WRITE THE DJANGO WSGI CONFIGURATION
 wsgiStr="
@@ -297,46 +330,47 @@ rm -f jre-8-linux-x64.rpm
 
 # NOT INSTALLING JAI/JAIIO UNTIL WE FIGURE OUT HOW TO MAKE THEM USER FRIENDLY INSTALLS.
 
-#notify-send "Installing JAVA. Please manually accept the two license agreements in the terminal."
+##notify-send "Installing JAVA. Please manually accept the two license agreements in the terminal."
 
 # INSTALL JAI
 #cd /usr/java/jre1.8.0/
 #chmod u+x ~/jai-1_1_3-lib-linux-amd64-jre.bin
 #~/jai-1_1_3-lib-linux-amd64-jre.bin
-#rm -f ~/jai-1_1_3-lib-linux-amd64-jre.bin
+rm -f ~/jai-1_1_3-lib-linux-amd64-jre.bin
 
 # INSTALL JAI-IO
 #export _POSIX2_VERSION=199209 
 #chmod u+x ~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
 #~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
-#rm -f ~/jai_imageio-1_1-lib-linux-amd64-jre.bin && cd ~
+rm -f ~/jai_imageio-1_1-lib-linux-amd64-jre.bin && cd ~
 
-#notify-send "Thank you for your input. The installation will now automatically continue."
+##notify-send "Thank you for your input. The installation will now automatically continue."
 
 # --------------------------------------------------------------------
 # INSTALL AND CONFIGURE POSTGRESQL + POSTGIS
 
+pgDir=$snfsBasePath'pgsql/9.3/'
+pgPth=$snfsBasePath'pgsql/'
+
+# EXCLUDE POSTGRESQL FROM THE BASE CentOS RPM
+sed -i -e '/^\[base\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
+sed -i -e '/^\[updates\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
+
+# INSTALL POSTGRESQL
+yum install -y postgresql93* postgis2_93* 
+
+# INSTALL PYTHON PSYCOPG2 MODULE FOR POSTGRES
+export PATH=/usr/pgsql-9.3/bin:"$PATH"
+pip install psycopg2
+
 if [ $newDb -eq 1 ]; then
-
-	pgDir='/cresis/snfs1/web/ops/pgsql/9.3/'
-
-	# EXCLUDE POSTGRESQL FROM THE BASE CentOS RPM
-	sed -i -e '/^\[base\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
-	sed -i -e '/^\[updates\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
-
-	# INSTALL POSTGRESQL
-	yum install -y postgresql93* postgis2_93* 
-
-	# INSTALL PYTHON PSYCOPG2 MODULE FOR POSTGRES
-	export PATH=/usr/pgsql-9.3/bin:"$PATH"
-	pip install psycopg2
 	
 	# MAKE THE SNFS1 MOCK DIRECTORY IF IT DOESNT EXIST
-	if [ ! -d "/cresis/snfs1/web/ops/pgsql" ]
+	if [ ! -d $pgPth ]
 		then
-			mkdir -p /cresis/snfs1/web/ops/pgsql/
-			chown postgres:postgres /cresis/snfs1/web/ops/pgsql/
-			chmod 700 /cresis/snfs1/web/ops/pgsql/
+			mkdir -p $pgPth
+			chown postgres:postgres $pgPth
+			chmod 700 $pgPth
 	fi
 	
 	# INITIALIZE THE DATABASE CLUSTER
@@ -348,13 +382,9 @@ if [ $newDb -eq 1 ]; then
 	sed -i "s,PGLOG=/var/lib/pgsql/9.3/pgstartup.log,PGLOG=$pgDir/pgstartup.log,g" /etc/rc.d/init.d/postgresql-9.3
 	
 	# CREATE STARTUP LOG
-	touch /cresis/snfs1/web/ops/pgsql/9.3/pgstartup.log
-	chown postgres:postgres /cresis/snfs1/web/ops/pgsql/9.3/pgstartup.log
-	chmod 700 /cresis/snfs1/web/ops/pgsql/9.3/pgstartup.log
-	
-	# SET THE DEVELOPMENT USERNAME AND PASSWORD
-	dbUser='admin'
-	dbPswd='pubAdmin'
+	touch $pgDir"pgstartup.log"
+	chown postgres:postgres $pgDir"pgstartup.log"
+	chmod 700 $pgDir"pgstartup.log"
 
 	# SET UP THE POSTGRESQL CONFIG FILES
 	pgConfDir=$pgDir"postgresql.conf"
@@ -375,11 +405,11 @@ if [ $newDb -eq 1 ]; then
 	su - postgres -c "$cmdstring"
 	psql -U postgres -d postgis_template -c "CREATE EXTENSION postgis; CREATE EXTENSION postgis_topology;"
 
-	# CREATE THE APP DATABASE
-	cmdstring="createdb "$dbName" -O "$dbUser" -T postgis_template"
-	su - postgres -c "$cmdstring"
-	
 fi
+
+# CREATE THE APP DATABASE
+cmdstring="createdb "$dbName" -O "$dbUser" -T postgis_template"
+su - postgres -c "$cmdstring"
 
 # --------------------------------------------------------------------
 # INSTALL PYTHON PACKAGES
@@ -407,16 +437,20 @@ pip install Django==1.6.4
 mkdir -p /var/django/
 cp -rf /vagrant/conf/django/* /var/django/
 
+# GENERATE A NEW SECRET_KEY
+NEW_SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9*^+()@' | fold -w 40 | head -n 1);
+echo $NEW_SECRET_KEY >> /etc/secret_key.txt
+
 # MODIFY THE DATABASE NAME
 sed -i "s,		'NAME': 'ops',		'NAME': '$dbName',g" /var/django/ops/ops/settings.py
-
+sed -i "s,		'USER': 'admin',		'USER': '$dbUser',,g" /var/django/ops/ops/settings.py
 if [ $newDb -eq 1 ]; then
 
 	# SYNC THE DJANGO DEFINED DATABASE
 	python /var/django/$appName/manage.py syncdb --noinput 
 
 	# CREATE DATABASE VIEWS FOR CROSSOVER ERRORS
-	viewstr='psql -U postgres -d ops -c "CREATE VIEW app_crossover_errors AS SELECT (SELECT name FROM app_seasons WHERE id = pt_pths1.season_id) AS season_1_name, (SELECT name FROM app_seasons WHERE id = pt_pths2.season_id) AS season_2_name, cx.angle,pt_pths1.geom AS point_path_1_geom, pt_pths2.geom AS point_path_2_geom, pt_pths1.gps_time AS gps_time_1, pt_pths2.gps_time AS gps_time_2, pt_pths1.heading AS heading_1,pt_pths2.heading AS heading_2,pt_pths1.roll AS roll_1,pt_pths2.roll AS roll_2, pt_pths1.pitch AS pitch_1,pt_pths2.pitch AS pitch_2,pt_pths1.location_id, cx.geom, COALESCE(lyr_pts1.layer_id,lyr_pts2.layer_id) AS layer_id, (SELECT name FROM app_frames WHERE id = pt_pths1.frame_id) AS frame_1_name, (SELECT name FROM app_frames WHERE id = pt_pths2.frame_id) AS frame_2_name,cx.point_path_1_id, cx.point_path_2_id,lyr_pts1.twtt AS twtt_1, lyr_pts2.twtt AS twtt_2, CASE WHEN COALESCE(lyr_pts1,lyr_pts2) IS NULL THEN NULL WHEN COALESCE(lyr_pts1.layer_id,lyr_pts2.layer_id) = 1 THEN ABS((ST_Z(pt_pths1.geom) - lyr_pts1.twtt*299792458.0003452/2)) ELSE ABS((ST_Z(pt_pths1.geom) - (SELECT twtt FROM app_layer_points WHERE layer_id=1 AND point_path_id = pt_pths1.id)*299792458.0003452/2 - (lyr_pts1.twtt - (SELECT twtt FROM app_layer_points WHERE layer_id = 1 AND point_path_id = pt_pths1.id))*299792458.0003452/2/sqrt(3.15))) END AS layer_elev_1, CASE WHEN COALESCE(lyr_pts1,lyr_pts2) IS NULL THEN NULL WHEN COALESCE(lyr_pts1.layer_id,lyr_pts2.layer_id) = 1 THEN ABS((ST_Z(pt_pths2.geom) - lyr_pts2.twtt*299792458.0003452/2)) ELSE ABS((ST_Z(pt_pths2.geom) - (SELECT twtt FROM app_layer_points WHERE layer_id=1 AND point_path_id = pt_pths2.id)*299792458.0003452/2 - (lyr_pts2.twtt - (SELECT twtt FROM app_layer_points WHERE layer_id = 1 AND point_path_id = pt_pths2.id))*299792458.0003452/2/sqrt(3.15))) END AS layer_elev_2 FROM app_crossovers AS cx LEFT JOIN app_layer_points AS lyr_pts1 ON lyr_pts1.point_path_id=cx.point_path_1_id LEFT JOIN app_layer_points AS lyr_pts2 ON lyr_pts2.point_path_id=cx.point_path_2_id LEFT JOIN app_point_paths AS pt_pths1 ON cx.point_path_1_id=pt_pths1.id LEFT JOIN app_point_paths AS pt_pths2 ON pt_pths2.id=cx.point_path_2_id WHERE lyr_pts1.layer_id = lyr_pts2.layer_id OR (lyr_pts1 IS NULL OR lyr_pts2 IS NULL);"'
+	viewstr='psql -U postgres -d'$dbName'-c "CREATE VIEW app_crossover_errors AS SELECT (SELECT name FROM app_seasons WHERE id = pt_pths1.season_id) AS season_1_name, (SELECT name FROM app_seasons WHERE id = pt_pths2.season_id) AS season_2_name, cx.angle,pt_pths1.geom AS point_path_1_geom, pt_pths2.geom AS point_path_2_geom, pt_pths1.gps_time AS gps_time_1, pt_pths2.gps_time AS gps_time_2, pt_pths1.heading AS heading_1,pt_pths2.heading AS heading_2,pt_pths1.roll AS roll_1,pt_pths2.roll AS roll_2, pt_pths1.pitch AS pitch_1,pt_pths2.pitch AS pitch_2,pt_pths1.location_id, cx.geom, COALESCE(lyr_pts1.layer_id,lyr_pts2.layer_id) AS layer_id, (SELECT name FROM app_frames WHERE id = pt_pths1.frame_id) AS frame_1_name, (SELECT name FROM app_frames WHERE id = pt_pths2.frame_id) AS frame_2_name,cx.point_path_1_id, cx.point_path_2_id,lyr_pts1.twtt AS twtt_1, lyr_pts2.twtt AS twtt_2, CASE WHEN COALESCE(lyr_pts1,lyr_pts2) IS NULL THEN NULL WHEN COALESCE(lyr_pts1.layer_id,lyr_pts2.layer_id) = 1 THEN ABS((ST_Z(pt_pths1.geom) - lyr_pts1.twtt*299792458.0003452/2)) ELSE ABS((ST_Z(pt_pths1.geom) - (SELECT twtt FROM app_layer_points WHERE layer_id=1 AND point_path_id = pt_pths1.id)*299792458.0003452/2 - (lyr_pts1.twtt - (SELECT twtt FROM app_layer_points WHERE layer_id = 1 AND point_path_id = pt_pths1.id))*299792458.0003452/2/sqrt(3.15))) END AS layer_elev_1, CASE WHEN COALESCE(lyr_pts1,lyr_pts2) IS NULL THEN NULL WHEN COALESCE(lyr_pts1.layer_id,lyr_pts2.layer_id) = 1 THEN ABS((ST_Z(pt_pths2.geom) - lyr_pts2.twtt*299792458.0003452/2)) ELSE ABS((ST_Z(pt_pths2.geom) - (SELECT twtt FROM app_layer_points WHERE layer_id=1 AND point_path_id = pt_pths2.id)*299792458.0003452/2 - (lyr_pts2.twtt - (SELECT twtt FROM app_layer_points WHERE layer_id = 1 AND point_path_id = pt_pths2.id))*299792458.0003452/2/sqrt(3.15))) END AS layer_elev_2 FROM app_crossovers AS cx LEFT JOIN app_layer_points AS lyr_pts1 ON lyr_pts1.point_path_id=cx.point_path_1_id LEFT JOIN app_layer_points AS lyr_pts2 ON lyr_pts2.point_path_id=cx.point_path_2_id LEFT JOIN app_point_paths AS pt_pths1 ON cx.point_path_1_id=pt_pths1.id LEFT JOIN app_point_paths AS pt_pths2 ON pt_pths2.id=cx.point_path_2_id WHERE lyr_pts1.layer_id = lyr_pts2.layer_id OR (lyr_pts1 IS NULL OR lyr_pts2 IS NULL);"'
 	eval ${viewstr//app/rds}
 	eval ${viewstr//app/snow}
 	eval ${viewstr//app/accum}
@@ -456,20 +490,21 @@ yum install -y tomcat6
 # CONFIGURE TOMCAT6
 echo 'JAVA_HOME="/usr/java/jre1.8.0/"' >> /etc/tomcat6/tomcat6.conf
 echo 'JAVA_OPTS="-server -Xms512m -Xmx512m -XX:+UseParallelGC -XX:+UseParallelOldGC"' >> /etc/tomcat6/tomcat6.conf
-echo 'CATALINA_OPTS="-DGEOSERVER_DATA_DIR=/cresis/snfs1/web/ops/geoserver"' >> /etc/tomcat6/tomcat6.conf
+echo 'CATALINA_OPTS="-DGEOSERVER_DATA_DIR='$snfsBasePath'geoserver"' >> /etc/tomcat6/tomcat6.conf
 
 # MAKE THE EXTERNAL GEOSERVER DATA DIRECTORY (IF IT DOESNT EXIST)
-if [ ! -d "/cresis/snfs1/web/ops/geoserver/" ]; then
-	mkdir -p /cresis/snfs1/web/ops/geoserver/
+geoServerDataPath=$snfsBasePath"geoserver/"
+if [ ! -d $geoServerDataPath ]; then
+	mkdir -p $geoServerDataPath
 fi
 
 # EXTRACT THE OPS GEOSERVER DATA DIR TO THE DIRECTORY
-cp -rf /vagrant/conf/geoserver/geoserver/* /cresis/snfs1/web/ops/geoserver/
+cp -rf /vagrant/conf/geoserver/geoserver/* $geoServerDataPath
 
 # GET THE GEOSERVER REFERENCE DATA
 if [ -f /vagrant/data/geoserver/geoserver.zip ]; then
 
-	unzip /vagrant/data/geoserver/geoserver.zip -d /cresis/snfs1/web/ops/geoserver/data/
+	unzip /vagrant/data/geoserver/geoserver.zip -d $geoServerDataPath"data/"
 
 else
 
@@ -477,21 +512,21 @@ else
 	cd /vagrant/data/geoserver/ && wget https://ops.cresis.ku.edu/data/geoserver/geoserver.zip
 	
 	# UNZIP THE DOWNLOADED DATA PACK
-	unzip /vagrant/data/geoserver/geoserver.zip -d /cresis/snfs1/web/ops/geoserver/data/
+	unzip /vagrant/data/geoserver/geoserver.zip -d $geoServerDataPath"data/"
 
 fi
 
 # TEMPORARY HACK UNTIL THE GEOSERVER.ZIP STRUCTURE CHANGES
-mv /cresis/snfs1/web/ops/geoserver/data/geoserver/data/arctic /cresis/snfs1/web/ops/geoserver/data/
-mv /cresis/snfs1/web/ops/geoserver/data/geoserver/data/antarctic /cresis/snfs1/web/ops/geoserver/data/
-rm -rf /cresis/snfs1/web/ops/geoserver/data/geoserver/
+mv $geoServerDataPath"data//geoserver/data/arctic" $geoServerDataPath"data/"
+mv $geoServerDataPath"data/antarctic" $geoServerDataPath"data/"
+rm -rf $geoServerDataPath"data/geoserver/"
 
 # COPY THE GEOSERVER WAR TO TOMCAT
 cp /vagrant/conf/geoserver/geoserver.war /var/lib/tomcat6/webapps
 
 # SET OWNERSHIP/PERMISSIONS OF GEOSERVER DATA DIRECTORY
-chmod -R u=rwX,g=rwX,o=rX /cresis/snfs1/web/ops/geoserver/
-chown -R tomcat:tomcat /cresis/snfs1/web/ops/geoserver/
+chmod -R u=rwX,g=rwX,o=rX $geoServerDataPath
+chown -R tomcat:tomcat $geoServerDataPath
 
 # START APACHE TOMCAT
 service tomcat6 start
@@ -505,26 +540,13 @@ cp -rf /vagrant/conf/geoportal/* /var/www/html/ # COPY THE APPLICATION
 # sed -i "s,	 baseUrl: ""http://192.168.111.222"",	 baseUrl: ""$serverName"",g" /var/www/html/app.js
 
 # CREATE AND CONFIGURE ALL THE OUTPUT DIRECTORIES
-mkdir -p /cresis/snfs1/web/ops/data/csv/
-chmod 777 /cresis/snfs1/web/ops/data/csv/
-
-mkdir -p /cresis/snfs1/web/ops/data/kml/
-chmod 777 /cresis/snfs1/web/ops/data/kml/
-
-mkdir -p /cresis/snfs1/web/ops/data/mat/
-chmod 777 /cresis/snfs1/web/ops/data/mat/
-
-mkdir -p /cresis/snfs1/web/ops/datapacktmp/
-chmod 777 /cresis/snfs1/web/ops/datapacktmp/
-
-mkdir -p  /cresis/snfs1/web/ops/data/datapacks/
-chmod 777 /cresis/snfs1/web/ops/data/datapacks/
-
-mkdir -p /cresis/snfs1/web/ops/data/reports/
-chmod 777 /cresis/snfs1/web/ops/data/reports/
-
-mkdir -p /var/profile_logs/txt/
-chmod 777 /var/profile_logs/txt/
+mkdir -m 777 -p $snfsBasePath"data/csv/"
+mkdir -m 777 -p $snfsBasePath"data/kml/"
+mkdir -m 777 -p $snfsBasePath"data/mat/"
+mkdir -m 777 -p $snfsBasePath"datapacktmp/"
+mkdir -m 777 -p  $snfsBasePath"data/datapacks/"
+mkdir -m 777 -p $snfsBasePath"data/reports/"
+mkdir -m 777 -p /var/profile_logs/txt/
 
 # --------------------------------------------------------------------
 # MAKE SURE ALL SERVICES ARE STARTED AND ON
@@ -533,19 +555,16 @@ chmod 777 /var/profile_logs/txt/
 service httpd start
 chkconfig httpd on
 
-if [ $newDb -eq 1 ]; then
-
-	# POSTGRESQL
-	service postgresql-9.3 start
-	chkconfig postgresql-9.3 on
-
-fi
+# POSTGRESQL
+service postgresql-9.3 start
+chkconfig postgresql-9.3 on
 
 # APACHE TOMCAT
 service tomcat6 start
 chkconfig tomcat6 on
 
-# UPDATE SYSTEM (FORCES UPDATES FOR ALL NEW INSTALLS)
+# --------------------------------------------------------------------
+# DO A FINAL SYSTEM UPDATE
 yum update -y
 
 # --------------------------------------------------------------------
@@ -585,4 +604,4 @@ printf "\n"
 echo "Started at:" $startTime
 echo "Finished at:" $stopTime
 
-notify-send "OpenPolarServer build complete. See terminal for details."
+#notify-send "OpenPolarServer build complete. See terminal for details."

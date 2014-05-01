@@ -16,7 +16,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '8^k+cha00)w&rn87w43f0rr!)&)aj@doxpp)72ebfdh*zvybl+'
+with open('/etc/secret_key.txt') as f:
+    SECRET_KEY = f.read().strip()
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
@@ -28,7 +29,7 @@ ADMINS = (
 	('Trey Stafford','treystaff@gmail.com'),
 )
 
-ALLOWED_HOSTS = ['ops.cresis.ku.edu','192.168.111.222']
+ALLOWED_HOSTS = ['ops.cresis.ku.edu','ops2.cresis.ku.edu','192.168.111.222']
 
 # Application definition
 INSTALLED_APPS = (
@@ -74,12 +75,15 @@ WSGI_APPLICATION = 'ops.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
 
+with open('/etc/db_pswd.txt') as f:
+    DB_PSWD = f.read().strip()
+
 DATABASES = {
 	'default': {
 		'ENGINE': 'django.contrib.gis.db.backends.postgis',
 		'NAME': 'ops',
 		'USER': 'admin',
-		'PASSWORD': 'pubAdmin',
+		'PASSWORD': DB_PSWD,
 		'HOST': '',
 		'PORT': '',
 	}
