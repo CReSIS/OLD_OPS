@@ -2211,7 +2211,7 @@ def logoutUser(request):
 		
 		logout(request)
 		
-		return utility.response(1,'SUCESS: USER LOGGED OUT',{'userName':'','userAuthStatus':0})
+		return utility.response(1,'SUCESS: USER LOGGED OUT',{'userName':'','isAuthenticated':0})
 
 	except:
 		return utility.errorCheck(sys)

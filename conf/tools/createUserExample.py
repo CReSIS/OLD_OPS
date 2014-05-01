@@ -17,10 +17,14 @@ newUser = User.objects.create_user('userName', 'userEmail', 'userPassword')
 userProfile = newUser.get_profile()
 
 # set the user profile options (example for cresis superuser)
-userProfile.rds_layer_groups = ['cresis_public','cresis_private']
-userProfile.accum_layer_groups = ['cresis_public','cresis_private']
-userProfile.kuband_layer_groups = ['cresis_public','cresis_private']
-userProfile.snow_layer_groups = ['cresis_public','cresis_private']
+userProfile.rds_layer_groups = [1,2]
+userProfile.accum_layer_groups = [1,2]
+userProfile.kuband_layer_groups = [1,2]
+userProfile.snow_layer_groups = [1,2]
+userProfile.rds_season_groups = [1,2]
+userProfile.accum_season_groups = [1,2]
+userProfile.kuband_season_groups = [1,2]
+userProfile.snow_season_groups = [1,2]
 userProfile.layerGroupRelease = True
 userProfile.bulkDeleteData = True
 userProfile.createData = True
