@@ -1176,7 +1176,7 @@ def getLayerPointsCsv(request):
 		del lpIds,lpLyrIds,lpPpIds,lpTwtts,lpTypes,lpQualitys,ppIds,ppGpsTimes,ppRolls,ppPitchs,ppHeadings,ppPaths,ppSeasonNames,ppFrameNames
 
 		# generate the output csv information
-		serverDir = '/cresis/snfs1/web/ops/data/csv/'
+		serverDir = '/cresis/snfs1/web/ops2/data/csv/'
 		webDir = 'data/csv/'
 		if getAllPoints:
 			tmpFn = 'OPS_CReSIS_L2_CSV_' + utility.randId(10) + '.csv'
@@ -1289,7 +1289,7 @@ def getLayerPointsKml(request):
 			newLineString.style.linestyle.color = simplekml.Color.blue
 		
 		# generate the output kml information
-		serverDir = '/cresis/snfs1/web/ops/data/kml/'
+		serverDir = '/cresis/snfs1/web/ops2/data/kml/'
 		webDir = 'data/kml/'
 		tmpFn = 'OPS_CReSIS_L2_KML_' + utility.randId(10) + '.kml'
 		webFn = webDir + tmpFn
@@ -1472,7 +1472,7 @@ def getLayerPointsMat(request):
 		del lpIds,lpLyrIds,lpPpIds,lpTwtts,lpTypes,lpQualitys,ppIds,ppGpsTimes,ppRolls,ppPitchs,ppHeadings,ppPaths,ppSeasonNames,ppFrameNames,lpLyrNames,lpPpLyrNames
 		
 		# generate the output mat information
-		serverDir = '/cresis/snfs1/web/ops/data/mat/'
+		serverDir = '/cresis/snfs1/web/ops2/data/mat/'
 		webDir = 'data/mat/'
 		tmpFn = 'OPS_CReSIS_L2_MAT_' + utility.randId(10) + '.mat'
 		webFn = webDir + tmpFn
@@ -1819,7 +1819,7 @@ def getCrossoversReport(request):
 		if len(crossoverRows) > 0:
 		
 			# generate the output report information
-			serverDir = '/cresis/snfs1/web/ops/data/reports/'
+			serverDir = '/cresis/snfs1/web/ops2/data/reports/'
 			webDir = 'data/reports/'
 			tmpFn = 'OPS_CReSIS_Crossovers_Report_' + utility.randId(10) + '.csv'
 			webFn = webDir + tmpFn
@@ -2012,7 +2012,7 @@ def getInitialData(request):
 		layerGroupIds = utility.forceList(set(layerGroupIds))
 		
 		# create a temporary directory to store the csv files for compression
-		tmpDir = '/cresis/snfs1/web/ops/datapacktmp/' + utility.randId(10)
+		tmpDir = '/cresis/snfs1/web/ops2/datapacktmp/' + utility.randId(10)
 		sysCmd = 'mkdir -p -m 777 ' + tmpDir + ' && chown -R postgres:postgres ' + tmpDir
 		os.system(sysCmd)
 		
@@ -2057,7 +2057,7 @@ def getInitialData(request):
 			cursor.close() # close the cursor in case of exception
 		
 		# generate the output .tar.gz information
-		serverDir = '/cresis/snfs1/web/ops/data/datapacks/'
+		serverDir = '/cresis/snfs1/web/ops2/data/datapacks/'
 		webDir = 'data/datapacks/'
 		tmpFn = 'OPS_CReSIS_%s_DATAPACK' % (app.upper()) + '_' + utility.randId(10) + '.tar.gz'
 		webFn = webDir + tmpFn

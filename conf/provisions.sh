@@ -36,7 +36,7 @@ startTime=$(date -u);
 # SET SOME STATIC INPUTS
 preProv=1;
 newDb=1;
-serverName="192.168.111.222";
+serverName="ops2.cresis.ku.edu";
 serverAdmin="root"; 
 appName="ops";
 dbName="ops";
@@ -47,17 +47,18 @@ webDataDir=$snfsBasePath"data";
 # --------------------------------------------------------------------
 # GET SOME INPUTS FROM THE USER
 
-	read -s -p "Database Password (default=admin): " dbUser && printf "\n";
-	read -s -p "Database Password (default=pubAdmin): " dbPswd && printf "\n";
-	echo -e $dbPswd > /etc/db_pswd.txt;
+read -s -p "Database User (default=admin): " dbUser && printf "\n";
+read -s -p "Database Password (default=pubAdmin): " dbPswd && printf "\n";
+echo -e $dbPswd > /etc/db_pswd.txt;
 
 # --------------------------------------------------------------------
 # PRE-PROVISION THE OPS (NEED FOR CRESIS VM TEMPLATE)
 
 if [ $preProv -eq 1 ]; then
 
-	wget  http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm 
+	cd ~ && cp /vagrant/conf/software/epel-release-6-8.noarch.rpm ./
 	rpm -Uvh epel-release-6*.rpm 
+	rm -f epel-release-6-8.noarch.rpm
 	yum update -y
 	yum groupinstall -y "Development Tools"
 	yum install -y gzip gcc unzip rsync wget git
@@ -333,15 +334,15 @@ rm -f jre-8-linux-x64.rpm
 ##notify-send "Installing JAVA. Please manually accept the two license agreements in the terminal."
 
 # INSTALL JAI
-#cd /usr/java/jre1.8.0/
-#chmod u+x ~/jai-1_1_3-lib-linux-amd64-jre.bin
-#~/jai-1_1_3-lib-linux-amd64-jre.bin
+cd /usr/java/jre1.8.0/
+chmod u+x ~/jai-1_1_3-lib-linux-amd64-jre.bin
+~/jai-1_1_3-lib-linux-amd64-jre.bin
 rm -f ~/jai-1_1_3-lib-linux-amd64-jre.bin
 
 # INSTALL JAI-IO
-#export _POSIX2_VERSION=199209 
-#chmod u+x ~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
-#~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
+export _POSIX2_VERSION=199209 
+chmod u+x ~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
+~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
 rm -f ~/jai_imageio-1_1-lib-linux-amd64-jre.bin && cd ~
 
 ##notify-send "Thank you for your input. The installation will now automatically continue."
@@ -450,7 +451,7 @@ if [ $newDb -eq 1 ]; then
 	python /var/django/$appName/manage.py syncdb --noinput 
 
 	# CREATE DATABASE VIEWS FOR CROSSOVER ERRORS
-	viewstr='psql -U postgres -d'$dbName'-c "CREATE VIEW app_crossover_errors AS SELECT (SELECT name FROM app_seasons WHERE id = pt_pths1.season_id) AS season_1_name, (SELECT name FROM app_seasons WHERE id = pt_pths2.season_id) AS season_2_name, cx.angle,pt_pths1.geom AS point_path_1_geom, pt_pths2.geom AS point_path_2_geom, pt_pths1.gps_time AS gps_time_1, pt_pths2.gps_time AS gps_time_2, pt_pths1.heading AS heading_1,pt_pths2.heading AS heading_2,pt_pths1.roll AS roll_1,pt_pths2.roll AS roll_2, pt_pths1.pitch AS pitch_1,pt_pths2.pitch AS pitch_2,pt_pths1.location_id, cx.geom, COALESCE(lyr_pts1.layer_id,lyr_pts2.layer_id) AS layer_id, (SELECT name FROM app_frames WHERE id = pt_pths1.frame_id) AS frame_1_name, (SELECT name FROM app_frames WHERE id = pt_pths2.frame_id) AS frame_2_name,cx.point_path_1_id, cx.point_path_2_id,lyr_pts1.twtt AS twtt_1, lyr_pts2.twtt AS twtt_2, CASE WHEN COALESCE(lyr_pts1,lyr_pts2) IS NULL THEN NULL WHEN COALESCE(lyr_pts1.layer_id,lyr_pts2.layer_id) = 1 THEN ABS((ST_Z(pt_pths1.geom) - lyr_pts1.twtt*299792458.0003452/2)) ELSE ABS((ST_Z(pt_pths1.geom) - (SELECT twtt FROM app_layer_points WHERE layer_id=1 AND point_path_id = pt_pths1.id)*299792458.0003452/2 - (lyr_pts1.twtt - (SELECT twtt FROM app_layer_points WHERE layer_id = 1 AND point_path_id = pt_pths1.id))*299792458.0003452/2/sqrt(3.15))) END AS layer_elev_1, CASE WHEN COALESCE(lyr_pts1,lyr_pts2) IS NULL THEN NULL WHEN COALESCE(lyr_pts1.layer_id,lyr_pts2.layer_id) = 1 THEN ABS((ST_Z(pt_pths2.geom) - lyr_pts2.twtt*299792458.0003452/2)) ELSE ABS((ST_Z(pt_pths2.geom) - (SELECT twtt FROM app_layer_points WHERE layer_id=1 AND point_path_id = pt_pths2.id)*299792458.0003452/2 - (lyr_pts2.twtt - (SELECT twtt FROM app_layer_points WHERE layer_id = 1 AND point_path_id = pt_pths2.id))*299792458.0003452/2/sqrt(3.15))) END AS layer_elev_2 FROM app_crossovers AS cx LEFT JOIN app_layer_points AS lyr_pts1 ON lyr_pts1.point_path_id=cx.point_path_1_id LEFT JOIN app_layer_points AS lyr_pts2 ON lyr_pts2.point_path_id=cx.point_path_2_id LEFT JOIN app_point_paths AS pt_pths1 ON cx.point_path_1_id=pt_pths1.id LEFT JOIN app_point_paths AS pt_pths2 ON pt_pths2.id=cx.point_path_2_id WHERE lyr_pts1.layer_id = lyr_pts2.layer_id OR (lyr_pts1 IS NULL OR lyr_pts2 IS NULL);"'
+	viewstr='psql -U postgres -d '$dbName' -c "CREATE VIEW app_crossover_errors AS SELECT (SELECT name FROM app_seasons WHERE id = pt_pths1.season_id) AS season_1_name, (SELECT name FROM app_seasons WHERE id = pt_pths2.season_id) AS season_2_name, cx.angle,pt_pths1.geom AS point_path_1_geom, pt_pths2.geom AS point_path_2_geom, pt_pths1.gps_time AS gps_time_1, pt_pths2.gps_time AS gps_time_2, pt_pths1.heading AS heading_1,pt_pths2.heading AS heading_2,pt_pths1.roll AS roll_1,pt_pths2.roll AS roll_2, pt_pths1.pitch AS pitch_1,pt_pths2.pitch AS pitch_2,pt_pths1.location_id, cx.geom, COALESCE(lyr_pts1.layer_id,lyr_pts2.layer_id) AS layer_id, (SELECT name FROM app_frames WHERE id = pt_pths1.frame_id) AS frame_1_name, (SELECT name FROM app_frames WHERE id = pt_pths2.frame_id) AS frame_2_name,cx.point_path_1_id, cx.point_path_2_id,lyr_pts1.twtt AS twtt_1, lyr_pts2.twtt AS twtt_2, CASE WHEN COALESCE(lyr_pts1,lyr_pts2) IS NULL THEN NULL WHEN COALESCE(lyr_pts1.layer_id,lyr_pts2.layer_id) = 1 THEN ABS((ST_Z(pt_pths1.geom) - lyr_pts1.twtt*299792458.0003452/2)) ELSE ABS((ST_Z(pt_pths1.geom) - (SELECT twtt FROM app_layer_points WHERE layer_id=1 AND point_path_id = pt_pths1.id)*299792458.0003452/2 - (lyr_pts1.twtt - (SELECT twtt FROM app_layer_points WHERE layer_id = 1 AND point_path_id = pt_pths1.id))*299792458.0003452/2/sqrt(3.15))) END AS layer_elev_1, CASE WHEN COALESCE(lyr_pts1,lyr_pts2) IS NULL THEN NULL WHEN COALESCE(lyr_pts1.layer_id,lyr_pts2.layer_id) = 1 THEN ABS((ST_Z(pt_pths2.geom) - lyr_pts2.twtt*299792458.0003452/2)) ELSE ABS((ST_Z(pt_pths2.geom) - (SELECT twtt FROM app_layer_points WHERE layer_id=1 AND point_path_id = pt_pths2.id)*299792458.0003452/2 - (lyr_pts2.twtt - (SELECT twtt FROM app_layer_points WHERE layer_id = 1 AND point_path_id = pt_pths2.id))*299792458.0003452/2/sqrt(3.15))) END AS layer_elev_2 FROM app_crossovers AS cx LEFT JOIN app_layer_points AS lyr_pts1 ON lyr_pts1.point_path_id=cx.point_path_1_id LEFT JOIN app_layer_points AS lyr_pts2 ON lyr_pts2.point_path_id=cx.point_path_2_id LEFT JOIN app_point_paths AS pt_pths1 ON cx.point_path_1_id=pt_pths1.id LEFT JOIN app_point_paths AS pt_pths2 ON pt_pths2.id=cx.point_path_2_id WHERE lyr_pts1.layer_id = lyr_pts2.layer_id OR (lyr_pts1 IS NULL OR lyr_pts2 IS NULL);"'
 	eval ${viewstr//app/rds}
 	eval ${viewstr//app/snow}
 	eval ${viewstr//app/accum}
@@ -517,8 +518,8 @@ else
 fi
 
 # TEMPORARY HACK UNTIL THE GEOSERVER.ZIP STRUCTURE CHANGES
-mv $geoServerDataPath"data//geoserver/data/arctic" $geoServerDataPath"data/"
-mv $geoServerDataPath"data/antarctic" $geoServerDataPath"data/"
+mv $geoServerDataPath"data/geoserver/data/arctic" $geoServerDataPath"data/"
+mv $geoServerDataPath"data/geoserver/data/antarctic" $geoServerDataPath"data/"
 rm -rf $geoServerDataPath"data/geoserver/"
 
 # COPY THE GEOSERVER WAR TO TOMCAT
