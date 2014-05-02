@@ -41,6 +41,10 @@ def createPath(request):
 	"""
 	models,data,app,cookies = utility.getInput(request) # get the input and models
 	
+	userProfileObj = utility.getUserProfile(cookies)
+	if not userProfileObj.createData:
+		return utility.response(2,'WARNING: USER NOT AUTHORIZED TO CREATE DATA.',{})
+	
 	# parse the data input
 	try:
 	
@@ -260,6 +264,10 @@ def createLayer(request):
 	"""	
 	models,data,app,cookies = utility.getInput(request) # get the input and models
 	
+	userProfileObj = utility.getUserProfile(cookies)
+	if not userProfileObj.createData:
+		return utility.response(2,'WARNING: USER NOT AUTHORIZED TO CREATE DATA.',{})
+	
 	# parse the data input
 	try:
 	
@@ -372,6 +380,10 @@ def createLayerPoints(request):
 	
 	"""	
 	models,data,app,cookies = utility.getInput(request) # get the input and models
+	
+	userProfileObj = utility.getUserProfile(cookies)
+	if not userProfileObj.createData:
+		return utility.response(2,'WARNING: USER NOT AUTHORIZED TO CREATE DATA.',{})
 	
 	# parse the data input
 	try:
