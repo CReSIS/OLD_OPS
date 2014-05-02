@@ -378,7 +378,6 @@ def createLayerPoints(request):
 		twtt: (float or list of floats) two-way travel time of the points
 		type: (integer or list of integers) pick type of the points (1:manual 2:auto)
 		quality: (integer or list of integers) quality value of the points (1:good 2:moderate 3:derived)
-		user: (string) username of the person submitting the points
 		
 	Output:
 		status: (integer) 0:error 1:success 2:warning
@@ -402,7 +401,7 @@ def createLayerPoints(request):
 		inTwtt = utility.forceList(data['properties']['twtt'])
 		inType = utility.forceList(data['properties']['type'])
 		inQuality = utility.forceList(data['properties']['quality'])
-		inUserName = data['properties']['username']
+		inUserName = cookies['userName']
 	
 	except:
 		return utility.errorCheck(sys)
