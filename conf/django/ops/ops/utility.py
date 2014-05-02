@@ -300,15 +300,12 @@ def getUserProfile(cookies):
 	userName = cookies['userName']
 	isAuthenticated = cookies['isAuthenticated']
 
-	if userName == 'anonymous':
-		# get the user profile
-		userObj = User.objects.get(username__exact=userName)
-		userProfileObj = userObj.get_profile()
-	else:
-		if not isAuthenticated:
-			response(0,'ERROR: NON-ANONOMOUS USERS MUST LOGIN FIRST.',{});
-		# get the user profile
-		userObj = User.objects.get(username__exact=userName)
-		userProfileObj = userObj.get_profile()
+	if not isAuthenticated:
+		message = 'USER %s IS NOT AUTHENTICATED' % userName
+		return message,False
+
+	# get the user profile
+	userObj = User.objects.get(username__exact=userName)
+	userProfileObj = userObj.get_profile()
 		
-	return userProfileObj
+	return userProfileObj,True

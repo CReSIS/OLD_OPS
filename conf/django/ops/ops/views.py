@@ -41,9 +41,12 @@ def createPath(request):
 	"""
 	models,data,app,cookies = utility.getInput(request) # get the input and models
 	
-	userProfileObj = utility.getUserProfile(cookies)
-	if not userProfileObj.createData:
-		return utility.response(2,'WARNING: USER NOT AUTHORIZED TO CREATE DATA.',{})
+	userProfileObj,status = utility.getUserProfile(cookies)
+	if status:
+		if not userProfileObj.createData:
+			return utility.response(0,'ERROR: USER NOT AUTHORIZED TO CREATE DATA.',{})
+	else:
+		return utility.response(0,userProfileObj,{});
 	
 	# parse the data input
 	try:
@@ -264,9 +267,12 @@ def createLayer(request):
 	"""	
 	models,data,app,cookies = utility.getInput(request) # get the input and models
 	
-	userProfileObj = utility.getUserProfile(cookies)
-	if not userProfileObj.createData:
-		return utility.response(2,'WARNING: USER NOT AUTHORIZED TO CREATE DATA.',{})
+	userProfileObj,status = utility.getUserProfile(cookies)
+	if status:
+		if not userProfileObj.createData:
+			return utility.response(0,'ERROR: USER NOT AUTHORIZED TO CREATE DATA.',{})
+	else:
+		return utility.response(0,userProfileObj,{});
 	
 	# parse the data input
 	try:
@@ -381,9 +387,12 @@ def createLayerPoints(request):
 	"""	
 	models,data,app,cookies = utility.getInput(request) # get the input and models
 	
-	userProfileObj = utility.getUserProfile(cookies)
-	if not userProfileObj.createData:
-		return utility.response(2,'WARNING: USER NOT AUTHORIZED TO CREATE DATA.',{})
+	userProfileObj,status = utility.getUserProfile(cookies)
+	if status:
+		if not userProfileObj.createData:
+			return utility.response(0,'ERROR: USER NOT AUTHORIZED TO CREATE DATA.',{})
+	else:
+		return utility.response(0,userProfileObj,{});
 	
 	# parse the data input
 	try:
@@ -800,7 +809,7 @@ def getLayers(request):
 	try:
 	
 		# get the user profile
-		userProfileObj = utility.getUserProfile(cookies)
+		userProfileObj,status = utility.getUserProfile(cookies)
 		
 		# get the layers objects
 		authLayerGroups = eval('userProfileObj.'+app+'_layer_groups.values_list("name",flat=True)')
@@ -1560,7 +1569,7 @@ def getSystemInfo(request):
 	try:
 	
 		# get the user profile
-		userProfileObj = utility.getUserProfile(cookies)
+		userProfileObj,status = utility.getUserProfile(cookies)
 		
 		from ops.settings import INSTALLED_APPS as apps # get a list of all the apps
 
@@ -2105,7 +2114,10 @@ def getUserProfileData(request):
 	try:
 	
 		# get the user profile
-		uPObj = utility.getUserProfile(cookies)
+
+		uPObj,status = utility.getUserProfile(cookies)
+		if not status:
+			return utility.response(0,uPObj,{});
 		
 		# build the outputs (get rid of unicode strings)
 		rdsSg = [output.encode("utf8") for output in uPObj.rds_season_groups.values_list('name',flat=True)]

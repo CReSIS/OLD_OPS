@@ -11,7 +11,7 @@ userEmail=''
 userPassword=''
 
 # create the new user
-newUser = User.objects.create_user('userName', 'userEmail', 'userPassword')
+newUser = User.objects.create_user(userName, userEmail, userPassword)
 
 # get the new users profile
 userProfile = newUser.get_profile()
