@@ -1648,9 +1648,10 @@ def getCrossovers(request):
 			layer_id: (list of integer/s) layer ids of the crossovers
 			season_name: (list of string/s) season names of the crossovers
 			frame_name: (list of string/s) frame names of the crossovers
+			segment_id: (list of integer/s) segment ids of the crossovers
 			twtt: (list of float/s) two-way travel time of the crossovers
 			angle: (list of float/s) acute angle (degrees) of the crossovers path
-			abs_error: (list of float/s) absolute difference (twtt) between the source and crossover layer points
+			abs_error: (list of float/s) absolute difference (meters) between the source and crossover layer points
 		
 	"""
 	models,data,app,cookies = utility.getInput(request) # get the input and models
@@ -1685,7 +1686,7 @@ def getCrossovers(request):
 		
 		# get all of the data needed for crossovers
 		try:
-			sql_str = "SELECT point_path_1_id, point_path_2_id, ST_Z(point_path_1_geom), ST_Z(point_path_2_geom),layer_id, frame_1_name, frame_2_name, (SELECT segment_id FROM {app}_point_paths WHERE id = point_path_1_id), (SELECT segment_id FROM {app}_point_paths WHERE id = point_path_2_id), twtt_1, twtt_2, angle, ABS(twtt_1-twtt_2),season_1_name,season_2_name FROM {app}_crossover_errors WHERE (point_path_1_id IN %s OR point_path_2_id IN %s) AND (layer_id IN %s OR layer_id IS NULL);".format(app=app)
+			sql_str = "SELECT point_path_1_id, point_path_2_id, ST_Z(point_path_1_geom), ST_Z(point_path_2_geom),layer_id, frame_1_name, frame_2_name, (SELECT segment_id FROM {app}_point_paths WHERE id = point_path_1_id), (SELECT segment_id FROM {app}_point_paths WHERE id = point_path_2_id), twtt_1, twtt_2, angle, ABS(layer_elev_1-layer_elev_2),season_1_name,season_2_name FROM {app}_crossover_errors WHERE (point_path_1_id IN %s OR point_path_2_id IN %s) AND (layer_id IN %s OR layer_id IS NULL);".format(app=app)
 			cursor.execute(sql_str,[inPointPathIds,inPointPathIds,layerIds])
 			crossoverRows = cursor.fetchall() # get all of the data from the query
 			
@@ -1696,12 +1697,12 @@ def getCrossovers(request):
 			cursor.close() # close the cursor in case of exception
 		if len(crossoverRows) == 0:
 			#No crossovers found. Return empty response. 
-			return utility.response(1,{'source_point_path_id':[],'cross_point_path_id':[],'source_elev':[],'cross_elev':[],'layer_id':[],'season_name':[],'frame_name':[],'twtt':crossTwtt,'angle':[],'abs_error':[]},{}) 
+			return utility.response(1,{'source_point_path_id':[],'cross_point_path_id':[],'source_elev':[],'cross_elev':[],'layer_id':[],'season_name':[],'segment_id':[],'frame_name':[],'twtt':[],'angle':[],'abs_error':[]},{}) 
 			
 		# set up for the creation of outputs
 		sourcePointPathIds = []; crossPointPathIds = []; sourceElev = []; crossElev = []; 
 		crossTwtt = []; crossAngle = []; crossFrameName = []; layerId = []; absError = [];
-		crossSeasonName = [];
+		crossSeasonName = []; crossSegmentId = [];
 		
 		for crossoverData in crossoverRows: # parse each output row and sort it into either source or crossover outputs
 		
@@ -1720,6 +1721,7 @@ def getCrossovers(request):
 				crossFrameName.append(crossoverData[6])
 				layerId.append(crossoverData[4])
 				absError.append(crossoverData[12])
+				crossSegmentId.append(crossoverData[8])
 			
 			else:
 			
@@ -1732,13 +1734,14 @@ def getCrossovers(request):
 				crossFrameName.append(crossoverData[5])
 				layerId.append(crossoverData[4])
 				absError.append(crossoverData[12])
+				crossSegmentId.append(crossoverData[7])
 				
 				# point_path_2 is the source
 				sourcePointPathIds.append(crossoverData[1])
 				sourceElev.append(crossoverData[3])
 		
 		# return the output
-		return utility.response(1,{'source_point_path_id':sourcePointPathIds,'cross_point_path_id':crossPointPathIds,'source_elev':sourceElev,'cross_elev':crossElev,'layer_id':layerId,'season_name':crossSeasonName,'frame_name':crossFrameName,'twtt':crossTwtt,'angle':crossAngle,'abs_error':absError},{})
+		return utility.response(1,{'source_point_path_id':sourcePointPathIds,'cross_point_path_id':crossPointPathIds,'source_elev':sourceElev,'cross_elev':crossElev,'layer_id':layerId,'season_name':crossSeasonName,'segment_id':crossSegmentId,'frame_name':crossFrameName,'twtt':crossTwtt,'angle':crossAngle,'abs_error':absError},{})
 		
 	except:
 		return utility.errorCheck(sys)
