@@ -89,17 +89,30 @@ def createPath(request):
 		# build the point path objects for bulk create
 		pointPathObjs = []
 		for ptIdx,ptGeom in enumerate(linePathGeom):
+			
 			# get the frame pk (based on start gps time list)
-			frmId = frmPks[max([gpsIdx for gpsIdx in range(len(inFrameStartGpsTimes)) if inFrameStartGpsTimes[gpsIdx] <= inGpsTime[ptIdx]])]
+			#frmId = frmPks[max([gpsIdx for gpsIdx in range(len(inFrameStartGpsTimes)) if inFrameStartGpsTimes[gpsIdx] <= inGpsTime[ptIdx]])]
+			outIdx = 0
+			curGps = inGpsTime[ptIdx]
+			gpsCount = range(len(inFrameStartGpsTimes))
+			while gpsIdx <= gpsCount:
+				if inFrameStartGpsTimes[gpsIdx] <= curGps:
+					outIdx = gpsIdx
+				else:
+					break
+			frmId = frmPks[outIdx]
 			
-			pointPathGeom = GEOSGeometry('POINT Z ('+repr(ptGeom[0])+' '+repr(ptGeom[1])+' '+str(inElevation[ptIdx])+')',srid=4326) # create a point geometry object
+			# prepare the gps time and perform exact comparison in the database
+			try:
+				curGpsTime = Decimal(inGpsTime[ptIdx]).quantize(Decimal('.000001'))
+				pointPathExists = models.point_paths.objects.filter(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=curGpsTime).exists()
+			except:
+				return utility.response(0,'ERROR: QUANTIZING GPS TIME %f FOR EXISTING POINT PATH SEARCH FAILED.' % inGpsTime[ptIdx],{}
 			
-			# query for current point path (checking if it already exists)
-			pointPathObj = models.point_paths.objects.filter(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=Decimal(inGpsTime[ptIdx]).quantize(Decimal('.000001'))).values_list('pk',flat=True)
-
-			if len(pointPathObj) < 1:
+			if not isNewPointPth:
 				
 				# add a point path object to the output list
+				pointPathGeom = GEOSGeometry('POINT Z ('+repr(ptGeom[0])+' '+repr(ptGeom[1])+' '+str(inElevation[ptIdx])+')',srid=4326) # create a point geometry object
 				pointPathObjs.append(models.point_paths(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=inGpsTime[ptIdx],roll=inRoll[ptIdx],pitch=inPitch[ptIdx],heading=inHeading[ptIdx],geom=pointPathGeom))
 		
 		if len(pointPathObjs) > 0:
@@ -146,7 +159,7 @@ def createPath(request):
 						
 				else:
 					# This should not occur.
-					return response(0, "ERROR FINDING MATCHING CROSSOVER POINT PATHS ON INTERSECTING LINES",{})
+					return utility.response(0, "ERROR FINDING MATCHING CROSSOVER POINT PATHS ON INTERSECTING LINES",{})
 			
 			##FIND ALL SELF-INTERSECTING CROSSOVERS:
 			#Fetch the given line path from the db as a multilinestring.
@@ -2123,16 +2136,27 @@ def getUserProfileData(request):
 		
 		# build the outputs (get rid of unicode strings)
 		rdsSg = [output.encode("utf8") for output in uPObj.rds_season_groups.values_list('name',flat=True)]
+		rdsSgId = uPObj.rds_season_groups.values_list('pk',flat=True)
 		rdsLg = [output.encode("utf8") for output in uPObj.rds_layer_groups.values_list('name',flat=True)]
+		rdsLgId = uPObj.rds_layer_groups.values_list('pk',flat=True)
+		
 		accumSg = [output.encode("utf8") for output in uPObj.accum_season_groups.values_list('name',flat=True)]
+		accumSgId = uPObj.accum_season_groups.values_list('pk',flat=True)
 		accumLg = [output.encode("utf8") for output in uPObj.accum_layer_groups.values_list('name',flat=True)]
+		accumLgId = uPObj.accum_layer_groups.values_list('pk',flat=True)
+		
 		snowSg = [output.encode("utf8") for output in uPObj.snow_season_groups.values_list('name',flat=True)]
+		snowSgId = uPObj.snow_season_groups.values_list('pk',flat=True)
 		snowLg = [output.encode("utf8") for output in uPObj.snow_layer_groups.values_list('name',flat=True)]
+		snowLgId = uPObj.snow_layer_groups.values_list('pk',flat=True)
+		
 		kubandSg = [output.encode("utf8") for output in uPObj.kuband_season_groups.values_list('name',flat=True)]
+		kubandSgId = uPObj.kuband_season_groups.values_list('pk',flat=True)
 		kubandLg = [output.encode("utf8") for output in uPObj.kuband_layer_groups.values_list('name',flat=True)]
+		kubandLgId = uPObj.kuband_layer_groups.values_list('pk',flat=True)
 		
 		# return the output
-		return utility.response(1,{'rds_season_groups':rdsSg,'rds_layer_groups':rdsLg,'accum_season_groups':accumSg,'accum_layer_groups':accumLg,'snow_season_groups':snowSg,'snow_layer_groups':snowLg,'kuband_season_groups':kubandSg,'kuband_layer_groups':kubandLg,'layerGroupRelease':uPObj.layerGroupRelease,'seasonRelease':uPObj.seasonRelease,'createData':uPObj.createData,'bulkDeleteData':uPObj.bulkDeleteData},{})
+		return utility.response(1,{'rds_season_groups':rdsSg,'rds_season_group_ids':rdsSgId,'rds_layer_groups':rdsLg,'rds_layer_group_ids':rdsLgId,'accum_season_groups':accumSg,'accum_season_group_ids':accumSgId,'accum_layer_groups':accumLg,'accum_layer_group_ids':accumLgId,'snow_season_groups':snowSg,'snow_season_groupIds':snowSgId,'snow_layer_groups':snowLg,'snow_layer_group_ids':snowLgId,'kuband_season_groups':kubandSg,'kuband_season_group_ids':kubandSgId,'kuband_layer_groups':kubandLg,'kuband_layer_group_ids':kubandLgId,'layerGroupRelease':uPObj.layerGroupRelease,'seasonRelease':uPObj.seasonRelease,'createData':uPObj.createData,'bulkDeleteData':uPObj.bulkDeleteData},{})
 		
 	except:
 		return utility.errorCheck(sys)
