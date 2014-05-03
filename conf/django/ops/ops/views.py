@@ -2117,31 +2117,30 @@ def getUserProfileData(request):
 	try:
 	
 		# get the user profile
-
 		uPObj,status = utility.getUserProfile(cookies)
 		if not status:
-			return utility.response(0,uPObj,{});
+			return utility.response(0,uPObj,{})
 		
 		# build the outputs (get rid of unicode strings)
 		rdsSg = [output.encode("utf8") for output in uPObj.rds_season_groups.values_list('name',flat=True)]
-		rdsSgId = uPObj.rds_season_groups.values_list('pk',flat=True)
+		rdsSgId = list(uPObj.rds_season_groups.values_list('pk',flat=True))
 		rdsLg = [output.encode("utf8") for output in uPObj.rds_layer_groups.values_list('name',flat=True)]
-		rdsLgId = uPObj.rds_layer_groups.values_list('pk',flat=True)
+		rdsLgId = list(uPObj.rds_layer_groups.values_list('pk',flat=True))
 		
 		accumSg = [output.encode("utf8") for output in uPObj.accum_season_groups.values_list('name',flat=True)]
-		accumSgId = uPObj.accum_season_groups.values_list('pk',flat=True)
+		accumSgId = list(uPObj.accum_season_groups.values_list('pk',flat=True))
 		accumLg = [output.encode("utf8") for output in uPObj.accum_layer_groups.values_list('name',flat=True)]
-		accumLgId = uPObj.accum_layer_groups.values_list('pk',flat=True)
+		accumLgId = list(uPObj.accum_layer_groups.values_list('pk',flat=True))
 		
 		snowSg = [output.encode("utf8") for output in uPObj.snow_season_groups.values_list('name',flat=True)]
-		snowSgId = uPObj.snow_season_groups.values_list('pk',flat=True)
+		snowSgId = list(uPObj.snow_season_groups.values_list('pk',flat=True))
 		snowLg = [output.encode("utf8") for output in uPObj.snow_layer_groups.values_list('name',flat=True)]
-		snowLgId = uPObj.snow_layer_groups.values_list('pk',flat=True)
+		snowLgId = list(uPObj.snow_layer_groups.values_list('pk',flat=True))
 		
 		kubandSg = [output.encode("utf8") for output in uPObj.kuband_season_groups.values_list('name',flat=True)]
-		kubandSgId = uPObj.kuband_season_groups.values_list('pk',flat=True)
+		kubandSgId = list(uPObj.kuband_season_groups.values_list('pk',flat=True))
 		kubandLg = [output.encode("utf8") for output in uPObj.kuband_layer_groups.values_list('name',flat=True)]
-		kubandLgId = uPObj.kuband_layer_groups.values_list('pk',flat=True)
+		kubandLgId = list(uPObj.kuband_layer_groups.values_list('pk',flat=True))
 		
 		# return the output
 		return utility.response(1,{'rds_season_groups':rdsSg,'rds_season_group_ids':rdsSgId,'rds_layer_groups':rdsLg,'rds_layer_group_ids':rdsLgId,'accum_season_groups':accumSg,'accum_season_group_ids':accumSgId,'accum_layer_groups':accumLg,'accum_layer_group_ids':accumLgId,'snow_season_groups':snowSg,'snow_season_groupIds':snowSgId,'snow_layer_groups':snowLg,'snow_layer_group_ids':snowLgId,'kuband_season_groups':kubandSg,'kuband_season_group_ids':kubandSgId,'kuband_layer_groups':kubandLg,'kuband_layer_group_ids':kubandLgId,'layerGroupRelease':uPObj.layerGroupRelease,'seasonRelease':uPObj.seasonRelease,'createData':uPObj.createData,'bulkDeleteData':uPObj.bulkDeleteData},{})
