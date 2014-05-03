@@ -91,18 +91,7 @@ def createPath(request):
 		for ptIdx,ptGeom in enumerate(linePathGeom):
 			
 			# get the frame pk (based on start gps time list)
-			#frmId = frmPks[max([gpsIdx for gpsIdx in range(len(inFrameStartGpsTimes)) if inFrameStartGpsTimes[gpsIdx] <= inGpsTime[ptIdx]])]
-			outIdx = 0
-			curGps = inGpsTime[ptIdx]
-			gpsCount = range(len(inFrameStartGpsTimes))
-			gpsIdx = 0;
-			while gpsIdx <= gpsCount:
-				if inFrameStartGpsTimes[gpsIdx] <= curGps:
-					outIdx = gpsIdx
-					gpsIdx+=1
-				else:
-					break
-			frmId = frmPks[outIdx]
+			frmId = frmPks[max([gpsIdx for gpsIdx in range(len(inFrameStartGpsTimes)) if inFrameStartGpsTimes[gpsIdx] <= inGpsTime[ptIdx]])]
 			
 			# prepare the gps time and perform exact comparison in the database
 			try:
