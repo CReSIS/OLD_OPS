@@ -101,12 +101,10 @@ def createPath(request):
 				
 				# add a point path object to the output list
 				pointPathGeom = GEOSGeometry('POINT Z ('+repr(ptGeom[0])+' '+repr(ptGeom[1])+' '+str(inElevation[ptIdx])+')',srid=4326) # create a point geometry object
-				#pointPathObjs.append(models.point_paths(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=inGpsTime[ptIdx],roll=inRoll[ptIdx],pitch=inPitch[ptIdx],heading=inHeading[ptIdx],geom=pointPathGeom))
-				
-				models.point_paths.objects.create(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=inGpsTime[ptIdx],roll=inRoll[ptIdx],pitch=inPitch[ptIdx],heading=inHeading[ptIdx],geom=pointPathGeom)
+				pointPathObjs.append(models.point_paths(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=inGpsTime[ptIdx],roll=inRoll[ptIdx],pitch=inPitch[ptIdx],heading=inHeading[ptIdx],geom=pointPathGeom))
 		
-		#if len(pointPathObjs) > 0:
-		#	_ = models.point_paths.objects.bulk_create(pointPathObjs) # bulk create the point paths objects
+		if len(pointPathObjs) > 0:
+			_ = models.point_paths.objects.bulk_create(pointPathObjs) # bulk create the point paths objects
 		
 		# calculate and insert crossovers
 		cursor = connection.cursor()
