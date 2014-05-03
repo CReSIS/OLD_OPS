@@ -95,9 +95,11 @@ def createPath(request):
 			outIdx = 0
 			curGps = inGpsTime[ptIdx]
 			gpsCount = range(len(inFrameStartGpsTimes))
+			gpsIdx = 0;
 			while gpsIdx <= gpsCount:
 				if inFrameStartGpsTimes[gpsIdx] <= curGps:
 					outIdx = gpsIdx
+					gpsIdx+=1
 				else:
 					break
 			frmId = frmPks[outIdx]
@@ -107,9 +109,9 @@ def createPath(request):
 				curGpsTime = Decimal(inGpsTime[ptIdx]).quantize(Decimal('.000001'))
 				pointPathExists = models.point_paths.objects.filter(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=curGpsTime).exists()
 			except:
-				return utility.response(0,'ERROR: QUANTIZING GPS TIME %f FOR EXISTING POINT PATH SEARCH FAILED.' % inGpsTime[ptIdx],{}
+				return utility.response(0,'ERROR: QUANTIZING GPS TIME %f FOR EXISTING POINT PATH SEARCH FAILED.' % inGpsTime[ptIdx],{})
 			
-			if not isNewPointPth:
+			if not pointPathExists:
 				
 				# add a point path object to the output list
 				pointPathGeom = GEOSGeometry('POINT Z ('+repr(ptGeom[0])+' '+repr(ptGeom[1])+' '+str(inElevation[ptIdx])+')',srid=4326) # create a point geometry object
