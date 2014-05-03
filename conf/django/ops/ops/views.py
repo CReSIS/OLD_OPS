@@ -94,20 +94,19 @@ def createPath(request):
 			frmId = frmPks[max([gpsIdx for gpsIdx in range(len(inFrameStartGpsTimes)) if inFrameStartGpsTimes[gpsIdx] <= inGpsTime[ptIdx]])]
 			
 			# prepare the gps time and perform exact comparison in the database
-			try:
-				curGpsTime = Decimal(inGpsTime[ptIdx]).quantize(Decimal('.000001'))
-				pointPathExists = models.point_paths.objects.filter(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=curGpsTime).exists()
-			except:
-				return utility.response(0,'ERROR: QUANTIZING GPS TIME %f FOR EXISTING POINT PATH SEARCH FAILED.' % inGpsTime[ptIdx],{})
+			curGpsTime = Decimal(inGpsTime[ptIdx]).quantize(Decimal('.000001'))
+			pointPathExists = models.point_paths.objects.filter(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=curGpsTime).exists()
 			
 			if not pointPathExists:
 				
 				# add a point path object to the output list
 				pointPathGeom = GEOSGeometry('POINT Z ('+repr(ptGeom[0])+' '+repr(ptGeom[1])+' '+str(inElevation[ptIdx])+')',srid=4326) # create a point geometry object
-				pointPathObjs.append(models.point_paths(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=inGpsTime[ptIdx],roll=inRoll[ptIdx],pitch=inPitch[ptIdx],heading=inHeading[ptIdx],geom=pointPathGeom))
+				#pointPathObjs.append(models.point_paths(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=inGpsTime[ptIdx],roll=inRoll[ptIdx],pitch=inPitch[ptIdx],heading=inHeading[ptIdx],geom=pointPathGeom))
+				
+				models.point_paths.objects.create(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=inGpsTime[ptIdx],roll=inRoll[ptIdx],pitch=inPitch[ptIdx],heading=inHeading[ptIdx],geom=pointPathGeom)
 		
-		if len(pointPathObjs) > 0:
-			_ = models.point_paths.objects.bulk_create(pointPathObjs) # bulk create the point paths objects
+		#if len(pointPathObjs) > 0:
+		#	_ = models.point_paths.objects.bulk_create(pointPathObjs) # bulk create the point paths objects
 		
 		# calculate and insert crossovers
 		cursor = connection.cursor()
