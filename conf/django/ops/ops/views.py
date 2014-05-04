@@ -1943,8 +1943,14 @@ def getFrameSearch(request):
 		
 			inSeasonNames = models.seasons.objects.filter(location__name=inLocationName,season_group__public=True).values_list('name',flat=True) # get all the public seasons
 		
-		# get the first matching frame object
-		framesObj = models.frames.objects.filter(name__istartswith=inSearchStr,segment__season__location__name=inLocationName).order_by('pk')[0]
+		# get any frame objects that match the search string
+		framesObj = models.frames.objects.filter(name__istartswith=inSearchStr,segment__season__location__name=inLocationName).order_by('pk')
+		
+		# if there are search results get the first return
+		if framesObj.exist():
+			framesObj = framesObj[0]
+		else:
+			return utility.response(2,'WARNING: NO FRAMES MATCH YOUR SEARCH'.{})
 		
 		epsg = utility.epsgFromLocation(inLocationName) # get the input epsg
 		
