@@ -1950,7 +1950,7 @@ def getFrameSearch(request):
 		if framesObj.exist():
 			framesObj = framesObj[0]
 		else:
-			return utility.response(2,'WARNING: NO FRAMES MATCH YOUR SEARCH'.{})
+			return utility.response(2,'WARNING: NO FRAMES FOUND THAT MATCH YOUR SEARCH',{})
 		
 		epsg = utility.epsgFromLocation(inLocationName) # get the input epsg
 		
