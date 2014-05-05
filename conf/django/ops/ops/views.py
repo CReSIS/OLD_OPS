@@ -1947,7 +1947,7 @@ def getFrameSearch(request):
 		framesObj = models.frames.objects.filter(name__istartswith=inSearchStr,segment__season__location__name=inLocationName).order_by('pk')
 		
 		# if there are search results get the first return
-		if framesObj.exist():
+		if framesObj.exists():
 			framesObj = framesObj[0]
 		else:
 			return utility.response(2,'WARNING: NO FRAMES FOUND THAT MATCH YOUR SEARCH',{})
