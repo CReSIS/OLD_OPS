@@ -1707,8 +1707,8 @@ def getCrossovers(request):
 		
 		# get all of the data needed for crossovers
 		try:
-			sql_str = "SELECT point_path_1_id, point_path_2_id, ST_Z(point_path_1_geom), ST_Z(point_path_2_geom),layer_id, frame_1_name, frame_2_name, (SELECT segment_id FROM {app}_point_paths WHERE id = point_path_1_id), (SELECT segment_id FROM {app}_point_paths WHERE id = point_path_2_id), twtt_1, twtt_2, angle, ABS(layer_elev_1-layer_elev_2),season_1_name,season_2_name FROM {app}_crossover_errors WHERE (point_path_1_id IN %s OR point_path_2_id IN %s) AND (layer_id IN %s OR layer_id IS NULL);".format(app=app)
-			cursor.execute(sql_str,[inPointPathIds,inPointPathIds,layerIds])
+			sql_str = "SELECT point_path_1_id, point_path_2_id, ST_Z(point_path_1_geom), ST_Z(point_path_2_geom),layer_id, frame_1_name, frame_2_name, segment_1_id, segment_2_id, twtt_1, twtt_2, angle, ABS(layer_elev_1-layer_elev_2) AS error,season_1_name,season_2_name FROM {app}_crossover_errors WHERE (point_path_1_id IN %s OR point_path_2_id IN %s) AND (layer_id IN %s OR layer_id IS NULL) UNION SELECT cx.point_path_1_id, cx.point_path_2_id, ST_Z(pp1.geom),ST_Z(pp2.geom), NULL AS layer_id, frm1.name AS frame_1_name, frm2.name AS frame_2_name, pp1.segment_id AS segment_1_id, pp2.segment_id AS segment_2_id, NULL AS twtt_1, NULL AS twtt_2, cx.angle, NULL AS error, s1.name AS season_1_name, s2.name AS season_2_name FROM {app}_crossovers cx JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id JOIN {app}_frames frm1 ON pp1.frame_id=frm1.id JOIN {app}_frames frm2 ON pp2.frame_id=frm1.id JOIN {app}_seasons s1 ON pp1.season_id=s1.id JOIN {app}_seasons s2 ON pp2.season_id=s2.id WHERE (cx.point_path_1_id IN %s OR cx.point_path_2_id IN %s) AND cx.id NOT IN (SELECT cross_id FROM {app}_crossover_errors WHERE layer_id IN %s OR layer_id IS NULL);".format(app=app)
+			cursor.execute(sql_str,[inPointPathIds,inPointPathIds,layerIds,inPointPathIds,inPointPathIds,layerIds])
 			crossoverRows = cursor.fetchall() # get all of the data from the query
 			
 		except DatabaseError as dberror:
