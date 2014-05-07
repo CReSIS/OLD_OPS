@@ -763,16 +763,16 @@ def getFrameClosest(request):
 			inSeasonNames = models.seasons.objects.filter(location_id__name=inLocationName,season_group__public=True).values_list('name',flat=True) # get all the public seasons
 		
 		epsg = utility.epsgFromLocation(inLocationName) # get the input epsg
-		inPoint = GEOSGeometry('POINT ('+str(inPointX)+' '+str(inPointY)+')', srid=epsg).transform(4326,clone=True) # create a point geometry object
+		inPoint = GEOSGeometry('POINT ('+str(inPointX)+' '+str(inPointY)+')', srid=epsg) # create a point geometry object
 		
 		# get the segment_id of the closest segment path
-		closestSegmentId = models.segments.objects.filter(season_id__name__in=inSeasonNames,name__range=(inStartSeg,inStopSeg)).distance(inPoint).order_by('distance').values_list('pk','distance')[0][0]
+		closestSegmentId = models.segments.objects.filter(season_id__name__in=inSeasonNames,name__range=(inStartSeg,inStopSeg)).transform(epsg).distance(inPoint).order_by('distance').values_list('pk','distance')[0][0]
 
 		# get the frame id of the closest point path
 		# closestFrameId = models.point_paths.objects.filter(location_id__name=inLocationName,season_id__name__in=inSeasonNames,segment_id__name__range=(inStartSeg,inStopSeg)).transform(epsg).distance(inPoint).order_by('distance').values_list('frame_id','distance')[0][0]
 		
 		# get the frame_id of the point_path for the closest segment
-		closestFrameId = models.point_paths.objects.filter(segment_id=closestSegmentId).distance(inPoint).order_by('distance').values_list('frame_id','distance')[0][0]
+		closestFrameId = models.point_paths.objects.filter(segment_id=closestSegmentId).transform(epsg).distance(inPoint).order_by('distance').values_list('frame_id','distance')[0][0]
 
 		# get the frame name,segment id, season name, path, and gps_time from point_paths for the frame id above
 		pointPathsObj = models.point_paths.objects.select_related('frames__name','seasons_name').filter(frame_id=closestFrameId).transform(epsg).order_by('gps_time').values_list('frame__name','segment_id','season__name','geom','gps_time')
