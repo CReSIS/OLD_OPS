@@ -778,8 +778,15 @@ def getFrameClosest(request):
 		pointPathsObj = models.point_paths.objects.select_related('frames__name','seasons_name').filter(frame_id=closestFrameId).transform(epsg).order_by('gps_time').values_list('frame__name','segment_id','season__name','geom','gps_time')
 		
 		# get the (x,y,z) coords from pointPathsObj
-		pointPathsGeoms = [(pointPath[3].x,pointPath[3].y,pointPath[4]) for pointPath in pointPathsObj]
-		xCoords,yCoords,gpsTimes = zip(*pointPathsGeoms)
+		#pointPathsGeoms = [(pointPath[3].x,pointPath[3].y,pointPath[4]) for pointPath in pointPathsObj]
+		#xCoords,yCoords,gpsTimes = zip(*pointPathsGeoms)
+
+		xCoords = []; yCoords = []; gpsTimes = [];
+		numPoints = len(pointPathsObj)
+		for pointIdx in range(0,numPoints,7):
+			xCoords.append(pointPathsObj[pointIdx][3].x)
+			yCoords.append(pointPathsObj[pointIdx][3].y)
+			gpsTimes.append(pointPathsObj[pointIdx][4])
 		
 		# build the echogram image urls list
 		outEchograms = utility.buildEchogramList(app,pointPathsObj[0][2],pointPathsObj[0][0])
