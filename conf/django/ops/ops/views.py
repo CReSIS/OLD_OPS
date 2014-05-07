@@ -765,11 +765,11 @@ def getFrameClosest(request):
 		epsg = utility.epsgFromLocation(inLocationName) # get the input epsg
 		inPoint = GEOSGeometry('POINT ('+str(inPointX)+' '+str(inPointY)+')', srid=epsg) # create a point geometry object
 		
-		# get the frame_id of the closest segment
-		closestSegmentId = models.segments.objects.filter(season_id__name__in=inSeasonNames,name__range=(inStartSeg,inStopSeg)).transform(epsg).distance(inPoint).order_by('distance').values_list('pk','distance')[0][0]
+		# get the frame id of the closest point path
+		closestFrameId = models.point_paths.objects.filter(location_id__name=inLocationName,season_id__name__in=inSeasonNames,segment_id__name__range=(inStartSeg,inStopSeg)).transform(epsg).distance(inPoint).order_by('distance').values_list('frame_id','distance')[0][0]
 		
 		# get the frame name,segment id, season name, path, and gps_time from point_paths for the frame id above
-		pointPathsObj = models.point_paths.objects.select_related('frames__name','seasons_name').filter(segment_id=closestSegmentId).transform(epsg).distance(inPoint).order_by('distance','gps_time').values_list('frame__name','segment_id','season__name','geom','gps_time','distance')[0]
+		pointPathsObj = models.point_paths.objects.select_related('frames__name','seasons_name').filter(frame_id=closestFrameId).transform(epsg).order_by('gps_time').values_list('frame__name','segment_id','season__name','geom','gps_time')
 		
 		# get the (x,y,z) coords from pointPathsObj
 		pointPathsGeoms = [(pointPath[3].x,pointPath[3].y,pointPath[4]) for pointPath in pointPathsObj]
