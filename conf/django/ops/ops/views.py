@@ -763,7 +763,7 @@ def getFrameClosest(request):
 			inSeasonNames = models.seasons.objects.filter(location_id__name=inLocationName,season_group__public=True).values_list('name',flat=True) # get all the public seasons
 		
 		epsg = utility.epsgFromLocation(inLocationName) # get the input epsg
-		inPoint = GEOSGeometry('POINT ('+str(inPointX)+' '+str(inPointY)+')', srid=epsg) # create a point geometry object
+		inPoint = GEOSGeometry('POINT ('+str(inPointX)+' '+str(inPointY)+')', srid=epsg).transform(4326,clone=True) # create a point geometry object
 		
 		# get the segment_id of the closest segment path
 		closestSegmentId = models.segments.objects.filter(season_id__name__in=inSeasonNames,name__range=(inStartSeg,inStopSeg)).distance(inPoint).order_by('distance').values_list('pk','distance')[0][0]
