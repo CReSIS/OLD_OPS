@@ -410,8 +410,24 @@ def createLayerPoints(request):
 	# perform the function logic
 	try:
 	
+		# get the layer id
 		layerId = models.layers.objects.filter(name=inLyrName,deleted=False).values_list('pk',flat=True)[0] # get the layer object
 		
+		# delete all layer points passed in
+		_ = models.layer_points.objects.filter(pk__in=inPointPathIds).delete()
+		
+		# build an object for bulk create
+		layerPointsObjs = []
+		for ptIdx in range(len(inPointPathIds)):
+			if inTwtt[ptIdx] is None:
+				continue
+			layerPointsObjs.append(models.layer_points(layer_id=layerId,point_path_id=inPointPathIds[ptIdx],twtt=inTwtt[ptIdx],type=inType[ptIdx],quality=inQuality[ptIdx],user=inUserName))
+		
+		# bulk create the layer points
+		if len(layerPointsObjs) > 0:
+			_ = models.layer_points.objects.bulk_create(layerPointsObjs)
+		
+		'''
 		layerPointsObjs = []
 		for ptIdx in range(len(inPointPathIds)):
 			
@@ -436,7 +452,8 @@ def createLayerPoints(request):
 		
 		if len(layerPointsObjs) > 0:
 			_ = models.layer_points.objects.bulk_create(layerPointsObjs) # bulk create the layer points objects
-			
+		'''
+		
 		return utility.response(1,'SUCCESS: LAYER POINTS INSERTION COMPLETED.',{})
 		
 	except:
