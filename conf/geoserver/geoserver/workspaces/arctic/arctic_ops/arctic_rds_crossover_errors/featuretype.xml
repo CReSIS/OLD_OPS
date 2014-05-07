@@ -47,7 +47,7 @@
     <entry key="JDBC_VIRTUAL_TABLE">
       <virtualTable>
         <name>rds_crossover_errors</name>
-        <sql>SELECT geom, ABS(layer_elev_1-layer_elev_2) AS error FROM rds_crossover_errors WHERE (layer_id = %layer_id% OR layer_id IS NULL) AND location_id = 1
+        <sql>SELECT geom, ABS(layer_elev_1-layer_elev_2) AS error FROM rds_crossover_errors WHERE (layer_id = %layer_id% OR layer_id IS NULL) AND location_id = 1 UNION SELECT cx.geom, NULL AS error FROM rds_crossovers cx JOIN rds_point_paths pp ON cx.point_path_1_id=pp.id WHERE pp.location_id=1 AND cx.id NOT IN (SELECT cross_id FROM rds_crossover_errors WHERE layer_id=%layer_id%)
 </sql>
         <escapeSql>false</escapeSql>
         <geometry>

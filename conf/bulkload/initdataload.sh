@@ -13,7 +13,7 @@ sed -i "s,#checkpoint_completion_target = 0.5,checkpoint_completion_target = 0.9
 
 #RESTART POSTGRESQL
 su - postgres -c '/usr/pgsql-9.3/bin/pg_ctl restart -m fast -D '$pgdir
-sleep 1
+sleep 2
 
 # PREPARE DB FOR DATA LOAD
 psql -U postgres -d ops -c "SET maintenance_work_mem TO '1024MB';"
@@ -48,7 +48,7 @@ sed -i "s,checkpoint_completion_target = 0.9,#checkpoint_completion_target = 0.5
 
 # RESTART POSTGRESQL
 su - postgres -c '/usr/pgsql-9.3/bin/pg_ctl restart -D '$pgdir
-sleep 1
+sleep 2
 
 # FINISH TIME
 END=$(date +%s)
