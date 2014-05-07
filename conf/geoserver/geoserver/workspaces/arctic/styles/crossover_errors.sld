@@ -64,8 +64,8 @@
            </PointSymbolizer>
          </Rule>
          <Rule>
-           <Name>50-105</Name>
-           <Title>50 to 105</Title>
+           <Name>50-75</Name>
+           <Title>50 to 75</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
@@ -74,7 +74,7 @@
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>105</ogc:Literal>
+             <ogc:Literal>75</ogc:Literal>
              </ogc:PropertyIsLessThan>
            </ogc:And>
            </ogc:Filter>
@@ -96,13 +96,13 @@
            </PointSymbolizer>
          </Rule>   
          <Rule>
-           <Name>105-100</Name>
-           <Title>105 to 100</Title>
+           <Name>75-100</Name>
+           <Title>75 to 100</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>105</ogc:Literal>
+             <ogc:Literal>75</ogc:Literal>
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
@@ -160,8 +160,8 @@
            </PointSymbolizer>
          </Rule>
          <Rule>
-           <Name>125-20</Name>
-           <Title>125 to 20</Title>
+           <Name>125-150</Name>
+           <Title>125 to 150</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
@@ -170,7 +170,7 @@
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>20</ogc:Literal>
+             <ogc:Literal>150</ogc:Literal>
              </ogc:PropertyIsLessThan>
            </ogc:And>
            </ogc:Filter>
@@ -192,17 +192,17 @@
            </PointSymbolizer>
          </Rule>   
          <Rule>
-           <Name>20-1105</Name>
-           <Title>20 to 1105</Title>
+           <Name>150-175</Name>
+           <Title>150 to 175</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>20</ogc:Literal>
+             <ogc:Literal>150</ogc:Literal>
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>1105</ogc:Literal>
+             <ogc:Literal>175</ogc:Literal>
              </ogc:PropertyIsLessThan>
            </ogc:And>
            </ogc:Filter>
@@ -224,13 +224,13 @@
            </PointSymbolizer>
          </Rule>   
          <Rule>
-           <Name>1105-200</Name>
-           <Title>1105 to 200</Title>
+           <Name>175-200</Name>
+           <Title>175 to 200</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>1105</ogc:Literal>
+             <ogc:Literal>175</ogc:Literal>
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
@@ -435,8 +435,8 @@
            </PointSymbolizer>
          </Rule>
          <Rule>
-           <Name>50-105</Name>
-           <Title>50 to 105</Title>
+           <Name>50-75</Name>
+           <Title>50 to 75</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
@@ -445,7 +445,7 @@
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>105</ogc:Literal>
+             <ogc:Literal>75</ogc:Literal>
              </ogc:PropertyIsLessThan>
            </ogc:And>
            </ogc:Filter>
@@ -468,13 +468,13 @@
            </PointSymbolizer>
          </Rule>   
          <Rule>
-           <Name>105-100</Name>
-           <Title>105 to 100</Title>
+           <Name>75-100</Name>
+           <Title>75 to 100</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>105</ogc:Literal>
+             <ogc:Literal>75</ogc:Literal>
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
@@ -534,8 +534,8 @@
            </PointSymbolizer>
          </Rule>
          <Rule>
-           <Name>125-20</Name>
-           <Title>125 to 20</Title>
+           <Name>125-150</Name>
+           <Title>125 to 150</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
@@ -544,7 +544,7 @@
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>20</ogc:Literal>
+             <ogc:Literal>150</ogc:Literal>
              </ogc:PropertyIsLessThan>
            </ogc:And>
            </ogc:Filter>
@@ -567,17 +567,17 @@
            </PointSymbolizer>
          </Rule>   
          <Rule>
-           <Name>20-1105</Name>
-           <Title>20 to 1105</Title>
+           <Name>150-175</Name>
+           <Title>150 to 175</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>20</ogc:Literal>
+             <ogc:Literal>150</ogc:Literal>
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>1105</ogc:Literal>
+             <ogc:Literal>175</ogc:Literal>
              </ogc:PropertyIsLessThan>
            </ogc:And>
            </ogc:Filter>
@@ -600,13 +600,13 @@
            </PointSymbolizer>
          </Rule>   
          <Rule>
-           <Name>1105-200</Name>
-           <Title>1105 to 200</Title>
+           <Name>175-200</Name>
+           <Title>175 to 200</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>1105</ogc:Literal>
+             <ogc:Literal>175</ogc:Literal>
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
@@ -814,8 +814,8 @@
            </PointSymbolizer>
          </Rule>
          <Rule>
-           <Name>50-105</Name>
-           <Title>50 to 105</Title>
+           <Name>50-75</Name>
+           <Title>50 to 75</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
@@ -824,7 +824,7 @@
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>105</ogc:Literal>
+             <ogc:Literal>75</ogc:Literal>
              </ogc:PropertyIsLessThan>
            </ogc:And>
            </ogc:Filter>
@@ -846,13 +846,13 @@
            </PointSymbolizer>
          </Rule>   
          <Rule>
-           <Name>105-100</Name>
-           <Title>105 to 100</Title>
+           <Name>75-100</Name>
+           <Title>75 to 100</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>105</ogc:Literal>
+             <ogc:Literal>75</ogc:Literal>
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
@@ -910,8 +910,8 @@
            </PointSymbolizer>
          </Rule>
          <Rule>
-           <Name>125-20</Name>
-           <Title>125 to 20</Title>
+           <Name>125-150</Name>
+           <Title>125 to 150</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
@@ -920,7 +920,7 @@
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>20</ogc:Literal>
+             <ogc:Literal>150</ogc:Literal>
              </ogc:PropertyIsLessThan>
            </ogc:And>
            </ogc:Filter>
@@ -942,17 +942,17 @@
            </PointSymbolizer>
          </Rule>   
          <Rule>
-           <Name>20-1105</Name>
-           <Title>20 to 1105</Title>
+           <Name>150-175</Name>
+           <Title>150 to 175</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>20</ogc:Literal>
+             <ogc:Literal>150</ogc:Literal>
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>1105</ogc:Literal>
+             <ogc:Literal>175</ogc:Literal>
              </ogc:PropertyIsLessThan>
            </ogc:And>
            </ogc:Filter>
@@ -974,13 +974,13 @@
            </PointSymbolizer>
          </Rule>   
          <Rule>
-           <Name>1105-200</Name>
-           <Title>1105 to 200</Title>
+           <Name>175-200</Name>
+           <Title>175 to 200</Title>
            <ogc:Filter>
            <ogc:And>
              <ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyName>error</ogc:PropertyName>
-             <ogc:Literal>1105</ogc:Literal>
+             <ogc:Literal>175</ogc:Literal>
              </ogc:PropertyIsGreaterThanOrEqualTo>
              <ogc:PropertyIsLessThan>
              <ogc:PropertyName>error</ogc:PropertyName>
