@@ -781,6 +781,7 @@ def getFrameClosest(request):
 		#pointPathsGeoms = [(pointPath[3].x,pointPath[3].y,pointPath[4]) for pointPath in pointPathsObj]
 		#xCoords,yCoords,gpsTimes = zip(*pointPathsGeoms)
 
+		# get the (x,y,z) coords from pointPathsObj (keep ever 7th point = 100m)
 		xCoords = []; yCoords = []; gpsTimes = [];
 		numPoints = len(pointPathsObj)
 		for pointIdx in range(0,numPoints,7):
