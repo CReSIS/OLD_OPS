@@ -766,13 +766,13 @@ def getFrameClosest(request):
 		inPoint = GEOSGeometry('POINT ('+str(inPointX)+' '+str(inPointY)+')', srid=epsg) # create a point geometry object
 		
 		# get the segment_id of the closest segment path
-		closestSegmentId = models.segments.objects.filter(season_id__name__in=inSeasonNames,name__range=(inStartSeg,inStopSeg)).transform(epsg).distance(inPoint).order_by('distance').values_list('pk','distance')[0][0]
+		closestSegmentId = models.segments.objects.filter(season_id__name__in=inSeasonNames,name__range=(inStartSeg,inStopSeg)).distance(inPoint).order_by('distance').values_list('pk','distance')[0][0]
 
 		# get the frame id of the closest point path
 		# closestFrameId = models.point_paths.objects.filter(location_id__name=inLocationName,season_id__name__in=inSeasonNames,segment_id__name__range=(inStartSeg,inStopSeg)).transform(epsg).distance(inPoint).order_by('distance').values_list('frame_id','distance')[0][0]
 		
 		# get the frame_id of the point_path for the closest segment
-		closestFrameId = models.point_paths.objects.filter(segment_id=closestSegmentId).transform(epsg).distance(inPoint).order_by('distance').values_list('frame_id','distance')[0][0]
+		closestFrameId = models.point_paths.objects.filter(segment_id=closestSegmentId).distance(inPoint).order_by('distance').values_list('frame_id','distance')[0][0]
 
 		# get the frame name,segment id, season name, path, and gps_time from point_paths for the frame id above
 		pointPathsObj = models.point_paths.objects.select_related('frames__name','seasons_name').filter(frame_id=closestFrameId).transform(epsg).order_by('gps_time').values_list('frame__name','segment_id','season__name','geom','gps_time')
@@ -781,7 +781,6 @@ def getFrameClosest(request):
 		#pointPathsGeoms = [(pointPath[3].x,pointPath[3].y,pointPath[4]) for pointPath in pointPathsObj]
 		#xCoords,yCoords,gpsTimes = zip(*pointPathsGeoms)
 
-		# get the (x,y,z) coords from pointPathsObj (keep ever 7th point = 100m)
 		xCoords = []; yCoords = []; gpsTimes = [];
 		numPoints = len(pointPathsObj)
 		for pointIdx in range(0,numPoints,7):
