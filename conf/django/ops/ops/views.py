@@ -1634,7 +1634,9 @@ def getSegmentInfo(request):
 	""" Get information about a given segment from the OPS.
 	
 	Input:
-		segment_id: segment id of a segment in the segments table
+		segment_id: (integer) segment id of a segment in the segments table
+			or
+		segment: (string) name of the segment
 		
 	Output:
 		status: (integer) 0:error 1:success 2:warning
@@ -1652,7 +1654,11 @@ def getSegmentInfo(request):
 	try:
 		inSegmentId = data['properties']['segment_id']
 	except:
-		utility.errorCheck(sys)
+		try:
+			inSegment = data['properties']['segment']
+			inSegmentId = models.objects.segments.filter(name=inSegment).values_list('pk',flat=True)[0]
+		except:
+			utility.errorCheck(sys)
 	
 	# perform the function logic
 	try:
