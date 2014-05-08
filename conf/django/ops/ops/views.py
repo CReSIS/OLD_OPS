@@ -1,4 +1,5 @@
 from django.db import connection,DatabaseError
+from django.db.models import Max,Min
 from django.contrib.gis.geos import GEOSGeometry,Point,LineString,WKBReader
 from django.contrib.gis.gdal import SpatialReference,CoordTransform
 from django.contrib.auth import authenticate,login,logout
@@ -975,8 +976,8 @@ def getLayerPoints(request):
 			# get the start/stop gps times
 			if useAllGps:
 				pointPathsObj = models.point_paths.objects.filter(segment_id=segmentId,location__name=inLocationName).aggregate(Max('gps_time'),Min('gps_time'))
-				inStartGpsTime = inPointPathsObj['gps_time__max']
-				inStopGpsTime = inPointPathsObj['gps_time__min']
+				inStartGpsTime = pointPathsObj['gps_time__min']
+				inStopGpsTime = pointPathsObj['gps_time__max']
 
 			# get the point path ids
 			inPointPathIds = models.point_paths.objects.filter(segment_id=segmentId,location__name=inLocationName,gps_time__range=(inStartGpsTime,inStopGpsTime)).values_list('pk',flat=True)
@@ -993,7 +994,7 @@ def getLayerPoints(request):
 			layerPointsObj = models.layer_points.objects.select_related('point_path__gps_time').filter(point_path_id__in=inPointPathIds,layer_id__in=layerIds).values_list('point_path','layer_id','point_path__gps_time','twtt','type','quality')
 
 			if len(layerPointsObj) == 0:
-				return utility.response(2,'WARNING: NO LAYER POINTS FOUND FOR THE GIVEN PARAMETERS.')
+				return utility.response(2,'WARNING: NO LAYER POINTS FOUND FOR THE GIVEN PARAMETERS.',{})
 
 			layerPoints = zip(*layerPointsObj) # unzip the layerPointsObj
 
