@@ -1656,7 +1656,7 @@ def getSegmentInfo(request):
 	except:
 		try:
 			inSegment = data['properties']['segment']
-			inSegmentId = models.objects.segments.filter(name=inSegment).values_list('pk',flat=True)[0]
+			inSegmentId = models.segments.objects.filter(name=inSegment).values_list('pk',flat=True)[0]
 		except:
 			utility.errorCheck(sys)
 	
