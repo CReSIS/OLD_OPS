@@ -415,9 +415,7 @@ def createLayerPoints(request):
 		layerId = models.layers.objects.filter(name=inLyrName,deleted=False).values_list('pk',flat=True)[0] # get the layer object
 		
 		# delete all layer points passed in
-		layerPointsObj = models.layer_points.objects.filter(pk__in=inPointPathIds)
-		layerPointsObj.delete()
-		layerPointsObj.save()
+		layerPointsObj = models.layer_points.objects.filter(point_path_id__in=inPointPathIds).delete()
 		
 		# build an object for bulk create
 		layerPointsObjs = []
