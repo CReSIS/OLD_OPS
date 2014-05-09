@@ -421,7 +421,7 @@ def createLayerPoints(request):
 		
 		# build an object for bulk create
 		layerPointsObjs = []
-		#donePointPaths = []
+		donePointPaths = []
 		for ptIdx in range(len(inPointPathIds)):
 			if inTwtt[ptIdx] is None: # prevent nan-none twtt from being inserted
 				continue
