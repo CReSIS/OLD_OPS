@@ -1744,63 +1744,64 @@ def getCrossovers(request):
 		
 		# get all of the data needed for crossovers
 		try:
-			sql_str = "SELECT point_path_1_id, point_path_2_id, ST_Z(point_path_1_geom), ST_Z(point_path_2_geom),layer_id, frame_1_name, frame_2_name, (SELECT segment_id FROM {app}_point_paths WHERE id = point_path_1_id), (SELECT segment_id FROM {app}_point_paths WHERE id = point_path_2_id), twtt_1, twtt_2, angle, ABS(layer_elev_1-layer_elev_2),season_1_name,season_2_name FROM {app}_crossover_errors WHERE (point_path_1_id IN %s OR point_path_2_id IN %s) AND (layer_id IN %s OR layer_id IS NULL);".format(app=app)
-			cursor.execute(sql_str,[inPointPathIds,inPointPathIds,layerIds])
-			crossoverRows = cursor.fetchall() # get all of the data from the query
-			
+			# set up for the creation of outputs
+			sourcePointPathIds = []; crossPointPathIds = []; sourceElev = []; crossElev = []; 
+			crossTwtt = []; crossAngle = []; crossFrameName = []; layerId = []; absError = [];
+			crossSeasonName = []; crossSegmentId = [];
+			#Get crossover errors for each layer. 
+			for lyrId in layerIds:
+				sql_str = "SELECT point_path_1_id, point_path_2_id, ST_Z(point_path_1_geom), ST_Z(point_path_2_geom),layer_id, frame_1_name, frame_2_name, segment_1_id, segment_2_id, twtt_1, twtt_2, angle, ABS(layer_elev_1-layer_elev_2) AS error,season_1_name,season_2_name FROM {app}_crossover_errors WHERE (point_path_1_id IN %s OR point_path_2_id IN %s) AND (layer_id = %s OR layer_id IS NULL) UNION SELECT cx.point_path_1_id, cx.point_path_2_id, ST_Z(pp1.geom),ST_Z(pp2.geom), NULL AS layer_id, frm1.name AS frame_1_name, frm2.name AS frame_2_name, pp1.segment_id AS segment_1_id, pp2.segment_id AS segment_2_id, NULL AS twtt_1, NULL AS twtt_2, cx.angle, NULL AS error, s1.name AS season_1_name, s2.name AS season_2_name FROM {app}_crossovers cx JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id JOIN {app}_frames frm1 ON pp1.frame_id=frm1.id JOIN {app}_frames frm2 ON pp2.frame_id=frm2.id JOIN {app}_seasons s1 ON pp1.season_id=s1.id JOIN {app}_seasons s2 ON pp2.season_id=s2.id WHERE (cx.point_path_1_id IN %s OR cx.point_path_2_id IN %s) AND cx.id NOT IN (SELECT cross_id FROM {app}_crossover_errors WHERE layer_id = %s OR layer_id IS NULL);".format(app=app)
+				cursor.execute(sql_str,[inPointPathIds,inPointPathIds,lyrId,inPointPathIds,inPointPathIds,lyrId])
+				crossoverRows = cursor.fetchall() # get all of the data from the query
+					
+				for crossoverData in crossoverRows: # parse each output row and sort it into either source or crossover outputs
+				
+					if crossoverData[0] in inPointPathIds:
+						
+						# point_path_1 is the source
+						sourcePointPathIds.append(crossoverData[0])
+						sourceElev.append(crossoverData[2])
+						
+						# point_path_2 is the crossover
+						crossPointPathIds.append(crossoverData[1])
+						crossElev.append(crossoverData[3])
+						crossTwtt.append(crossoverData[10])
+						crossAngle.append(crossoverData[11])
+						crossSeasonName.append(crossoverData[14])
+						crossFrameName.append(crossoverData[6])
+						layerId.append(lyrId)
+						absError.append(crossoverData[12])
+						crossSegmentId.append(crossoverData[8])
+					
+					else:
+
+						# point_path_1 is the crossover
+						crossPointPathIds.append(crossoverData[0])
+						crossElev.append(crossoverData[2])
+						crossTwtt.append(crossoverData[9])
+						crossAngle.append(crossoverData[11])
+						crossSeasonName.append(crossoverData[13])
+						crossFrameName.append(crossoverData[5])
+						layerId.append(lyrId)
+						absError.append(crossoverData[12])
+						crossSegmentId.append(crossoverData[7])
+						
+						# point_path_2 is the source
+						sourcePointPathIds.append(crossoverData[1])
+						sourceElev.append(crossoverData[3])
+				
 		except DatabaseError as dberror:
 			return utility.response(0,dberror[0],{})
 		
 		finally:
 			cursor.close() # close the cursor in case of exception
-		if len(crossoverRows) == 0:
+		
+		if crossPointPathIds:
+			# return the output
+			return utility.response(1,{'source_point_path_id':sourcePointPathIds,'cross_point_path_id':crossPointPathIds,'source_elev':sourceElev,'cross_elev':crossElev,'layer_id':layerId,'season_name':crossSeasonName,'segment_id':crossSegmentId,'frame_name':crossFrameName,'twtt':crossTwtt,'angle':crossAngle,'abs_error':absError},{})
+		else:	
 			#No crossovers found. Return empty response. 
-			return utility.response(1,{'source_point_path_id':[],'cross_point_path_id':[],'source_elev':[],'cross_elev':[],'layer_id':[],'season_name':[],'segment_id':[],'frame_name':[],'twtt':[],'angle':[],'abs_error':[]},{}) 
-			
-		# set up for the creation of outputs
-		sourcePointPathIds = []; crossPointPathIds = []; sourceElev = []; crossElev = []; 
-		crossTwtt = []; crossAngle = []; crossFrameName = []; layerId = []; absError = [];
-		crossSeasonName = []; crossSegmentId = [];
-		
-		for crossoverData in crossoverRows: # parse each output row and sort it into either source or crossover outputs
-		
-			if crossoverData[0] in inPointPathIds:
-			
-				# point_path_1 is the source
-				sourcePointPathIds.append(crossoverData[0])
-				sourceElev.append(crossoverData[2])
-				
-				# point_path_2 is the crossover
-				crossPointPathIds.append(crossoverData[1])
-				crossElev.append(crossoverData[3])
-				crossTwtt.append(crossoverData[10])
-				crossAngle.append(crossoverData[11])
-				crossSeasonName.append(crossoverData[14])
-				crossFrameName.append(crossoverData[6])
-				layerId.append(crossoverData[4])
-				absError.append(crossoverData[12])
-				crossSegmentId.append(crossoverData[8])
-			
-			else:
-			
-				# point_path_1 is the crossover
-				crossPointPathIds.append(crossoverData[0])
-				crossElev.append(crossoverData[2])
-				crossTwtt.append(crossoverData[9])
-				crossAngle.append(crossoverData[11])
-				crossSeasonName.append(crossoverData[13])
-				crossFrameName.append(crossoverData[5])
-				layerId.append(crossoverData[4])
-				absError.append(crossoverData[12])
-				crossSegmentId.append(crossoverData[7])
-				
-				# point_path_2 is the source
-				sourcePointPathIds.append(crossoverData[1])
-				sourceElev.append(crossoverData[3])
-		
-		# return the output
-		return utility.response(1,{'source_point_path_id':sourcePointPathIds,'cross_point_path_id':crossPointPathIds,'source_elev':sourceElev,'cross_elev':crossElev,'layer_id':layerId,'season_name':crossSeasonName,'segment_id':crossSegmentId,'frame_name':crossFrameName,'twtt':crossTwtt,'angle':crossAngle,'abs_error':absError},{})
-		
+			return utility.response(1,{'source_point_path_id':[],'cross_point_path_id':[],'source_elev':[],'cross_elev':[],'layer_id':[],'season_name':[],'segment_id':[],'frame_name':[],'twtt':[],'angle':[],'abs_error':[]},{})
 	except:
 		return utility.errorCheck(sys)
 
