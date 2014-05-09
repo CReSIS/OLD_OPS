@@ -115,6 +115,9 @@ class layer_points(models.Model):
 	quality = models.IntegerField(blank=True,null=True) # 1:good,2:moderate,3:derived
 	user = models.CharField(max_length=20)
 	last_updated = models.DateTimeField(auto_now=True)
+	
+	class Meta:
+		unique_together = ('layer', 'point_path')
 
 	def __unicode__(self):
 		return "%d"%(self.id)
