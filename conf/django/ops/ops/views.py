@@ -421,11 +421,11 @@ def createLayerPoints(request):
 		
 		# build an object for bulk create
 		layerPointsObjs = []
-		donePointPaths = []
+		#donePointPaths = []
 		for ptIdx in range(len(inPointPathIds)):
 			if inTwtt[ptIdx] is None: # prevent nan-none twtt from being inserted
 				continue
-			if inPointPathIds[ptIdx] not in donePointPaths: # prevent duplicate points from being inserted
+			if inPointPathIds[ptIdx] in donePointPaths: # prevent duplicate points from being inserted
 				continue
 			donePointPaths.append(inPointPathIds[ptIdx])
 			layerPointsObjs.append(models.layer_points(layer_id=layerId,point_path_id=inPointPathIds[ptIdx],twtt=inTwtt[ptIdx],type=inType[ptIdx],quality=inQuality[ptIdx],user=inUserName))
