@@ -415,7 +415,9 @@ def createLayerPoints(request):
 		layerId = models.layers.objects.filter(name=inLyrName,deleted=False).values_list('pk',flat=True)[0] # get the layer object
 		
 		# delete all layer points passed in
-		_ = models.layer_points.objects.filter(pk__in=inPointPathIds).delete()
+		layerPointsObj = models.layer_points.objects.filter(point_path_id__in=inPointPathIds,layer_id__name=inLyrName)
+		if layerPointsObj.exists():
+			layerPointsObj.delete()
 		
 		# build an object for bulk create
 		layerPointsObjs = []
@@ -1982,7 +1984,11 @@ def getFrameSearch(request):
 			inSeasonNames = models.seasons.objects.filter(location__name=inLocationName,season_group__public=True).values_list('name',flat=True) # get all the public seasons
 		
 		# get the first matching frame object
-		framesObj = models.frames.objects.filter(name__istartswith=inSearchStr,segment__season__location__name=inLocationName).order_by('pk')[0]
+		framesObj = models.frames.objects.filter(name__istartswith=inSearchStr,segment__season__location__name=inLocationName).order_by('pk')
+		if framesObj.exists():
+			framesObj = framesObj[0]
+		else:
+			return utility.response(2,'WARNING: NO FRAMES FOUND FOR THE GIVEN SEARCH STRING.',{})
 		
 		epsg = utility.epsgFromLocation(inLocationName) # get the input epsg
 		
