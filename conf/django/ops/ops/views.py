@@ -415,47 +415,27 @@ def createLayerPoints(request):
 		layerId = models.layers.objects.filter(name=inLyrName,deleted=False).values_list('pk',flat=True)[0] # get the layer object
 		
 		# delete all layer points passed in
-		layerPointsObj = models.layer_points.objects.filter(point_path_id__in=inPointPathIds,layer_id__name=inLyrName)
+		layerPointsObj = models.layer_points.objects.filter(point_path_id__in=inPointPathIds,layer_id=layerId)
 		if layerPointsObj.exists():
 			layerPointsObj.delete()
 		
 		# build an object for bulk create
 		layerPointsObjs = []
+		donePointPaths = []
 		for ptIdx in range(len(inPointPathIds)):
-			if inTwtt[ptIdx] is None:
+			if inTwtt[ptIdx] is None: # prevent nan-none twtt from being inserted
 				continue
+			if inPointPathIds[ptIdx] not in donePointPaths: # prevent duplicate points from being inserted
+				continue
+			donePointPaths.append(inPointPathIds[ptIdx])
 			layerPointsObjs.append(models.layer_points(layer_id=layerId,point_path_id=inPointPathIds[ptIdx],twtt=inTwtt[ptIdx],type=inType[ptIdx],quality=inQuality[ptIdx],user=inUserName))
 		
-		# bulk create the layer points
+		# bulk create the layer points (handle integrity error due to constraint)
 		if len(layerPointsObjs) > 0:
-			_ = models.layer_points.objects.bulk_create(layerPointsObjs)
-		
-		'''
-		layerPointsObjs = []
-		for ptIdx in range(len(inPointPathIds)):
-			
-			layerPointsObj = models.layer_points.objects.filter(layer_id=layerId,point_path_id=inPointPathIds[ptIdx]) # get any current entry from the database
-			
-			if len(layerPointsObj) > 0:
-			
-				if inTwtt[ptIdx] is None: # delete the point if MATLAB passed a NaN TWTT
-					layerPointsObj.delete()
-				else:
-					layerPointsObj.update(twtt=inTwtt[ptIdx],type=inType[ptIdx],quality=inQuality[ptIdx],user=inUserName,last_updated=datetime.datetime.now()) # update the current entry
-				
-				if len(layerPointsObj) > 1:
-					
-					for idx in range(layerPointsObj)[1:]: # delete duplicate entries (likely will never occur)
-						layerPointsObj[idx].delete()
-						
-			else: # there is no existing object to update, create it
-			
-				# build a list of objects for bulk create
-				layerPointsObjs.append(models.layer_points(layer_id=layerId,point_path_id=inPointPathIds[ptIdx],twtt=inTwtt[ptIdx],type=inType[ptIdx],quality=inQuality[ptIdx],user=inUserName))
-		
-		if len(layerPointsObjs) > 0:
-			_ = models.layer_points.objects.bulk_create(layerPointsObjs) # bulk create the layer points objects
-		'''
+			try:
+				_ = models.layer_points.objects.bulk_create(layerPointsObjs)
+			except IntegrityError:
+				return utility.response(0,'ERROR: DUPLICATE LAYER POINTS.',{})
 		
 		return utility.response(1,'SUCCESS: LAYER POINTS INSERTION COMPLETED.',{})
 		
