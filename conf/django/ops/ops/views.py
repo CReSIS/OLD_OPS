@@ -1638,7 +1638,11 @@ def getSegmentInfo(request):
 	except:
 		try:
 			inSegment = data['properties']['segment']
-			inSegmentId = models.segments.objects.filter(name=inSegment).values_list('pk',flat=True)[0]
+			inSegmentId = models.segments.objects.filter(name=inSegment).values_list('pk',flat=True)
+			if inSegmentId.exists():
+				inSegmentId = inSegmentId[0]
+			else:
+				return utility.response(0,'ERROR: SEGMENT DOES NOT EXIST.',{})
 		except:
 			utility.errorCheck(sys)
 	
