@@ -17,7 +17,7 @@ newUser = User.objects.create_user(userName, userEmail, userPassword)
 userProfile = newUser.get_profile()
 
 # set the user profile options (example for cresis superuser)
-userProfile.rds_layer_groups = [1,2]
+userProfile.rds_layer_groups = [1,2,4] #4=atm(OPS2)
 userProfile.accum_layer_groups = [1,2]
 userProfile.kuband_layer_groups = [1,2]
 userProfile.snow_layer_groups = [1,2]
