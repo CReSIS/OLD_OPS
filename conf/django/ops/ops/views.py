@@ -952,7 +952,7 @@ def getLayerPoints(request):
 			if segName:
 				segmentId = models.segments.objects.filter(name=inSegment).values_list('pk',flat=True)
 				if segmentId.exists():
-					segmentId = inSegmentId[0]
+					segmentId = segmentId[0]
 				else:
 					return utility.response(0,'ERROR: SEGMENT DOES NOT EXIST.',{})
 			else:
