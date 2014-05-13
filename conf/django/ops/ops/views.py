@@ -950,9 +950,9 @@ def getLayerPoints(request):
 
 			# get a segment object with a pk field
 			if segName:
-				inSegmentId = models.segments.objects.filter(name=inSegment).values_list('pk',flat=True)
-				if inSegmentId.exists():
-					inSegmentId = inSegmentId[0]
+				segmentId = models.segments.objects.filter(name=inSegment).values_list('pk',flat=True)
+				if segmentId.exists():
+					segmentId = inSegmentId[0]
 				else:
 					return utility.response(0,'ERROR: SEGMENT DOES NOT EXIST.',{})
 			else:
