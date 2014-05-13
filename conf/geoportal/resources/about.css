@@ -1,0 +1,68 @@
+/* PAGE (BODY) ELEMENT */
+body {
+	background: url("./opsbg.png") no-repeat center center fixed;
+	-webkit-background-size: cover;
+	-moz-background-size: cover;
+	-o-background-size: cover;
+	background-size: cover;
+	margin: 25px;
+	height: 100%;
+}
+
+/* TITLE (HEADER) ELEMENT */
+.title {
+	width: 100%;
+	height: 100px;
+	margin: 10px auto;
+	/*background-color: rgba(90,90,90,0.5);
+	border-radius: 10px;*/
+	text-align: center;
+}
+.title h1 {
+	line-height:100px;
+}
+
+.section
+{
+	width: 100%;
+	height: 50px;
+	margin: 10px auto;
+	background-color: rgba(90,90,90,0.5);
+	border-radius: 10px;
+	text-align: center;
+}
+
+.section h2
+{
+	line-height:50px;
+}
+
+
+.content
+{
+	width: 100%;
+	height: 100px;
+	margin: 10px auto;
+	background-color: rgba(190,190,190,0.5);
+	border-radius: 10px;
+	text-align: center;
+}
+
+.content p {
+	padding: 10px;
+}
+
+/* COPYRIGHT (FOOTER) ELEMENT */
+.footer {
+	width: 100%;
+	height: 50px;
+	margin: 10px auto;
+	/*background-color: rgba(90,90,90,0.5);
+	border-radius: 10px;*/
+	text-align: center;
+	font-weight:bold;
+}
+
+.footer h3 {
+	line-height:50px;
+}
