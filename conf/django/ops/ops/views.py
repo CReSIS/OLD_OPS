@@ -1200,8 +1200,9 @@ def getLayerPointsCsv(request):
 				#outUtcSod.append(utcTime.seconds + (utcTime.microseconds/1000000.0))
 				
 			elif 2 in lyrIds:
+				continue
 				# bottom found with no surface
-				return utility.response(0,'ERROR: BOTTOM WITH NO SURFACE AT POINT PATH ID %d. PLEASE REPORT THIS.'%ppId,{})
+				# return utility.response(0,'ERROR: BOTTOM WITH NO SURFACE AT POINT PATH ID %d. PLEASE REPORT THIS.'%ppId,{})
 			else:
 				badCount += 1 # no surface or bottom found for point path id
 
