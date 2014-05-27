@@ -101,7 +101,7 @@ def twttToRange(surfTwtt,layerTwtt):
 	"""
 	myC = Decimal(299792458.0)
 	surfRange = surfTwtt*(myC/Decimal(2.0))
-	layerRange = surfElev + ((layerTwtt-surfTwtt)*(myC/Decimal(2.0/(math.sqrt(3.15)))))
+	layerRange = surfRange + ((layerTwtt-surfTwtt)*(myC/Decimal(2.0/(math.sqrt(3.15)))))
 	return surfRange,layerRange
 
 def randId(size):
