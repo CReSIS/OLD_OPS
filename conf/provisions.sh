@@ -302,12 +302,11 @@ HOME=/
 0 2 * * * root rm -f $(find "$webDataDir"/csv/*.csv -mtime +7);
 0 2 * * * root rm -f $(find "$webDataDir"/kml/*.kml -mtime +7); 
 0 2 * * * root rm -f $(find "$webDataDir"/mat/*.mat -mtime +7);
+0 2 * * * root rm -f $(find "$webDataDir"/reports/*.csv -mtime +7);
+0 2 * * * root rm -f $(find "$webDataDir"/datapacks/*.tar.gz -mtime +7);
 
 # VACUUM ANALYZE-ONLY THE ENTIRE OPS DATABASE AT 2 AM DAILY
-0 2 * * * root su postgres -c '/usr/pgsql-9.3/bin/vacuumdb -v -Z "$dbName"'
-
-# VACUUM ANALYZE THE ENTIRE OPS DATABASE AT 2 AM ON THE 1ST OF EACH MONTH
-0 2 1 * * root su postgres -c '/usr/pgsql-9.3/bin/vacuumdb -v -z "$dbName"'"
+30 * * * * root su postgres -c 'psql -d "$dbName" -c 'VACCUM(analyze);'''"
 
 echo -n > /etc/crontab
 echo "$cronStr" > /etc/crontab
