@@ -1063,156 +1063,26 @@ def getLayerPointsCsv(request):
 
 	# perform function logic
 	try:
-	
-		inPoly = GEOSGeometry(inBoundaryWkt, srid=4326) # create a polygon geometry object
-	
-		# get the point paths that match the input filters
-		pointPathsObj = models.point_paths.objects.select_related('season__name','frame__name').filter(location__name=inLocationName,season__name__in=inSeasons,segment__name__range=(inStartSeg,inStopSeg),geom__within=inPoly).order_by('frame__name','gps_time').values_list('pk','gps_time','roll','pitch','heading','geom','season__name','frame__name')[:2000000]
+		#Get location id 
+		locationId = models.locations.objects.filter(name=inLocationName).values_list('pk',flat=True)[0]
 		
-		# unzip the pointPathsObj into lists of values
-		ppIds,ppGpsTimes,ppRolls,ppPitchs,ppHeadings,ppPaths,ppSeasonNames,ppFrameNames = zip(*pointPathsObj)
-		del pointPathsObj
-		
-		# force the outputs to be lists (handles single element results)
-		utility.forceList(ppIds)
-		utility.forceList(ppGpsTimes)
-		utility.forceList(ppRolls)
-		utility.forceList(ppPitchs)
-		utility.forceList(ppHeadings)
-		utility.forceList(ppPaths)
-		utility.forceList(ppSeasonNames)
-		utility.forceList(ppFrameNames)
-
-		# get layer points (surface and bottom) for the filtered point path ids
-		layerPointsObj = models.layer_points.objects.filter(point_path_id__in=ppIds,layer_id__in=[1,2]).values_list('pk','layer_id','point_path_id','twtt','type','quality')
-		
-		# unzip the layerPointsObj into lists of values
-		lpIds,lpLyrIds,lpPpIds,lpTwtts,lpTypes,lpQualitys = zip(*layerPointsObj)
-		del layerPointsObj
-		
-		# force the outputs to be lists (handles single element results)
-		utility.forceList(lpIds)
-		utility.forceList(lpLyrIds)
-		utility.forceList(lpPpIds)
-		utility.forceList(lpTwtts)
-		utility.forceList(lpTypes)
-		utility.forceList(lpQualitys)
-		
-		badCount = 0 # create a counter for bad data
-		
-		# build output lists
-		outLat = []; outLon = []; outElev = []; outRoll = []; outPitch = []; outHeading = []; outSeason = []; outFrame = [];
-		outSurface = []; outBottom = []; outSurfaceType = []; outBottomType = []; outSurfaceQuality = []; outBottomQuality = [];
-		outThickness = []; outUtcSod = []; outUtcDate = [];
-		
-		for ppIdx,ppId in enumerate(ppIds):
-		
-			# get the indexes in layerPointsData for ppId
-			lpIdxs = [idx for idx in range(len(lpPpIds)) if lpPpIds[idx] == ppId]
-			
-			if not lpIdxs: # if there are no layer points for the point path, go to the next point path
-				continue
-				
-			lyrIds = [lpLyrIds[idx] for idx in lpIdxs] # get the layer ids of the matched point path layer points
-			
-			if 1 in lyrIds and 2 in lyrIds: # write both surface and bottom values
-				
-				# get the surface and bottom idxs
-				surfIdx = lpIdxs[lyrIds.index(1)]
-				bottIdx = lpIdxs[lyrIds.index(2)]
-
-				# write the values
-				outLat.append(ppPaths[ppIdx].x)
-				outLon.append(ppPaths[ppIdx].y)
-				outElev.append(ppPaths[ppIdx].z)
-				outRoll.append(ppRolls[ppIdx])
-				outPitch.append(ppPitchs[ppIdx])
-				outHeading.append(ppHeadings[ppIdx])
-				outSeason.append(ppSeasonNames[ppIdx])
-				outFrame.append(ppFrameNames[ppIdx])
-				outSurface.append(lpTwtts[surfIdx])
-				outSurfaceType.append(int(lpTypes[surfIdx]))
-				outSurfaceQuality.append(int(lpQualitys[surfIdx]))
-				outBottom.append(lpTwtts[bottIdx])
-				outBottomType.append(int(lpTypes[bottIdx]))
-				outBottomQuality.append(int(lpQualitys[bottIdx]))
-				
-				# calculate surface and bottom elevation from twtt
-				try:
-					surfRange,bottRange = utility.twttToRange(outSurface[-1],outBottom[-1])
-					outSurface[-1] = surfRange
-					outBottom[-1] = bottRange
-				except:
-					return utility.response(0,[outSurface[-1],outBottom[-1],ppId],{})
-					
-				
-				# calculate ice thickness
-				outThick = outBottom[-1]-outSurface[-1]
-				if outThick < 0.0:
-					outThick = 0.0
-					outBottom[-1] = outSurface[-1]
-				outThickness.append(outThick)
-				
-				# calculate utc date and seconds of day
-				utcDateStruct = time.gmtime(ppGpsTimes[ppIdx])
-				outUtcDate.append(time.strftime('%Y%m%d',utcDateStruct))
-				outUtcSod.append(float(utcDateStruct.tm_hour*3600.0 + utcDateStruct.tm_min*60.0 + utcDateStruct.tm_sec))
-				
-				# calculate utc seconds of day
-				#utcTime = datetime.datetime.utcfromtimestamp(ppGpsTimes[ppIdx]) - datetime.datetime.strptime(ppFrameNames[ppIdx][:-7],'%Y%m%d')
-				#outUtcSod.append(utcTime.seconds + (utcTime.microseconds/1000000.0))
-				
-			elif 1 in lyrIds and getAllPoints: # write surface values and fill in nodata
-				
-				# get the surface idx
-				surfIdx = lpIdxs[lyrIds.index(1)]
-
-				# write the values
-				outLat.append(ppPaths[ppIdx].x)
-				outLon.append(ppPaths[ppIdx].y)
-				outElev.append(ppPaths[ppIdx].z)
-				outRoll.append(ppRolls[ppIdx])
-				outPitch.append(ppPitchs[ppIdx])
-				outHeading.append(ppHeadings[ppIdx])
-				outSeason.append(ppSeasonNames[ppIdx])
-				outFrame.append(ppFrameNames[ppIdx])
-				outSurface.append(lpTwtts[surfIdx])
-				outSurfaceType.append(lpTypes[surfIdx])
-				outSurfaceQuality.append(lpQualitys[surfIdx])
-				outBottom.append(np.nan)
-				outBottomType.append(np.nan)
-				outBottomQuality.append(np.nan)
-				
-				# calculate surface and bottom elevation from twtt
-				surfRange,_ = utility.twttToRange(outSurface[-1],outSurface[-1])
-				outSurface[-1] = surfRange
-				
-				# calculate ice thickness
-				outThickness.append(np.nan)
-				
-				# calculate utc date and seconds of day
-				utcDateStruct = time.gmtime(ppGpsTimes[ppIdx])
-				outUtcDate.append(time.strftime('%Y%m%d',utcDateStruct))
-				outUtcSod.append(float(utcDateStruct.tm_hour*3600.0 + utcDateStruct.tm_min*60.0 + utcDateStruct.tm_sec))
-				
-				# calculate utc seconds of day
-				#utcTime = datetime.datetime.utcfromtimestamp(ppGpsTimes[ppIdx]) - datetime.datetime.strptime(ppFrameNames[ppIdx][:-7],'%Y%m%d')
-				#outUtcSod.append(utcTime.seconds + (utcTime.microseconds/1000000.0))
-				
-			elif 2 in lyrIds:
-				continue
-				# bottom found with no surface
-				# return utility.response(0,'ERROR: BOTTOM WITH NO SURFACE AT POINT PATH ID %d. PLEASE REPORT THIS.'%ppId,{})
+		cursor = connection.cursor() #Create a database cursor		
+		try:
+			#Construct query string
+			if getAllPoints:
+				sqlStr = "WITH surflp AS (SELECT lp.twtt,lp.type,lp.quality,lp.point_path_id FROM {app}_layer_points lp WHERE lp.layer_id = 1), botlp AS (SELECT lp.twtt, lp.type, lp.quality, lp.point_path_id FROM {app}_layer_points lp WHERE lp.layer_id = 2) SELECT ST_Y(pp.geom) LAT, ST_X(pp.geom) LON, ST_Z(pp.geom) ELEVATION, pp.roll, pp.pitch, pp.heading, pp.gps_time, surflp.twtt*(299792458.0/2) surface, surflp.twtt*(299792458.0/2) + ((botlp.twtt-surflp.twtt)*(299792458.0/2/sqrt(3.15))) bottom,  ABS((surflp.twtt*(299792458.0/2)) - (surflp.twtt*(299792458.0/2) + ((botlp.twtt-surflp.twtt)*(299792458.0/2/sqrt(3.15))))) thickness, surflp.type, botlp.type, surflp.quality, botlp.quality,s.name SEASON, frm.name FRAME FROM {app}_point_paths pp JOIN surflp ON pp.id=surflp.point_path_id LEFT JOIN botlp ON pp.id=botlp.point_path_id JOIN {app}_seasons s ON s.id=pp.season_id JOIN {app}_frames frm ON frm.id=pp.frame_id WHERE pp.location_id = %s AND ST_Within(pp.geom,ST_GeomFromText(%s,4326));".format(app=app)
 			else:
-				badCount += 1 # no surface or bottom found for point path id
-
-		# make sure there was some data
-		if badCount == len(ppIds):
-			return utility.response(0,'ERROR: NO DATA FOUND THAT MATCHES THE SEARCH PARAMETERS',{})
+				sqlStr = "WITH surflp AS (SELECT lp.twtt,lp.type,lp.quality,lp.point_path_id FROM {app}_layer_points lp WHERE lp.layer_id = 1), botlp AS (SELECT lp.twtt, lp.type, lp.quality, lp.point_path_id FROM {app}_layer_points lp WHERE lp.layer_id = 2) SELECT ST_Y(pp.geom) LAT, ST_X(pp.geom) LON, ST_Z(pp.geom) ELEVATION, pp.roll, pp.pitch, pp.heading, pp.gps_time, surflp.twtt*(299792458.0/2) surface, surflp.twtt*(299792458.0/2) + ((botlp.twtt-surflp.twtt)*(299792458.0/2/sqrt(3.15))) bottom,  ABS((surflp.twtt*(299792458.0/2)) - (surflp.twtt*(299792458.0/2) + ((botlp.twtt-surflp.twtt)*(299792458.0/2/sqrt(3.15))))) thickness, surflp.type, botlp.type, surflp.quality, botlp.quality,s.name SEASON, frm.name FRAME FROM {app}_point_paths pp JOIN surflp ON pp.id=surflp.point_path_id JOIN botlp ON pp.id=botlp.point_path_id JOIN {app}_seasons s ON s.id=pp.season_id JOIN {app}_frames frm ON frm.id=pp.frame_id WHERE pp.location_id = %s AND ST_Within(pp.geom,ST_GeomFromText(%s,4326));".format(app=app)
+			
+			#Query the database and fetch results
+			cursor.execute(sqlStr,[locationId,inBoundaryWkt])	
+			data = cursor.fetchall()
+			
+		except DatabaseError as dberror:
+			return utility.response(0,dberror[0],{})
+		finally: 
+			cursor.close()
 		
-		# clear some memory
-		del lpIds,lpLyrIds,lpPpIds,lpTwtts,lpTypes,lpQualitys,ppIds,ppGpsTimes,ppRolls,ppPitchs,ppHeadings,ppPaths,ppSeasonNames,ppFrameNames
-
 		# generate the output csv information
 		serverDir = '/cresis/snfs1/web/ops2/data/csv/'
 		webDir = 'data/csv/'
@@ -1231,29 +1101,49 @@ def getLayerPointsCsv(request):
 		with open(serverFn,'wb') as csvFile:
 			csvWriter = csv.writer(csvFile,delimiter=',',quoting=csv.QUOTE_NONE)
 			csvWriter.writerow(csvHeader)
-			for outIdx in range(len(outUtcSod)):
+			for row in data:
+				
+				# calculate utc date and seconds of day
+				utcDateStruct = time.gmtime(row[6])
+				outUtcDate = time.strftime('%Y%m%d',utcDateStruct)
+				outUtcSod = float(utcDateStruct.tm_hour*3600.0 + utcDateStruct.tm_min*60.0 + utcDateStruct.tm_sec)
+				
+				#Account for surfaces without bottom values
+				if row[8] is None: 
+					bottom = np.nan
+					thick = np.nan
+					bott_type = np.nan
+					bott_quality = np.nan
+				else: 
+					bottom = row[8]
+					thick = row[9]
+					bott_type = row[11]
+					bott_quality = row[13]
+					
+				#Write the row to file.
 				csvWriter.writerow([
-					"%.8f" % outLat[outIdx],
-					"%.8f" % outLon[outIdx],
-					"%.5f" % outElev[outIdx],
-					"%.5f" % outRoll[outIdx],
-					"%.5f" % outPitch[outIdx],
-					"%.5f" % outHeading[outIdx],
-					"%.3f" % outUtcSod[outIdx],
-					outUtcDate[outIdx],
-					"%.3f" % outSurface[outIdx],
-					"%.3f" % outBottom[outIdx],
-					"%.3f" % outThickness[outIdx],
-					outSurfaceType[outIdx],
-					outBottomType[outIdx],
-					outSurfaceQuality[outIdx],
-					outBottomQuality[outIdx],
-					outSeason[outIdx],
-					outFrame[outIdx],
+					"%.8f" % row[0],
+					"%.8f" % row[1],
+					"%.5f" % row[2],
+					"%.5f" % row[3],
+					"%.5f" % row[4],
+					"%.5f" % row[5],
+					"%.3f" % outUtcSod,
+					outUtcDate,
+					"%.3f" % row[7],
+					"%.3f" % bottom,
+					"%.3f" % thick,
+					row[10],
+					bott_type,
+					row[12],
+					bott_quality,
+					row[14],
+					row[15],
 				])
 		
 		# return the output
 		return utility.response(1,webFn,{})
+
 		
 	except:
 		return utility.errorCheck(sys)
