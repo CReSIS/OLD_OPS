@@ -1139,9 +1139,9 @@ def getLayerPointsCsv(request):
 				
 				# calculate surface and bottom elevation from twtt
 				try:
-					surfElev,bottElev = utility.twttToElev(outSurface[-1],outBottom[-1])
-					outSurface[-1] = surfElev
-					outBottom[-1] = bottElev
+					surfRange,bottRange = utility.twttToRange(outSurface[-1],outBottom[-1])
+					outSurface[-1] = surfRange
+					outBottom[-1] = bottRange
 				except:
 					return utility.response(0,[outSurface[-1],outBottom[-1],ppId],{})
 					
@@ -1184,8 +1184,8 @@ def getLayerPointsCsv(request):
 				outBottomQuality.append(np.nan)
 				
 				# calculate surface and bottom elevation from twtt
-				surfElev,_ = utility.twttToElev(outSurface[-1],outSurface[-1])
-				outSurface[-1] = surfElev
+				surfRange,_ = utility.twttToRange(outSurface[-1],outSurface[-1])
+				outSurface[-1] = surfRange
 				
 				# calculate ice thickness
 				outThickness.append(np.nan)
@@ -1480,8 +1480,8 @@ def getLayerPointsMat(request):
 				
 				# write the surface record to the output layers structure
 				surfTwtt = lpTwtts[lpIdx[lpPpLyrNames.index('surface')]]
-				_,surfElev = utility.twttToElev(surfTwtt,surfTwtt)
-				outLayers['surface']['elev'] = np.append(outLayers['surface']['elev'],float(surfElev))
+				surfRange,_ = utility.twttToRange(surfTwtt,surfTwtt)
+				outLayers['surface']['elev'] = np.append(outLayers['surface']['elev'],float(surfRange))
 				outLayers['surface']['type'] = np.append(outLayers['surface']['type'],lpTypes[lpPpLyrNames.index('surface')])
 				outLayers['surface']['quality'] = np.append(outLayers['surface']['quality'],lpQualitys[lpPpLyrNames.index('surface')])
 				
@@ -1490,8 +1490,8 @@ def getLayerPointsMat(request):
 					if lyrName not in ['surface']: # write the records (data or nans)
 						if lyrName in lpPpLyrNames:
 							lyrTwtt = lpTwtts[lpIdx[lpPpLyrNames.index(lyrName)]]
-							_,lyrElev = utility.twttToElev(surfTwtt,lyrTwtt)
-							outLayers[lyrName]['elev'] = np.append(outLayers[lyrName]['elev'],float(lyrElev))
+							_,lyrRange = utility.twttToRange(surfTwtt,lyrTwtt)
+							outLayers[lyrName]['elev'] = np.append(outLayers[lyrName]['elev'],float(lyrRange))
 							outLayers[lyrName]['type'] = np.append(outLayers[lyrName]['type'],lpTypes[lpPpLyrNames.index(lyrName)])
 							outLayers[lyrName]['quality'] = np.append(outLayers[lyrName]['quality'],lpQualitys[lpPpLyrNames.index(lyrName)])
 						else:

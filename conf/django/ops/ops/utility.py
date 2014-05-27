@@ -87,22 +87,22 @@ def epsgFromLocation(locationName):
 	else:
 		return response(0,'ERROR. ONLY MAPPED FOR (antarctic or arctic).',{})
 
-def twttToElev(surfTwtt,layerTwtt):
-	""" Convert a layers two-way travel time to wgs1984 elevation in meters.
+def twttToRange(surfTwtt,layerTwtt):
+	""" Convert a layer's two-way travel time to range from aircraft in wgs1984 meters.
 	
 	Input:
 		surfTwtt: (float) the two-way travel time of the surface for the given value
 		layerTwtt: (float) the two-way travel time of the layer for the given value
 		
 	Output:
-		surfElev: (float) the wgs1984 elevation in meters of the input surfaceTwtt
-		layerElev: (float) the wgs1984 elevation in meters of the input layerTwtt
+		surfRange: (float) the range in wgs1984 meters of the input surfaceTwtt from the aircraft
+		layerRange: (float) the range in wgs1984 meters of the input layerTwtt from the aircraft
 	
 	"""
 	myC = Decimal(299792458.0)
-	surfElev = surfTwtt*(myC/Decimal(2.0))
-	layerElev = surfElev + ((layerTwtt-surfTwtt)*(myC/Decimal((math.sqrt(3.15)*2.0))))
-	return surfElev,layerElev
+	surfRange = surfTwtt*(myC/Decimal(2.0))
+	layerRange = surfElev + ((layerTwtt-surfTwtt)*(myC/Decimal(2.0/(math.sqrt(3.15)))))
+	return surfRange,layerRange
 
 def randId(size):
 	""" Generates a random string of letters and integers.
