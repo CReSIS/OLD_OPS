@@ -46,7 +46,74 @@
     <entry key="JDBC_VIRTUAL_TABLE">
       <virtualTable>
         <name>kuband_crossover_errors</name>
-        <sql>SELECT geom, ABS(layer_elev_1-layer_elev_2) AS error FROM kuband_crossover_errors WHERE (layer_id = %layer_id% OR layer_id IS NULL) AND location_id = 1 UNION SELECT cx.geom, NULL AS error FROM kuband_crossovers cx JOIN kuband_point_paths pp ON cx.point_path_1_id=pp.id WHERE pp.location_id=1 AND cx.id NOT IN (SELECT cross_id FROM kuband_crossover_errors WHERE layer_id=%layer_id%)
+        <sql>SELECT &#xd;
+	cx.geom, ABS(cx.layer_elev_1-cx.layer_elev_2) AS error &#xd;
+FROM &#xd;
+	kuband_crossover_errors cx &#xd;
+JOIN &#xd;
+	kuband_segments sgs1 ON cx.segment_1_id=sgs1.id&#xd;
+JOIN &#xd;
+	kuband_segments sgs2 ON cx.segment_2_id=sgs2.id&#xd;
+JOIN &#xd;
+	kuband_seasons ss1 ON cx.season_1_name=ss1.name&#xd;
+JOIN&#xd;
+	kuband_seasons ss2 ON cx.season_2_name=ss2.name&#xd;
+WHERE &#xd;
+	(layer_id = %layer_id% OR layer_id IS NULL) &#xd;
+AND &#xd;
+	cx.location_id = %location_id%&#xd;
+AND&#xd;
+	ss1.season_group_id IN (%season_group_ids%)&#xd;
+AND&#xd;
+	ss2.season_group_id IN (%season_group_ids%)&#xd;
+AND&#xd;
+	ss1.name IN (%season_name%)&#xd;
+AND&#xd;
+	ss2.name IN (%season_name%)&#xd;
+AND &#xd;
+	sgs1.name &gt; %start_seg% &#xd;
+AND &#xd;
+	sgs1.name &lt; %stop_seg%&#xd;
+AND &#xd;
+	sgs2.name &gt; %start_seg%&#xd;
+AND &#xd;
+	sgs2.name &lt; %stop_seg%&#xd;
+UNION SELECT &#xd;
+	cx.geom, NULL AS error &#xd;
+FROM &#xd;
+	kuband_crossovers cx &#xd;
+JOIN &#xd;
+	kuband_point_paths pp1 ON cx.point_path_1_id=pp1.id&#xd;
+JOIN &#xd;
+	kuband_point_paths pp2 ON cx.point_path_2_id=pp2.id&#xd;
+JOIN &#xd;
+	kuband_seasons ss1 ON pp1.season_id=ss1.id&#xd;
+JOIN&#xd;
+	kuband_seasons ss2 ON pp2.season_id=ss2.id&#xd;
+JOIN&#xd;
+	kuband_segments sgs1 ON pp1.segment_id=sgs1.id&#xd;
+JOIN&#xd;
+	kuband_segments sgs2 ON pp2.segment_id=sgs2.id&#xd;
+WHERE &#xd;
+	pp1.location_id= %location_id% &#xd;
+AND&#xd;
+	ss1.season_group_id IN (%season_group_ids%)&#xd;
+AND&#xd;
+	ss2.season_group_id IN (%season_group_ids%)&#xd;
+AND&#xd;
+	ss1.name IN (%season_name%)&#xd;
+AND&#xd;
+	ss2.name IN (%season_name%)&#xd;
+AND &#xd;
+	sgs1.name &gt; %start_seg% &#xd;
+AND &#xd;
+	sgs1.name &lt; %stop_seg%&#xd;
+AND &#xd;
+	sgs2.name &gt; %start_seg%&#xd;
+AND &#xd;
+	sgs2.name &lt; %stop_seg% &#xd;
+AND &#xd;
+	cx.id NOT IN (SELECT cross_id FROM kuband_crossover_errors WHERE layer_id=%layer_id%)
 </sql>
         <escapeSql>false</escapeSql>
         <geometry>
@@ -55,9 +122,34 @@
           <srid>4326</srid>
         </geometry>
         <parameter>
+          <name>start_seg</name>
+          <defaultValue>&apos;00000000_00&apos;</defaultValue>
+          <regexpValidator>^[\w\d\s]+$</regexpValidator>
+        </parameter>
+        <parameter>
           <name>layer_id</name>
           <defaultValue>2</defaultValue>
-          <regexpValidator>[0-9]</regexpValidator>
+          <regexpValidator>^[\w\d\s]+$</regexpValidator>
+        </parameter>
+        <parameter>
+          <name>stop_seg</name>
+          <defaultValue>&apos;99999999_99&apos;</defaultValue>
+          <regexpValidator>^[\w\d\s]+$</regexpValidator>
+        </parameter>
+        <parameter>
+          <name>season_group_ids</name>
+          <defaultValue>1</defaultValue>
+          <regexpValidator>^[\w\d\s]+$</regexpValidator>
+        </parameter>
+        <parameter>
+          <name>season_name</name>
+          <defaultValue>select name from kuband_seasons</defaultValue>
+          <regexpValidator>^[\w\d\s]+$</regexpValidator>
+        </parameter>
+        <parameter>
+          <name>location_id</name>
+          <defaultValue>1</defaultValue>
+          <regexpValidator>^[\w\d\s]+$</regexpValidator>
         </parameter>
       </virtualTable>
     </entry>

@@ -1,0 +1,15 @@
+<layer>
+  <name>arctic_accum_data_coverage</name>
+  <id>LayerInfoImpl-261a041d:14643741f53:-5f4a</id>
+  <type>VECTOR</type>
+  <defaultStyle>
+    <id>StyleInfoImpl-261a041d:14643741f53:-5f45</id>
+  </defaultStyle>
+  <resource class="featureType">
+    <id>FeatureTypeInfoImpl-261a041d:14643741f53:-5f4b</id>
+  </resource>
+  <attribution>
+    <logoWidth>0</logoWidth>
+    <logoHeight>0</logoHeight>
+  </attribution>
+</layer>

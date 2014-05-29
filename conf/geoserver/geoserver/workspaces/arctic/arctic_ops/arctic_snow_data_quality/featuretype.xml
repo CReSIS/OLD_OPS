@@ -1,14 +1,14 @@
 <featureType>
-  <id>FeatureTypeInfoImpl--406bdaba:1452e0ca4db:-46ee</id>
-  <name>arctic_snow_crossover_errors</name>
-  <nativeName>snow_crossover_errors</nativeName>
+  <id>FeatureTypeInfoImpl-261a041d:14643741f53:-5f1b</id>
+  <name>arctic_snow_data_quality</name>
+  <nativeName>arctic_snow_data_quality</nativeName>
   <namespace>
     <id>NamespaceInfoImpl--4dd02097:1405ef0542e:-7fff</id>
   </namespace>
-  <title>snow_crossover_errors</title>
+  <title>arctic_snow_data_quality</title>
   <keywords>
     <string>features</string>
-    <string>snow_crossover_errors</string>
+    <string>arctic_snow_data_quality</string>
   </keywords>
   <nativeCRS>GEOGCS[&quot;WGS 84&quot;, 
   DATUM[&quot;World Geodetic System 1984&quot;, 
@@ -21,17 +21,17 @@
   AUTHORITY[&quot;EPSG&quot;,&quot;4326&quot;]]</nativeCRS>
   <srs>EPSG:3413</srs>
   <nativeBoundingBox>
-    <minx>8565408.05796338</minx>
-    <maxx>8871382.405528735</maxx>
-    <miny>-9024858.222420722</miny>
-    <maxy>-8718901.806961386</maxy>
-    <crs class="projected">EPSG:3413</crs>
+    <minx>-1.0</minx>
+    <maxx>0.0</maxx>
+    <miny>-1.0</miny>
+    <maxy>0.0</maxy>
+    <crs>EPSG:4326</crs>
   </nativeBoundingBox>
   <latLonBoundingBox>
-    <minx>-1.4962008457618183</minx>
-    <maxx>0.4966534840263827</maxx>
-    <miny>-1.4988052034848345</miny>
-    <maxy>0.5077035024400219</maxy>
+    <minx>-135.0</minx>
+    <maxx>-45.0</maxx>
+    <miny>89.99998694499642</miny>
+    <maxy>90.0</maxy>
     <crs>GEOGCS[&quot;WGS84(DD)&quot;, 
   DATUM[&quot;WGS84&quot;, 
     SPHEROID[&quot;WGS84&quot;, 6378137.0, 298.257223563]], 
@@ -45,75 +45,31 @@
   <metadata>
     <entry key="JDBC_VIRTUAL_TABLE">
       <virtualTable>
-        <name>snow_crossover_errors</name>
+        <name>arctic_snow_data_quality</name>
         <sql>SELECT &#xd;
-	cx.geom, ABS(cx.layer_elev_1-cx.layer_elev_2) AS error &#xd;
+	pp.id, lp.quality,pp.geom &#xd;
 FROM &#xd;
-	snow_crossover_errors cx &#xd;
+	snow_point_paths AS pp &#xd;
 JOIN &#xd;
-	snow_segments sgs1 ON cx.segment_1_id=sgs1.id&#xd;
+	snow_segments AS segs ON pp.segment_id=segs.id&#xd;
 JOIN &#xd;
-	snow_segments sgs2 ON cx.segment_2_id=sgs2.id&#xd;
+	snow_seasons ss ON pp.season_id=ss.id&#xd;
 JOIN &#xd;
-	snow_seasons ss1 ON cx.season_1_name=ss1.name&#xd;
-JOIN&#xd;
-	snow_seasons ss2 ON cx.season_2_name=ss2.name&#xd;
+	snow_season_groups sgs ON ss.season_group_id=sgs.id &#xd;
+LEFT JOIN &#xd;
+	snow_layer_points AS lp ON pp.id=lp.point_path_id &#xd;
+AND &#xd;
+	(lp.layer_id = %layer_id% OR lp IS NULL) &#xd;
 WHERE &#xd;
-	(layer_id = %layer_id% OR layer_id IS NULL) &#xd;
+	ss.location_id=%location_id% &#xd;
 AND &#xd;
-	cx.location_id = %location_id%&#xd;
-AND&#xd;
-	ss1.season_group_id IN (%season_group_ids%)&#xd;
-AND&#xd;
-	ss2.season_group_id IN (%season_group_ids%)&#xd;
-AND&#xd;
-	ss1.name IN (%season_name%)&#xd;
-AND&#xd;
-	ss2.name IN (%season_name%)&#xd;
+	ss.name IN (%season_name%) &#xd;
 AND &#xd;
-	sgs1.name &gt; %start_seg% &#xd;
+	sgs.id IN (%season_group_ids%) &#xd;
 AND &#xd;
-	sgs1.name &lt; %stop_seg%&#xd;
-AND &#xd;
-	sgs2.name &gt; %start_seg%&#xd;
-AND &#xd;
-	sgs2.name &lt; %stop_seg%&#xd;
-UNION SELECT &#xd;
-	cx.geom, NULL AS error &#xd;
-FROM &#xd;
-	snow_crossovers cx &#xd;
-JOIN &#xd;
-	snow_point_paths pp1 ON cx.point_path_1_id=pp1.id&#xd;
-JOIN &#xd;
-	snow_point_paths pp2 ON cx.point_path_2_id=pp2.id&#xd;
-JOIN &#xd;
-	snow_seasons ss1 ON pp1.season_id=ss1.id&#xd;
-JOIN&#xd;
-	snow_seasons ss2 ON pp2.season_id=ss2.id&#xd;
-JOIN&#xd;
-	snow_segments sgs1 ON pp1.segment_id=sgs1.id&#xd;
-JOIN&#xd;
-	snow_segments sgs2 ON pp2.segment_id=sgs2.id&#xd;
-WHERE &#xd;
-	pp1.location_id= %location_id% &#xd;
-AND&#xd;
-	ss1.season_group_id IN (%season_group_ids%)&#xd;
-AND&#xd;
-	ss2.season_group_id IN (%season_group_ids%)&#xd;
-AND&#xd;
-	ss1.name IN (%season_name%)&#xd;
-AND&#xd;
-	ss2.name IN (%season_name%)&#xd;
-AND &#xd;
-	sgs1.name &gt; %start_seg% &#xd;
-AND &#xd;
-	sgs1.name &lt; %stop_seg%&#xd;
-AND &#xd;
-	sgs2.name &gt; %start_seg%&#xd;
-AND &#xd;
-	sgs2.name &lt; %stop_seg% &#xd;
-AND &#xd;
-	cx.id NOT IN (SELECT cross_id FROM snow_crossover_errors WHERE layer_id=%layer_id%)
+	segs.name &gt; %start_seg% &#xd;
+AND	&#xd;
+	segs.name &lt; %stop_seg%
 </sql>
         <escapeSql>false</escapeSql>
         <geometry>
@@ -137,13 +93,13 @@ AND &#xd;
           <regexpValidator>^[\w\d\s\&apos;\,]+$</regexpValidator>
         </parameter>
         <parameter>
-          <name>season_group_ids</name>
-          <defaultValue>1</defaultValue>
+          <name>season_name</name>
+          <defaultValue>select name from snow_seasons</defaultValue>
           <regexpValidator>^[\w\d\s\&apos;\,]+$</regexpValidator>
         </parameter>
         <parameter>
-          <name>season_name</name>
-          <defaultValue>select name from snow_seasons</defaultValue>
+          <name>season_group_ids</name>
+          <defaultValue>1</defaultValue>
           <regexpValidator>^[\w\d\s\&apos;\,]+$</regexpValidator>
         </parameter>
         <parameter>

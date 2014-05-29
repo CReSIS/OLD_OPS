@@ -1,14 +1,14 @@
 <featureType>
-  <id>FeatureTypeInfoImpl--406bdaba:1452e0ca4db:-46e6</id>
-  <name>antarctic_rds_crossover_errors</name>
-  <nativeName>rds_crossover_errors</nativeName>
+  <id>FeatureTypeInfoImpl-261a041d:14643741f53:-5f23</id>
+  <name>arctic_accum_data_quality</name>
+  <nativeName>arctic_accum_data_quality</nativeName>
   <namespace>
-    <id>NamespaceInfoImpl--4dd02097:1405ef0542e:-7ffd</id>
+    <id>NamespaceInfoImpl--4dd02097:1405ef0542e:-7fff</id>
   </namespace>
-  <title>rds_crossover_errors</title>
+  <title>arctic_accum_data_quality</title>
   <keywords>
     <string>features</string>
-    <string>rds_crossover_errors</string>
+    <string>arctic_accum_data_quality</string>
   </keywords>
   <nativeCRS>GEOGCS[&quot;WGS 84&quot;, 
   DATUM[&quot;World Geodetic System 1984&quot;, 
@@ -19,19 +19,19 @@
   AXIS[&quot;Geodetic longitude&quot;, EAST], 
   AXIS[&quot;Geodetic latitude&quot;, NORTH], 
   AUTHORITY[&quot;EPSG&quot;,&quot;4326&quot;]]</nativeCRS>
-  <srs>EPSG:3031</srs>
+  <srs>EPSG:3413</srs>
   <nativeBoundingBox>
-    <minx>-215840.82537548462</minx>
+    <minx>-1.0</minx>
     <maxx>0.0</maxx>
-    <miny>1.2152975180149341E7</miny>
-    <maxy>1.236739621845986E7</maxy>
-    <crs class="projected">EPSG:3031</crs>
+    <miny>-1.0</miny>
+    <maxy>0.0</maxy>
+    <crs>EPSG:4326</crs>
   </nativeBoundingBox>
   <latLonBoundingBox>
-    <minx>-1.017484864669901</minx>
-    <maxx>0.0</maxx>
-    <miny>-1.0087845375260764</miny>
-    <maxy>0.0087832298385675</maxy>
+    <minx>-135.0</minx>
+    <maxx>-45.0</maxx>
+    <miny>89.99998694499642</miny>
+    <maxy>90.0</maxy>
     <crs>GEOGCS[&quot;WGS84(DD)&quot;, 
   DATUM[&quot;WGS84&quot;, 
     SPHEROID[&quot;WGS84&quot;, 6378137.0, 298.257223563]], 
@@ -45,75 +45,31 @@
   <metadata>
     <entry key="JDBC_VIRTUAL_TABLE">
       <virtualTable>
-        <name>rds_crossover_errors</name>
+        <name>arctic_accum_data_quality</name>
         <sql>SELECT &#xd;
-	cx.geom, ABS(cx.layer_elev_1-cx.layer_elev_2) AS error &#xd;
+	pp.id, lp.quality,pp.geom &#xd;
 FROM &#xd;
-	rds_crossover_errors cx &#xd;
+	accum_point_paths AS pp &#xd;
 JOIN &#xd;
-	rds_segments sgs1 ON cx.segment_1_id=sgs1.id&#xd;
+	accum_segments AS segs ON pp.segment_id=segs.id&#xd;
 JOIN &#xd;
-	rds_segments sgs2 ON cx.segment_2_id=sgs2.id&#xd;
+	accum_seasons ss ON pp.season_id=ss.id&#xd;
 JOIN &#xd;
-	rds_seasons ss1 ON cx.season_1_name=ss1.name&#xd;
-JOIN&#xd;
-	rds_seasons ss2 ON cx.season_2_name=ss2.name&#xd;
+	accum_season_groups sgs ON ss.season_group_id=sgs.id &#xd;
+LEFT JOIN &#xd;
+	accum_layer_points AS lp ON pp.id=lp.point_path_id &#xd;
+AND &#xd;
+	(lp.layer_id = %layer_id% OR lp IS NULL) &#xd;
 WHERE &#xd;
-	(layer_id = %layer_id% OR layer_id IS NULL) &#xd;
+	ss.location_id=%location_id% &#xd;
 AND &#xd;
-	cx.location_id = %location_id%&#xd;
-AND&#xd;
-	ss1.season_group_id IN (%season_group_ids%)&#xd;
-AND&#xd;
-	ss2.season_group_id IN (%season_group_ids%)&#xd;
-AND&#xd;
-	ss1.name IN (%season_name%)&#xd;
-AND&#xd;
-	ss2.name IN (%season_name%)&#xd;
+	ss.name IN (%season_name%) &#xd;
 AND &#xd;
-	sgs1.name &gt; %start_seg% &#xd;
+	sgs.id IN (%season_group_ids%) &#xd;
 AND &#xd;
-	sgs1.name &lt; %stop_seg%&#xd;
-AND &#xd;
-	sgs2.name &gt; %start_seg%&#xd;
-AND &#xd;
-	sgs2.name &lt; %stop_seg%&#xd;
-UNION SELECT &#xd;
-	cx.geom, NULL AS error &#xd;
-FROM &#xd;
-	rds_crossovers cx &#xd;
-JOIN &#xd;
-	rds_point_paths pp1 ON cx.point_path_1_id=pp1.id&#xd;
-JOIN &#xd;
-	rds_point_paths pp2 ON cx.point_path_2_id=pp2.id&#xd;
-JOIN &#xd;
-	rds_seasons ss1 ON pp1.season_id=ss1.id&#xd;
-JOIN&#xd;
-	rds_seasons ss2 ON pp2.season_id=ss2.id&#xd;
-JOIN&#xd;
-	rds_segments sgs1 ON pp1.segment_id=sgs1.id&#xd;
-JOIN&#xd;
-	rds_segments sgs2 ON pp2.segment_id=sgs2.id&#xd;
-WHERE &#xd;
-	pp1.location_id= %location_id% &#xd;
-AND&#xd;
-	ss1.season_group_id IN (%season_group_ids%)&#xd;
-AND&#xd;
-	ss2.season_group_id IN (%season_group_ids%)&#xd;
-AND&#xd;
-	ss1.name IN (%season_name%)&#xd;
-AND&#xd;
-	ss2.name IN (%season_name%)&#xd;
-AND &#xd;
-	sgs1.name &gt; %start_seg% &#xd;
-AND &#xd;
-	sgs1.name &lt; %stop_seg%&#xd;
-AND &#xd;
-	sgs2.name &gt; %start_seg%&#xd;
-AND &#xd;
-	sgs2.name &lt; %stop_seg% &#xd;
-AND &#xd;
-	cx.id NOT IN (SELECT cross_id FROM rds_crossover_errors WHERE layer_id=%layer_id%)
+	segs.name &gt; %start_seg% &#xd;
+AND	&#xd;
+	segs.name &lt; %stop_seg%
 </sql>
         <escapeSql>false</escapeSql>
         <geometry>
@@ -138,7 +94,7 @@ AND &#xd;
         </parameter>
         <parameter>
           <name>season_name</name>
-          <defaultValue>select name from rds_seasons</defaultValue>
+          <defaultValue>select name from accum_seasons</defaultValue>
           <regexpValidator>^[\w\d\s\&apos;\,]+$</regexpValidator>
         </parameter>
         <parameter>
@@ -148,7 +104,7 @@ AND &#xd;
         </parameter>
         <parameter>
           <name>location_id</name>
-          <defaultValue>2</defaultValue>
+          <defaultValue>1</defaultValue>
           <regexpValidator>^[\d]+$</regexpValidator>
         </parameter>
       </virtualTable>
@@ -156,7 +112,7 @@ AND &#xd;
     <entry key="cachingEnabled">false</entry>
   </metadata>
   <store class="dataStore">
-    <id>DataStoreInfoImpl--4235bd10:144fae283cd:-7eb8</id>
+    <id>DataStoreInfoImpl--5230cf40:144fa9d62bf:-7fc8</id>
   </store>
   <maxFeatures>0</maxFeatures>
   <numDecimals>0</numDecimals>
