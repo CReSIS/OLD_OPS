@@ -16,6 +16,7 @@ class UserProfile(models.Model):
 	seasonRelease = models.BooleanField(default=False)
 	createData = models.BooleanField(default=False)
 	bulkDeleteData = models.BooleanField(default=False)
+	isRoot = models.BooleanField(default=False)
 	
 	def create_profile(sender, instance, created, **kwargs):
 		if created:

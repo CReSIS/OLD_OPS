@@ -44,7 +44,7 @@ def createPath(request):
 	
 	userProfileObj,status = utility.getUserProfile(cookies)
 	if status:
-		if not userProfileObj.createData:
+		if not userProfileObj.isRoot or not userProfileObj.createData:
 			return utility.response(0,'ERROR: USER NOT AUTHORIZED TO CREATE DATA.',{})
 	else:
 		return utility.response(0,userProfileObj,{});
@@ -271,7 +271,7 @@ def createLayer(request):
 	
 	userProfileObj,status = utility.getUserProfile(cookies)
 	if status:
-		if not userProfileObj.createData:
+		if not userProfileObj.isRoot or not userProfileObj.createData:
 			return utility.response(0,'ERROR: USER NOT AUTHORIZED TO CREATE DATA.',{})
 	else:
 		return utility.response(0,userProfileObj,{});
@@ -390,7 +390,7 @@ def createLayerPoints(request):
 	
 	userProfileObj,status = utility.getUserProfile(cookies)
 	if status:
-		if not userProfileObj.createData:
+		if not userProfileObj.isRoot or not userProfileObj.createData:
 			return utility.response(0,'ERROR: USER NOT AUTHORIZED TO CREATE DATA.',{})
 	else:
 		return utility.response(0,userProfileObj,{});
@@ -825,8 +825,11 @@ def getLayers(request):
 		userProfileObj,status = utility.getUserProfile(cookies)
 		
 		# get the layers objects
-		authLayerGroups = eval('userProfileObj.'+app+'_layer_groups.values_list("name",flat=True)')
-		layersObj = models.layers.objects.select_related('layer_group__name').filter(deleted=False,layer_group__name__in=authLayerGroups).order_by('pk').values_list('pk','name','layer_group__name')
+		if userProfileObj.isRoot:
+			layersObj = models.layers.objects.select_related('layer_group__name').filter(deleted=False).order_by('pk').values_list('pk','name','layer_group__name')
+		else:
+			authLayerGroups = eval('userProfileObj.'+app+'_layer_groups.values_list("name",flat=True)')
+			layersObj = models.layers.objects.select_related('layer_group__name').filter(deleted=False,layer_group__name__in=authLayerGroups).order_by('pk').values_list('pk','name','layer_group__name')
 		
 		# unzip layers
 		outLayersObj = zip(*layersObj)
@@ -1487,9 +1490,12 @@ def getSystemInfo(request):
 
 				models = utility.getAppModels(app) # get the models
 
+				if userProfileObj.isRoot:
+					seasonsObj = models.seasons.objects.select_related('locations__name').filter().values_list('name','location__name')
+				else:
 				# get all of the seasons (and location)
-				authSeasonGroups = eval('userProfileObj.'+app+'_season_groups.values_list("name",flat=True)')
-				seasonsObj = models.seasons.objects.select_related('locations__name').filter(season_group__name__in=authSeasonGroups).values_list('name','location__name')
+					authSeasonGroups = eval('userProfileObj.'+app+'_season_groups.values_list("name",flat=True)')
+					seasonsObj = models.seasons.objects.select_related('locations__name').filter(season_group__name__in=authSeasonGroups).values_list('name','location__name')
 
 				# if there are seasons populate the outData list
 				if not (len(seasonsObj) == 0):
