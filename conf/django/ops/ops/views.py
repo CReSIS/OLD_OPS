@@ -972,7 +972,7 @@ def getLayerPoints(request):
 
 		# get the user profile
 		userProfileObj,status = utility.getUserProfile(cookies)
-		authLayerGroups = eval('userProfileObj.'+app+'_layer_groups.values_list("name",flat=True)')
+		authLayerGroups = eval('userProfileObj.'+app+'_layer_groups.values_list("pk",flat=True)')
 			
 		# get a layers object
 		if useAllLyr:
@@ -1631,7 +1631,6 @@ def getCrossovers(request):
 		sourcePointPathIds = []; crossPointPathIds = []; sourceElev = []; crossElev = []; 
 		crossTwtt = []; crossAngle = []; crossFrameName = []; layerId = []; absError = [];
 		crossSeasonName = []; crossSegmentId = [];
-		pointPathIds
 		#Get layer ids: 
 		layerIds = utility.forceTuple(list(models.layers.objects.filter(name__in=inLayerNames).values_list('pk',flat=True)))
 		if not layerIds:
