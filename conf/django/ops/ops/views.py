@@ -970,11 +970,18 @@ def getLayerPoints(request):
 			# get the point path ids
 			inPointPathIds = models.point_paths.objects.filter(segment_id=segmentId,location__name=inLocationName,gps_time__range=(inStartGpsTime,inStopGpsTime)).values_list('pk',flat=True)
 
+		# get the user profile
+		userProfileObj,status = utility.getUserProfile(cookies)
+		authLayerGroups = eval('userProfileObj.'+app+'_layer_groups.values_list("name",flat=True)')
+			
 		# get a layers object
 		if useAllLyr:
-			layerIds = models.layers.objects.filter(deleted=False,layer_group__public=True).values_list('pk',flat=True)
+			if userProfileObj.isRoot:
+				layerIds = models.layers.objects.filter(deleted=False).values_list('pk',flat=True)
+			else:
+				layerIds = models.layers.objects.filter(deleted=False,layer_group__in=authLayerGroups).values_list('pk',flat=True)
 		else:
-			layerIds = models.layers.objects.filter(name__in=inLyrNames,deleted=False,layer_group__public=True).values_list('pk',flat=True)
+			layerIds = models.layers.objects.filter(name__in=inLyrNames,deleted=False,layer_group__in=authLayerGroups).values_list('pk',flat=True)
 
 		if not returnGeom:
 
