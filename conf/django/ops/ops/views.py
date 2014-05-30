@@ -1605,12 +1605,13 @@ def getCrossovers(request):
 		inLocationName = utility.forceList(data['properties']['location'])
 		inLayerNames = utility.forceList(data['properties']['lyr_name'])
 		try:
-			getPointPathIds = False
-			inPointPathIds = utility.forceTuple(data['properties']['point_path_id'])
+			inFrameNames = utility.forceTuple(data['properties']['frame'])
+			inPointPathIds = []
+			
 		except:
 			try:
-				getPointPathIds = True
-				inFrameNames = utility.forceList(data['properties']['frame'])
+				inPointPathIds = utility.forceTuple(data['properties']['point_path_id'])
+				inFrameNames = []
 			except:
 				return utility.response(0,'ERROR: EITHER POINT PATH IDS OR FRAME NAMES MUST BE GIVEN',{})
 	except:
@@ -1618,31 +1619,35 @@ def getCrossovers(request):
 	
 	# perform the function logic
 	try:
+		
+		#Set up variables for the creation of outputs
+		sourcePointPathIds = []; crossPointPathIds = []; sourceElev = []; crossElev = []; 
+		crossTwtt = []; crossAngle = []; crossFrameName = []; layerId = []; absError = [];
+		crossSeasonName = []; crossSegmentId = [];
+		pointPathIds
 		#Get layer ids: 
 		layerIds = utility.forceTuple(list(models.layers.objects.filter(name__in=inLayerNames).values_list('pk',flat=True)))
+		if not layerIds:
+			return utility.response(2,'SELECTED LAYERS NOT FOUND.',{})
 		
-		if getPointPathIds:
-		
-			# get the point path ids based on the given frames
-			inPointPathIds = utility.forceTuple(list(models.point_paths.objects.filter(frame_id__name__in=inFrameNames,location__name__in=inLocationName).values_list('pk',flat=True)))
-
 		cursor = connection.cursor() # create a database cursor
 		
 		# get all of the data needed for crossovers
 		try:
-			# set up for the creation of outputs
-			sourcePointPathIds = []; crossPointPathIds = []; sourceElev = []; crossElev = []; 
-			crossTwtt = []; crossAngle = []; crossFrameName = []; layerId = []; absError = [];
-			crossSeasonName = []; crossSegmentId = [];
+
 			#Get crossover errors for each layer. 
 			for lyrId in layerIds:
-				sql_str = "SELECT point_path_1_id, point_path_2_id, ST_Z(point_path_1_geom), ST_Z(point_path_2_geom),layer_id, frame_1_name, frame_2_name, segment_1_id, segment_2_id, twtt_1, twtt_2, angle, ABS(layer_elev_1-layer_elev_2) AS error,season_1_name,season_2_name FROM {app}_crossover_errors WHERE (point_path_1_id IN %s OR point_path_2_id IN %s) AND (layer_id = %s OR layer_id IS NULL) UNION SELECT cx.point_path_1_id, cx.point_path_2_id, ST_Z(pp1.geom),ST_Z(pp2.geom), NULL AS layer_id, frm1.name AS frame_1_name, frm2.name AS frame_2_name, pp1.segment_id AS segment_1_id, pp2.segment_id AS segment_2_id, NULL AS twtt_1, NULL AS twtt_2, cx.angle, NULL AS error, s1.name AS season_1_name, s2.name AS season_2_name FROM {app}_crossovers cx JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id JOIN {app}_frames frm1 ON pp1.frame_id=frm1.id JOIN {app}_frames frm2 ON pp2.frame_id=frm2.id JOIN {app}_seasons s1 ON pp1.season_id=s1.id JOIN {app}_seasons s2 ON pp2.season_id=s2.id WHERE (cx.point_path_1_id IN %s OR cx.point_path_2_id IN %s) AND cx.id NOT IN (SELECT cross_id FROM {app}_crossover_errors WHERE layer_id = %s OR layer_id IS NULL);".format(app=app)
-				cursor.execute(sql_str,[inPointPathIds,inPointPathIds,lyrId,inPointPathIds,inPointPathIds,lyrId])
+				if inPointPathIds:
+					sql_str = "SET LOCAL work_mem = '10MB'; SELECT point_path_1_id, point_path_2_id, ST_Z(point_path_1_geom), ST_Z(point_path_2_geom),layer_id, frame_1_name, frame_2_name, segment_1_id, segment_2_id, twtt_1, twtt_2, angle, ABS(layer_elev_1-layer_elev_2) AS error,season_1_name,season_2_name FROM {app}_crossover_errors WHERE (point_path_1_id IN %s OR point_path_2_id IN %s) AND (layer_id = %s OR layer_id IS NULL) UNION SELECT cx.point_path_1_id, cx.point_path_2_id, ST_Z(pp1.geom),ST_Z(pp2.geom), NULL AS layer_id, frm1.name AS frame_1_name, frm2.name AS frame_2_name, pp1.segment_id AS segment_1_id, pp2.segment_id AS segment_2_id, NULL AS twtt_1, NULL AS twtt_2, cx.angle, NULL AS error, s1.name AS season_1_name, s2.name AS season_2_name FROM {app}_crossovers cx JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id JOIN {app}_frames frm1 ON pp1.frame_id=frm1.id JOIN {app}_frames frm2 ON pp2.frame_id=frm2.id JOIN {app}_seasons s1 ON pp1.season_id=s1.id JOIN {app}_seasons s2 ON pp2.season_id=s2.id WHERE (cx.point_path_1_id IN %s OR cx.point_path_2_id IN %s) AND cx.id NOT IN (SELECT cross_id FROM {app}_crossover_errors WHERE layer_id = %s OR layer_id IS NULL);".format(app=app)
+					cursor.execute(sql_str,[inPointPathIds,inPointPathIds,lyrId,inPointPathIds,inPointPathIds,lyrId])
+				else:
+					sql_str = "SET LOCAL work_mem = '10MB'; SELECT point_path_1_id, point_path_2_id, ST_Z(point_path_1_geom), ST_Z(point_path_2_geom),layer_id, frame_1_name, frame_2_name, segment_1_id, segment_2_id, twtt_1, twtt_2, angle, ABS(layer_elev_1-layer_elev_2) AS error,season_1_name,season_2_name FROM {app}_crossover_errors WHERE (frame_1_name IN %s OR frame_1_name IN %s) AND (layer_id = %s OR layer_id IS NULL) UNION SELECT cx.point_path_1_id, cx.point_path_2_id, ST_Z(pp1.geom),ST_Z(pp2.geom), NULL AS layer_id, frm1.name AS frame_1_name, frm2.name AS frame_2_name, pp1.segment_id AS segment_1_id, pp2.segment_id AS segment_2_id, NULL AS twtt_1, NULL AS twtt_2, cx.angle, NULL AS error, s1.name AS season_1_name, s2.name AS season_2_name FROM {app}_crossovers cx JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id JOIN {app}_frames frm1 ON pp1.frame_id=frm1.id JOIN {app}_frames frm2 ON pp2.frame_id=frm2.id JOIN {app}_seasons s1 ON pp1.season_id=s1.id JOIN {app}_seasons s2 ON pp2.season_id=s2.id WHERE (frm1.name IN %s OR frm2.name IN %s) AND cx.id NOT IN (SELECT cross_id FROM {app}_crossover_errors WHERE layer_id = %s OR layer_id IS NULL);".format(app=app)
+					cursor.execute(sql_str,[inFrameNames,inFrameNames,lyrId,inFrameNames,inFrameNames,lyrId])
 				crossoverRows = cursor.fetchall() # get all of the data from the query
 					
 				for crossoverData in crossoverRows: # parse each output row and sort it into either source or crossover outputs
 				
-					if crossoverData[0] in inPointPathIds:
+					if crossoverData[5] in inFrameNames or crossoverData[0] in inPointPathIds:
 						
 						# point_path_1 is the source
 						sourcePointPathIds.append(crossoverData[0])
