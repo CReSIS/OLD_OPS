@@ -482,11 +482,6 @@ if [ $installPgData -eq 1 ]; then
 fi
 
 # --------------------------------------------------------------------
-# CREATE A UNIQUE CONSTRAINT ON (layer_id,point_path_id) FOR LAYER POINTS TABLES. 
-
-psql -U postgres -d $dbName -c "ALTER TABLE rds_layer_points ADD UNIQUE (layer_id, point_path_id);ALTER TABLE accum_layer_points ADD UNIQUE (layer_id, point_path_id);ALTER TABLE snow_layer_points ADD UNIQUE (layer_id, point_path_id);ALTER TABLE kuband_layer_points ADD UNIQUE (layer_id, point_path_id);"
-
-# --------------------------------------------------------------------
 # INSTALL AND CONFIGURE APACHE TOMCAT AND GEOSERVER(WAR)
 
 # INSALL APACHE TOMCAT
