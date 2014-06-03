@@ -44,7 +44,7 @@ def createPath(request):
 	
 	userProfileObj,status = utility.getUserProfile(cookies)
 	if status:
-		if not userProfileObj.isRoot or not userProfileObj.createData:
+		if not userProfileObj.isRoot and not userProfileObj.createData:
 			return utility.response(0,'ERROR: USER NOT AUTHORIZED TO CREATE DATA.',{})
 	else:
 		return utility.response(0,userProfileObj,{});
@@ -271,7 +271,7 @@ def createLayer(request):
 	
 	userProfileObj,status = utility.getUserProfile(cookies)
 	if status:
-		if not userProfileObj.isRoot or not userProfileObj.createData:
+		if not userProfileObj.isRoot and not userProfileObj.createData:
 			return utility.response(0,'ERROR: USER NOT AUTHORIZED TO CREATE DATA.',{})
 	else:
 		return utility.response(0,userProfileObj,{});
@@ -390,7 +390,7 @@ def createLayerPoints(request):
 	
 	userProfileObj,status = utility.getUserProfile(cookies)
 	if status:
-		if not userProfileObj.isRoot or not userProfileObj.createData:
+		if not userProfileObj.isRoot and not userProfileObj.createData:
 			return utility.response(0,'ERROR: USER NOT AUTHORIZED TO CREATE DATA.',{})
 	else:
 		return utility.response(0,userProfileObj,{});
@@ -948,7 +948,7 @@ def getLayerPoints(request):
 
 	# perform function logic
 	try:
-
+		
 		if not usePointPathIds:
 
 			# get a segment object with a pk field
