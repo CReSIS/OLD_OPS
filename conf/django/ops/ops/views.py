@@ -973,7 +973,7 @@ def getLayerPoints(request):
 		# get the user profile
 		userProfileObj,status = utility.getUserProfile(cookies)
 		authLayerGroups = eval('userProfileObj.'+app+'_layer_groups.values_list("pk",flat=True)')
-			
+		
 		# get a layers object
 		if useAllLyr:
 			if userProfileObj.isRoot:
@@ -981,8 +981,11 @@ def getLayerPoints(request):
 			else:
 				layerIds = models.layers.objects.filter(deleted=False,layer_group__in=authLayerGroups).values_list('pk',flat=True)
 		else:
-			layerIds = models.layers.objects.filter(name__in=inLyrNames,deleted=False,layer_group__in=authLayerGroups).values_list('pk',flat=True)
-
+			if userProfileObj.isRoot:
+				layerIds = models.layers.objects.filter(name__in=inLyrNames,deleted=False).values_list('pk',flat=True)
+			else:
+				layerIds = models.layers.objects.filter(name__in=inLyrNames,deleted=False,layer_group__in=authLayerGroups).values_list('pk',flat=True)
+		
 		if not returnGeom:
 
 			# get a layer points object (no geometry)
@@ -1640,15 +1643,25 @@ def getCrossovers(request):
 		
 		# get all of the data needed for crossovers
 		try:
-
+			#Get frame ids
+			if not inPointPathIds:
+				frameIds = utility.forceTuple(list(models.frames.objects.filter(name__in=inFrameNames).values_list('pk',flat=True)))
 			#Get crossover errors for each layer. 
 			for lyrId in layerIds:
 				if inPointPathIds:
-					sql_str = "SET LOCAL work_mem = '10MB'; SELECT point_path_1_id, point_path_2_id, ST_Z(point_path_1_geom), ST_Z(point_path_2_geom),layer_id, frame_1_name, frame_2_name, segment_1_id, segment_2_id, twtt_1, twtt_2, angle, ABS(layer_elev_1-layer_elev_2) AS error,season_1_name,season_2_name FROM {app}_crossover_errors WHERE (point_path_1_id IN %s OR point_path_2_id IN %s) AND (layer_id = %s OR layer_id IS NULL) UNION SELECT cx.point_path_1_id, cx.point_path_2_id, ST_Z(pp1.geom),ST_Z(pp2.geom), NULL AS layer_id, frm1.name AS frame_1_name, frm2.name AS frame_2_name, pp1.segment_id AS segment_1_id, pp2.segment_id AS segment_2_id, NULL AS twtt_1, NULL AS twtt_2, cx.angle, NULL AS error, s1.name AS season_1_name, s2.name AS season_2_name FROM {app}_crossovers cx JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id JOIN {app}_frames frm1 ON pp1.frame_id=frm1.id JOIN {app}_frames frm2 ON pp2.frame_id=frm2.id JOIN {app}_seasons s1 ON pp1.season_id=s1.id JOIN {app}_seasons s2 ON pp2.season_id=s2.id WHERE (cx.point_path_1_id IN %s OR cx.point_path_2_id IN %s) AND cx.id NOT IN (SELECT cross_id FROM {app}_crossover_errors WHERE layer_id = %s OR layer_id IS NULL);".format(app=app)
-					cursor.execute(sql_str,[inPointPathIds,inPointPathIds,lyrId,inPointPathIds,inPointPathIds,lyrId])
+					if lyrId == 1:
+						sql_str = "WITH cx1 AS (SELECT cx.id, cx.angle, cx.geom,cx.point_path_1_id,pp1.geom AS pp1_geom, pp1.frame_id, pp1.segment_id,pp1.season_id,lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id LEFT JOIN {app}_layer_points lp ON cx.point_path_1_id=lp.point_path_id AND lp.layer_id=1 WHERE pp1.id IN %s OR pp2.id IN %s), cx2 AS (SELECT cx.id, cx.point_path_2_id, pp2.geom AS pp2_geom, pp2.frame_id,pp2.segment_id,pp2.season_id, lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id LEFT JOIN {app}_layer_points lp ON cx.point_path_2_id=lp.point_path_id AND lp.layer_id=1 WHERE pp2.id IN %s OR pp1.id IN %s) SELECT point_path_1_id, point_path_2_id, ST_Z(pp1_geom), ST_Z(pp2_geom), COALESCE(cx1.layer_id,cx2.layer_id), frm1.name, frm2.name, cx1.segment_id,cx2.segment_id, cx1.twtt,cx2.twtt,cx1.angle, ABS((ST_Z(pp1_geom)-(cx1.twtt*299792458.0003452/2)) - (ST_Z(pp2_geom)-(cx2.twtt*299792458.0003452/2))), s1.name, s2.name FROM cx1 FULL OUTER JOIN cx2 ON cx1.id=cx2.id JOIN {app}_frames frm1 ON cx1.frame_id=frm1.id JOIN {app}_frames frm2 ON cx2.frame_id=frm2.id JOIN {app}_seasons s1 ON cx1.season_id=s1.id JOIN {app}_seasons s2 ON cx2.season_id=s2.id;".format(app=app)
+						cursor.execute(sql_str,[inPointPathIds,inPointPathIds,inPointPathIds,inPointPathIds])
+					else:
+						sql_str = "WITH cx1 AS (SELECT cx.id, cx.angle, cx.geom,cx.point_path_1_id,pp1.geom AS pp1_geom, pp1.frame_id, pp1.segment_id,pp1.season_id,lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id LEFT JOIN {app}_layer_points lp ON cx.point_path_1_id=lp.point_path_id AND lp.layer_id=%s WHERE pp1.id IN %s OR pp2.id IN %s), cx2 AS (SELECT cx.id, cx.point_path_2_id, pp2.geom AS pp2_geom, pp2.frame_id,pp2.segment_id,pp2.season_id, lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id LEFT JOIN {app}_layer_points lp ON cx.point_path_2_id=lp.point_path_id AND lp.layer_id=%s WHERE pp2.id IN %s OR pp1.id IN %s) SELECT point_path_1_id, point_path_2_id, ST_Z(pp1_geom), ST_Z(pp2_geom), COALESCE(cx1.layer_id,cx2.layer_id), frm1.name, frm2.name, cx1.segment_id,cx2.segment_id, cx1.twtt,cx2.twtt,cx1.angle, ABS((((ST_Z(pp1_geom) - (SELECT twtt FROM {app}_layer_points WHERE layer_id=1 AND point_path_id = cx1.point_path_1_id)*299792458.0003452/2) - ((cx1.twtt - (SELECT twtt FROM {app}_layer_points WHERE layer_id = 1 AND point_path_id = cx1.point_path_1_id))*299792458.0003452/2/sqrt(3.15))) - (((ST_Z(pp2_geom) - (SELECT twtt FROM {app}_layer_points WHERE layer_id=1 AND point_path_id = cx2.point_path_2_id)*299792458.0003452/2) - ((cx2.twtt - (SELECT twtt FROM {app}_layer_points WHERE layer_id = 1 AND point_path_id = cx2.point_path_2_id))*299792458.0003452/2/sqrt(3.15)))))), s1.name, s2.name FROM cx1 FULL OUTER JOIN cx2 ON cx1.id=cx2.id JOIN {app}_frames frm1 ON cx1.frame_id=frm1.id JOIN {app}_frames frm2 ON cx2.frame_id=frm2.id JOIN {app}_seasons s1 ON cx1.season_id=s1.id JOIN {app}_seasons s2 ON cx2.season_id=s2.id;".format(app=app)
+						cursor.execute(sql_str,[lyrId,inPointPathIds,inPointPathIds,lyrId,inPointPathIds,inPointPathIds,])
 				else:
-					sql_str = "SET LOCAL work_mem = '10MB'; SELECT point_path_1_id, point_path_2_id, ST_Z(point_path_1_geom), ST_Z(point_path_2_geom),layer_id, frame_1_name, frame_2_name, segment_1_id, segment_2_id, twtt_1, twtt_2, angle, ABS(layer_elev_1-layer_elev_2) AS error,season_1_name,season_2_name FROM {app}_crossover_errors WHERE (frame_1_name IN %s OR frame_2_name IN %s) AND (layer_id = %s OR layer_id IS NULL) UNION SELECT cx.point_path_1_id, cx.point_path_2_id, ST_Z(pp1.geom),ST_Z(pp2.geom), NULL AS layer_id, frm1.name AS frame_1_name, frm2.name AS frame_2_name, pp1.segment_id AS segment_1_id, pp2.segment_id AS segment_2_id, NULL AS twtt_1, NULL AS twtt_2, cx.angle, NULL AS error, s1.name AS season_1_name, s2.name AS season_2_name FROM {app}_crossovers cx JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id JOIN {app}_frames frm1 ON pp1.frame_id=frm1.id JOIN {app}_frames frm2 ON pp2.frame_id=frm2.id JOIN {app}_seasons s1 ON pp1.season_id=s1.id JOIN {app}_seasons s2 ON pp2.season_id=s2.id WHERE (frm1.name IN %s OR frm2.name IN %s) AND cx.id NOT IN (SELECT cross_id FROM {app}_crossover_errors WHERE layer_id = %s OR layer_id IS NULL);".format(app=app)
-					cursor.execute(sql_str,[inFrameNames,inFrameNames,lyrId,inFrameNames,inFrameNames,lyrId])
+					if lyrId == 1:
+						sql_str = "WITH cx1 AS (SELECT cx.id, cx.angle, cx.geom,cx.point_path_1_id,pp1.geom AS pp1_geom, pp1.frame_id, pp1.segment_id,pp1.season_id,lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id LEFT JOIN {app}_layer_points lp ON cx.point_path_1_id=lp.point_path_id AND lp.layer_id=1 WHERE pp1.frame_id IN %s OR pp2.frame_id IN %s), cx2 AS (SELECT cx.id, cx.point_path_2_id, pp2.geom AS pp2_geom, pp2.frame_id,pp2.segment_id,pp2.season_id, lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id LEFT JOIN {app}_layer_points lp ON cx.point_path_2_id=lp.point_path_id AND lp.layer_id=1 WHERE pp2.frame_id IN %s OR pp1.frame_id IN %s) SELECT point_path_1_id, point_path_2_id, ST_Z(pp1_geom), ST_Z(pp2_geom), COALESCE(cx1.layer_id,cx2.layer_id), frm1.name, frm2.name, cx1.segment_id,cx2.segment_id, cx1.twtt,cx2.twtt,cx1.angle, ABS((ST_Z(pp1_geom)-(cx1.twtt*299792458.0003452/2)) - (ST_Z(pp2_geom)-(cx2.twtt*299792458.0003452/2))), s1.name, s2.name FROM cx1 FULL OUTER JOIN cx2 ON cx1.id=cx2.id JOIN {app}_frames frm1 ON cx1.frame_id=frm1.id JOIN {app}_frames frm2 ON cx2.frame_id=frm2.id JOIN {app}_seasons s1 ON cx1.season_id=s1.id JOIN {app}_seasons s2 ON cx2.season_id=s2.id;".format(app=app)
+						cursor.execute(sql_str,[frameIds,frameIds,frameIds,frameIds])
+					else:
+						sql_str = "WITH cx1 AS (SELECT cx.id, cx.angle, cx.geom,cx.point_path_1_id,pp1.geom AS pp1_geom, pp1.frame_id, pp1.segment_id,pp1.season_id,lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id LEFT JOIN {app}_layer_points lp ON cx.point_path_1_id=lp.point_path_id AND lp.layer_id=%s WHERE pp1.frame_id IN %s OR pp2.frame_id IN %s), cx2 AS (SELECT cx.id, cx.point_path_2_id, pp2.geom AS pp2_geom, pp2.frame_id,pp2.segment_id,pp2.season_id, lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id LEFT JOIN {app}_layer_points lp ON cx.point_path_2_id=lp.point_path_id AND lp.layer_id=%s WHERE pp2.frame_id IN %s OR pp1.frame_id IN %s) SELECT point_path_1_id, point_path_2_id, ST_Z(pp1_geom), ST_Z(pp2_geom), COALESCE(cx1.layer_id,cx2.layer_id), frm1.name, frm2.name, cx1.segment_id,cx2.segment_id, cx1.twtt,cx2.twtt,cx1.angle, ABS((((ST_Z(pp1_geom) - (SELECT twtt FROM {app}_layer_points WHERE layer_id=1 AND point_path_id = cx1.point_path_1_id)*299792458.0003452/2) - ((cx1.twtt - (SELECT twtt FROM {app}_layer_points WHERE layer_id = 1 AND point_path_id = cx1.point_path_1_id))*299792458.0003452/2/sqrt(3.15))) - (((ST_Z(pp2_geom) - (SELECT twtt FROM {app}_layer_points WHERE layer_id=1 AND point_path_id = cx2.point_path_2_id)*299792458.0003452/2) - ((cx2.twtt - (SELECT twtt FROM {app}_layer_points WHERE layer_id = 1 AND point_path_id = cx2.point_path_2_id))*299792458.0003452/2/sqrt(3.15)))))), s1.name, s2.name FROM cx1 FULL OUTER JOIN cx2 ON cx1.id=cx2.id JOIN {app}_frames frm1 ON cx1.frame_id=frm1.id JOIN {app}_frames frm2 ON cx2.frame_id=frm2.id JOIN {app}_seasons s1 ON cx1.season_id=s1.id JOIN {app}_seasons s2 ON cx2.season_id=s2.id;".format(app=app)
+						cursor.execute(sql_str,[lyrId,frameIds,frameIds,lyrId,frameIds,frameIds,])
 				crossoverRows = cursor.fetchall() # get all of the data from the query
 					
 				for crossoverData in crossoverRows: # parse each output row and sort it into either source or crossover outputs
@@ -1701,6 +1714,7 @@ def getCrossovers(request):
 			return utility.response(1,{'source_point_path_id':[],'cross_point_path_id':[],'source_elev':[],'cross_elev':[],'layer_id':[],'season_name':[],'segment_id':[],'frame_name':[],'twtt':[],'angle':[],'abs_error':[]},{})
 	except:
 		return utility.errorCheck(sys)
+
 
 def getCrossoversReport(request):
 	""" Get crossover error report from the OPS.
