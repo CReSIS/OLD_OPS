@@ -1005,7 +1005,7 @@ def getLayerPoints(request):
 			layerPointsObj = models.layer_points.objects.select_related('point_path__gps_time','point_path__geom').filter(point_path_id__in=inPointPathIds,layer_id__in=layerIds).values_list('point_path','layer_id','point_path__gps_time','twtt','type','quality','point_path__geom')
 
 			if len(layerPointsObj) == 0:
-				return utility.response(2,'WARNING: NO LAYER POINTS FOUND FOR THE GIVEN PARAMETERS.')
+				return utility.response(2,'WARNING: NO LAYER POINTS FOUND FOR THE GIVEN PARAMETERS.',{})
 
 			pointPathId,layerIds,gpsTimes,twtts,types,qualitys,pointPaths = zip(*layerPointsObj) # unzip the layerPointsObj
 
