@@ -2092,7 +2092,7 @@ def getUserProfileData(request):
 		kubandLgId = list(uPObj.kuband_layer_groups.values_list('pk',flat=True))
 		
 		# return the output
-		return utility.response(1,{'rds_season_groups':rdsSg,'rds_season_group_ids':rdsSgId,'rds_layer_groups':rdsLg,'rds_layer_group_ids':rdsLgId,'accum_season_groups':accumSg,'accum_season_group_ids':accumSgId,'accum_layer_groups':accumLg,'accum_layer_group_ids':accumLgId,'snow_season_groups':snowSg,'snow_season_groupIds':snowSgId,'snow_layer_groups':snowLg,'snow_layer_group_ids':snowLgId,'kuband_season_groups':kubandSg,'kuband_season_group_ids':kubandSgId,'kuband_layer_groups':kubandLg,'kuband_layer_group_ids':kubandLgId,'layerGroupRelease':uPObj.layerGroupRelease,'seasonRelease':uPObj.seasonRelease,'createData':uPObj.createData,'bulkDeleteData':uPObj.bulkDeleteData},{})
+		return utility.response(1,{'rds_season_groups':rdsSg,'rds_season_group_ids':rdsSgId,'rds_layer_groups':rdsLg,'rds_layer_group_ids':rdsLgId,'accum_season_groups':accumSg,'accum_season_group_ids':accumSgId,'accum_layer_groups':accumLg,'accum_layer_group_ids':accumLgId,'snow_season_groups':snowSg,'snow_season_group_ids':snowSgId,'snow_layer_groups':snowLg,'snow_layer_group_ids':snowLgId,'kuband_season_groups':kubandSg,'kuband_season_group_ids':kubandSgId,'kuband_layer_groups':kubandLg,'kuband_layer_group_ids':kubandLgId,'layerGroupRelease':uPObj.layerGroupRelease,'seasonRelease':uPObj.seasonRelease,'createData':uPObj.createData,'bulkDeleteData':uPObj.bulkDeleteData},{})
 		
 	except:
 		return utility.errorCheck(sys)
