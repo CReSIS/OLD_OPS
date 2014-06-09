@@ -536,10 +536,12 @@ def deleteBulk(request):
 	
 	Input:
 		season: (string or list of strings) name of season to delete data from
-		
-	Optional Inputs:
-		segment: (string or list of strings) names of segments to delete
+		segment: (string or list of strings) names of segments to delete. An empty string deletes all segments.
 		only_layer_points: (boolean) if true only layer points are deleted
+		FROM MATLAB:
+			mat: (boolean) true
+			userName: (string) username of an authenticated user (or anonymous)
+			isAuthenticated (boolean) authentication status of a user
 		
 	Output:
 		status: (integer) 0:error 1:success 2:warning
@@ -551,28 +553,22 @@ def deleteBulk(request):
 	"""
 	models,data,app,cookies = utility.getInput(request) # get the input and models
 	
+	#Get user profile 
+	userProfileObj,status = utility.getUserProfile(cookies)
+	if status:
+		if not userProfileObj.isRoot and not userProfileObj.bulkDeleteData:
+			return utility.response(0,'ERROR: USER NOT AUTHORIZED TO BULK DELETE DATA.',{})
+	else:
+		return utility.response(0,userProfileObj,{});
+	
 	# parse the data input
 	try:
 	
 		inSeasonNames = utility.forceList(data['properties']['season'])
 	
-		# parse the optional input
-		try:
+		inSegmentNames = utility.forceList(data['properties']['segment'])
 		
-			useAllSegments = False
-			inSegmentNames = utility.forceList(data['properties']['segment'])
-		
-		except:
-		
-				useAllSegments = True
-				
-		try:
-		
-			deleteFull=data['properties']['only_layer_points']
-			
-		except:
-		
-			deleteFull=True
+		deleteOnlyLayerPoints=data['properties']['only_layer_points']
 			
 	except:
 		return utility.errorCheck(sys)
@@ -580,14 +576,14 @@ def deleteBulk(request):
 	# perform the function logic
 	try:
 		
-		if useAllSegments:
+		if not inSegmentNames:
 		
 			inSegmentNames = models.segments.objects.filter(season__name__in=inSeasonNames).values_list('name',flat=True) # get all the segments for the given seasons
 			
 		# delete layer points
 		_ = models.layer_points.objects.filter(point_path__season__name__in=inSeasonNames,point_path__segment__name__in=inSegmentNames).delete()
 		
-		if deleteFull:
+		if not deleteOnlyLayerPoints:
 		
 			_ = models.segments.objects.filter(name__in=inSegmentNames).delete() # delete segments
 			
