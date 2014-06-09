@@ -576,7 +576,7 @@ def deleteBulk(request):
 	# perform the function logic
 	try:
 		
-		if not inSegmentNames:
+		if len(inSegmentNames) == 1 and not inSegmentNames[0]:
 		
 			inSegmentNames = models.segments.objects.filter(season__name__in=inSeasonNames).values_list('name',flat=True) # get all the segments for the given seasons
 			
