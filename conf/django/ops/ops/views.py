@@ -79,6 +79,13 @@ def createPath(request):
 		linePathGeom = GEOSGeometry(ujson.dumps(inLinePath)) # create a geometry object
 		
 		# get or create the segments object
+		#Check of the segment exists already:
+		segmentsObj = models.segments.objects.filter(season_id=seasonsObj.pk,radar_id=radarsObj.pk,name=inSegment).values_list('pk',flat=True)
+		
+		if segmentsObj:
+			errorStr = 'SEGMENT %s HAS ALREADY BEEN CREATED' % inSegment
+			return utility.response(0,errorStr,{})
+		
 		segmentsObj,_ = models.segments.objects.get_or_create(season_id=seasonsObj.pk,radar_id=radarsObj.pk,name=inSegment,geom=linePathGeom)
 
 		frmPks = []
@@ -93,16 +100,10 @@ def createPath(request):
 			
 			# get the frame pk (based on start gps time list)
 			frmId = frmPks[max([gpsIdx for gpsIdx in range(len(inFrameStartGpsTimes)) if inFrameStartGpsTimes[gpsIdx] <= inGpsTime[ptIdx]])]
-			
-			# prepare the gps time and perform exact comparison in the database
-			curGpsTime = Decimal(inGpsTime[ptIdx]).quantize(Decimal('.000001'))
-			pointPathExists = models.point_paths.objects.filter(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=curGpsTime).exists()
-			
-			if not pointPathExists:
-				
-				# add a point path object to the output list
-				pointPathGeom = GEOSGeometry('POINT Z ('+repr(ptGeom[0])+' '+repr(ptGeom[1])+' '+str(inElevation[ptIdx])+')',srid=4326) # create a point geometry object
-				pointPathObjs.append(models.point_paths(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=inGpsTime[ptIdx],roll=inRoll[ptIdx],pitch=inPitch[ptIdx],heading=inHeading[ptIdx],geom=pointPathGeom))
+						
+			# add a point path object to the output list
+			pointPathGeom = GEOSGeometry('POINT Z ('+repr(ptGeom[0])+' '+repr(ptGeom[1])+' '+str(inElevation[ptIdx])+')',srid=4326) # create a point geometry object
+			pointPathObjs.append(models.point_paths(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=inGpsTime[ptIdx],roll=inRoll[ptIdx],pitch=inPitch[ptIdx],heading=inHeading[ptIdx],geom=pointPathGeom))
 		
 		if len(pointPathObjs) > 0:
 			_ = models.point_paths.objects.bulk_create(pointPathObjs) # bulk create the point paths objects
