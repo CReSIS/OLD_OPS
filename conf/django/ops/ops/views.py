@@ -1,4 +1,4 @@
-from django.db import connection,DatabaseError
+from django.db import connection,DatabaseError,transaction
 from django.db.models import Max,Min
 from django.contrib.gis.geos import GEOSGeometry,Point,LineString,WKBReader
 from django.contrib.gis.gdal import SpatialReference,CoordTransform
@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.http import HttpResponse
 from utility import ipAuth
 from decimal import Decimal
-import utility,sys,os,datetime,line_profiler,simplekml,ujson,csv,time,math
+import utility,sys,os,datetime,line_profiler,simplekml,ujson,csv,time,math,tempfile
 from scipy.io import savemat
 import numpy as np
 from collections import OrderedDict
@@ -17,6 +17,7 @@ from collections import OrderedDict
 # =======================================
 
 @ipAuth()
+@transaction.atomic()
 def createPath(request):
 	""" Creates/Updates entries in the segments, point paths, seasons, locations, and radars tables.
 	
@@ -78,7 +79,6 @@ def createPath(request):
 		
 		linePathGeom = GEOSGeometry(ujson.dumps(inLinePath)) # create a geometry object
 		
-		# get or create the segments object
 		#Check of the segment exists already:
 		segmentsObj = models.segments.objects.filter(season_id=seasonsObj.pk,radar_id=radarsObj.pk,name=inSegment).values_list('pk',flat=True)
 		
@@ -86,31 +86,40 @@ def createPath(request):
 			errorStr = 'SEGMENT %s HAS ALREADY BEEN CREATED' % inSegment
 			return utility.response(0,errorStr,{})
 		
+		#Create the segment if it does not exist.
 		segmentsObj,_ = models.segments.objects.get_or_create(season_id=seasonsObj.pk,radar_id=radarsObj.pk,name=inSegment,geom=linePathGeom)
-
+		
 		frmPks = []
 		for frmId in range(int(inFrameCount)):
 			frameName = inSegment+("_%03d"%(frmId+1))
 			frmObj,_ = models.frames.objects.get_or_create(name=frameName,segment_id=segmentsObj.pk) # get or create the frame object
 			frmPks.append(frmObj.pk) # store the pk for use in point paths
-
-		# build the point path objects for bulk create
-		pointPathObjs = []
-		for ptIdx,ptGeom in enumerate(linePathGeom):
+				
+		# Open a temporary file to hold point path records
+		with tempfile.NamedTemporaryFile(mode='w',prefix='tmp_',suffix='_pointPaths.csv',delete=False) as f:
+			# Create a csv writer object
+			fwrite = csv.writer(f,delimiter=',')
 			
-			# get the frame pk (based on start gps time list)
-			frmId = frmPks[max([gpsIdx for gpsIdx in range(len(inFrameStartGpsTimes)) if inFrameStartGpsTimes[gpsIdx] <= inGpsTime[ptIdx]])]
-						
-			# add a point path object to the output list
-			pointPathGeom = GEOSGeometry('POINT Z ('+repr(ptGeom[0])+' '+repr(ptGeom[1])+' '+str(inElevation[ptIdx])+')',srid=4326) # create a point geometry object
-			pointPathObjs.append(models.point_paths(location_id=locationsObj.pk,season_id=seasonsObj.pk,segment_id=segmentsObj.pk,frame_id=frmId,gps_time=inGpsTime[ptIdx],roll=inRoll[ptIdx],pitch=inPitch[ptIdx],heading=inHeading[ptIdx],geom=pointPathGeom))
-		
-		if len(pointPathObjs) > 0:
-			_ = models.point_paths.objects.bulk_create(pointPathObjs) # bulk create the point paths objects
-		
-		# calculate and insert crossovers
+			for ptIdx,ptGeom in enumerate(linePathGeom):
+				# get the frame pk (based on start gps time list)
+				frmId = frmPks[max([gpsIdx for gpsIdx in range(len(inFrameStartGpsTimes)) if inFrameStartGpsTimes[gpsIdx] <= inGpsTime[ptIdx]])]			
+				# Create a GEOSGeometry of the point path
+				pointPathGeom = GEOSGeometry('POINT Z ('+repr(ptGeom[0])+' '+repr(ptGeom[1])+' '+str(inElevation[ptIdx])+')',srid=4326) # create a point geometry object
+				# Write the row to the temp csv file
+				fwrite.writerow([locationsObj.pk, seasonsObj.pk, segmentsObj.pk,frmId,inGpsTime[ptIdx], inRoll[ptIdx], inPitch[ptIdx], inHeading[ptIdx], str(pointPathGeom.hexewkb)])
+				
+		# Create a cursor to interact with the database
 		cursor = connection.cursor()
 		try:	
+			# Change permissions on temp file to allow postgres read permission
+			os.chmod(f.name,100)
+			# Copy the point paths from the temp csv to the databse. 
+			copySql = "COPY {app}_point_paths (location_id,season_id,segment_id,frame_id,gps_time,roll,pitch,heading,geom) FROM %s DELIMITER ',';".format(app=app)
+			cursor.execute(copySql, [f.name])
+			# Remove the temporary file.
+			os.remove(f.name)
+			
+			### calculate and insert crossovers	###
 			#Get the correct srid for the locaiton
 			proj = utility.epsgFromLocation(inLocationName)
 			# Create a GEOS Well Known Binary reader and initialize vars                 
@@ -372,6 +381,7 @@ def deleteLayer(request):
 		return utility.errorCheck(sys)
 
 @ipAuth()
+@transaction.atomic()
 def createLayerPoints(request): 
 	""" Creates entries in layer points.
 	
@@ -430,8 +440,15 @@ def createLayerPoints(request):
 				continue
 			donePointPaths.append(inPointPathIds[ptIdx])
 			layerPointsObjs.append(models.layer_points(layer_id=layerId,point_path_id=inPointPathIds[ptIdx],twtt=inTwtt[ptIdx],type=inType[ptIdx],quality=inQuality[ptIdx],user=inUserName))
+			# Don't insert more than 500 points in a single bulk_create.
+			if len(layerPointsObjs) > 500:
+				try:
+					_ = models.layer_points.objects.bulk_create(layerPointsObjs)
+				except IntegrityError:
+					return utility.response(0,'ERROR: DUPLICATE LAYER POINTS.',{})
+				layerPointsObjs = []
 		
-		# bulk create the layer points (handle integrity error due to constraint)
+		# bulk create any remaining layer points
 		if len(layerPointsObjs) > 0:
 			try:
 				_ = models.layer_points.objects.bulk_create(layerPointsObjs)
