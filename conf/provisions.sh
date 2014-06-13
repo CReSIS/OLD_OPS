@@ -306,7 +306,13 @@ HOME=/
 0 2 * * * root rm -f $(find "$webDataDir"/datapacks/*.tar.gz -mtime +7);
 
 # VACUUM ANALYZE-ONLY THE ENTIRE OPS DATABASE AT 2 AM DAILY
-30 * * * * root su postgres -c 'psql -d "$dbName" -c 'VACCUM(analyze);'''"
+30 * * * * root su postgres -c 'psql -d "$dbName" -c 'VACCUM(analyze);'''
+
+# WEEKLY POSTGRESQL REPORT CREATION AT 11 PM SUNDAY
+0 23 * * 7 root sh /vagrant/conf/tools/createWeeklyPostgresqlReport.sh
+
+# REMOVE POSTGRESQL REPORTS OLDER THAN 2 MONTHS EVERY SUNDAY AT 11 PM
+0 23 * * 7 root rm -f $(find "$snfsBasePath"postgresql_reports/*.html -mtime +60);"
 
 echo -n > /etc/crontab
 echo "$cronStr" > /etc/crontab
@@ -392,7 +398,16 @@ if [ $newDb -eq 1 ]; then
 	sed -i "s,#track_counts = on,track_counts = on,g" $pgConfDir
 	sed -i "s,#autovacuum = on,autovacuum = on,g" $pgConfDir
 	sed -i "s,local   all             all                                     peer,local   all             all                                     trust,g" $pgConfDir
-
+	# THE FOLLOWING SET UP POSTGRESQL LOGGING:
+	sed -i "s,#log_min_duration_statement = -1, log_min_duration_statement = 1500,g" $pgConfDir
+	sed -i "s@log_line_prefix = '< %m >'@log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d '@g" $pgConfDir
+	sed -i "s,#log_checkpoints = off,log_checkpoints = on,g" $pgConfDir
+	sed -i "s,#log_connections = off,log_connections = on,g" $pgConfDir
+	sed -i "s,#log_disconnections = off,log_disconnections = on,g" $pgConfDir
+	sed -i "s,#log_lock_waits = off,log_lock_waits = on,g" $pgConfDir
+	sed -i "s,#log_temp_files = -1,log_temp_files = 0,g" $pgConfDir
+	sed -i "s,lc_messages = 'en_US.UTF-8',lc_messages = 'C',g" $pgConfDir
+	
 	# START UP THE POSTGRESQL SERVER
 	service postgresql-9.3 start
 
@@ -480,6 +495,11 @@ if [ $installPgData -eq 1 ]; then
 		sh /vagrant/conf/bulkload/initdataload.sh
 	fi
 fi
+
+# --------------------------------------------------------------------
+# INSTALL PGBADGER FOR LOG REPORT GENERATION
+
+yum install -y pgbadger
 
 # --------------------------------------------------------------------
 # INSTALL AND CONFIGURE APACHE TOMCAT AND GEOSERVER(WAR)
