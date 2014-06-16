@@ -387,7 +387,7 @@ def createLayerPoints(request):
 	
 	Input:
 		point_path_id: (integer or list of integers) point path ids to update or create layer points on
-		lyr_name: (string) name of the layer for the points
+		lyr_name OR lyr_id: (string) name of the layer  OR (integer) id of the layer for the points
 		twtt: (float or list of floats) two-way travel time of the points
 		type: (integer or list of integers) pick type of the points (1:manual 2:auto)
 		quality: (integer or list of integers) quality value of the points (1:good 2:moderate 3:derived)
@@ -410,7 +410,17 @@ def createLayerPoints(request):
 	try:
 	
 		inPointPathIds = utility.forceList(data['properties']['point_path_id'])
-		inLyrName = data['properties']['lyr_name']
+		
+		# Get the layer name or ID:
+		try:
+			inLyrName = data['properties']['lyr_name']
+			# get the layer id
+			layerId = models.layers.objects.filter(name=inLyrName,deleted=False).values_list('pk',flat=True)[0] # get the layer object
+			if not layerId:
+				return utility.response(0,'NO LAYER BY THE GIVEN NAME FOUND',{})
+		except:
+			layerId = data['properties']['lyr_id']
+			
 		inTwtt = utility.forceList(data['properties']['twtt'])
 		inType = utility.forceList(data['properties']['type'])
 		inQuality = utility.forceList(data['properties']['quality'])
@@ -422,9 +432,6 @@ def createLayerPoints(request):
 	# perform the function logic
 	try:
 	
-		# get the layer id
-		layerId = models.layers.objects.filter(name=inLyrName,deleted=False).values_list('pk',flat=True)[0] # get the layer object
-		
 		# delete all layer points passed in
 		layerPointsObj = models.layer_points.objects.filter(point_path_id__in=inPointPathIds,layer_id=layerId)
 		if layerPointsObj.exists():
@@ -469,13 +476,13 @@ def deleteLayerPoints(request):
 		stop_point_path_id: (integer) the stop point path id of the points for deletion
 		min_twtt: (float) the minimum two-way travel time of the points for deletion
 		max_twtt: (float) the maximum two-way travel time of the points for deletion
-		lyr_name: (string) the name of the layer of the points for deletion
+		lyr_name OR lyr_id: (string) name of the layer  OR (integer) id of the layer for the points to delete
 			OR
 		start_gps_time: (float) the start gps time of the points for deletion
 		stop_gps_time: (float) the stop gps time of the points for deletion
 		min_twtt: (float) the minimum two-way travel time of the points for deletion
 		max_twtt: (float) the maximum two-way travel time of the points for deletion
-		lyr_name: (string) the name of the layer of the points for deletion
+		lyr_name OR lyr_id: (string) name of the layer  OR (integer) id of the layer for the points to delete
 		segment: (string) the name of the segment of the points for deletion
 		location: (string) the name of the location of the points for deletion
 		
@@ -491,7 +498,16 @@ def deleteLayerPoints(request):
 	
 		inMinTwtt = data['properties']['min_twtt']
 		inMaxTwtt = data['properties']['max_twtt']
-		inLyrName = data['properties']['lyr_name']
+		
+		# Get the layer name or ID:
+		try:
+			inLyrName = data['properties']['lyr_name']
+			# get the layer id
+			layerId = models.layers.objects.filter(name=inLyrName,deleted=False).values_list('pk',flat=True)[0] # get the layer object
+			if not layerId:
+				return utility.response(0,'NO LAYER BY THE GIVEN NAME FOUND',{})
+		except:
+			layerId = data['properties']['lyr_id']
 		
 		# parse the optional inputs
 		try:
@@ -532,7 +548,7 @@ def deleteLayerPoints(request):
 		maxTwttN = inMaxTwtt.quantize(Decimal(10) ** -11).next_plus()
 		
 		# get the layer points objects for deletion
-		layerPointsObj = models.layer_points.objects.filter(point_path_id__in=inPointPathIds,twtt__range=(minTwttN,maxTwttN),layer__name=inLyrName)
+		layerPointsObj = models.layer_points.objects.filter(point_path_id__in=inPointPathIds,twtt__range=(minTwttN,maxTwttN),layer_id=layerId)
 		
 		if len(layerPointsObj) == 0:
 		
