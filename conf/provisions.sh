@@ -309,7 +309,7 @@ HOME=/
 30 * * * * root su postgres -c 'psql -d "$dbName" -c 'VACCUM(analyze);'''
 
 # WEEKLY POSTGRESQL REPORT CREATION AT 11 PM SUNDAY
-0 23 * * 7 root sh /vagrant/conf/tools/createWeeklyPostgresqlReport.sh
+0 23 * * 7 root pgbadger -f stderr -p '%t [%p]: [%l-1] user=%u,db=%d '  -O /cresis/snfs1/web/ops2/postgresql_reports/ -o postgresql_report_$(date +'%Y-%m-%d').html /cresis/snfs1/web/ops2/pgsql/9.3/pg_log/postgresql-*.log
 
 # REMOVE POSTGRESQL REPORTS OLDER THAN 2 MONTHS EVERY SUNDAY AT 11 PM
 0 23 * * 7 root rm -f $(find "$snfsBasePath"postgresql_reports/*.html -mtime +60);"
