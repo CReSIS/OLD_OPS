@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.http import HttpResponse
 from utility import ipAuth
 from decimal import Decimal
-import utility,sys,os,datetime,line_profiler,simplekml,ujson,csv,time,math,tempfile
+import utility,sys,os,datetime,line_profiler,simplekml,ujson,csv,time,math,tempfile,logging
 from scipy.io import savemat
 import numpy as np
 from collections import OrderedDict
@@ -41,6 +41,7 @@ def createPath(request):
 		data: string status message
 	
 	"""
+
 	models,data,app,cookies = utility.getInput(request) # get the input and models
 	
 	userProfileObj,status = utility.getUserProfile(cookies)
@@ -71,7 +72,10 @@ def createPath(request):
 		return utility.errorCheck(sys)
 	
 	try:
-
+		#Set up the basic logging configuration for createPath:
+		logging.basicConfig(filename='/cresis/snfs1/web/ops2/django_logs/createPath.log',format='%(levelname)s :: %(asctime)s :: %(message)s',datefmt='%c', level=logging.DEBUG)
+		logging.info('Segment %s of season %s is now loading',inSegment,inSeason)
+		
 		locationsObj,_ = models.locations.objects.get_or_create(name=inLocationName.lower()) # get or create the location 
 		seasonGroupsObj,_ = models.season_groups.objects.get_or_create(name=inSeasonGroup) # get or create the season  
 		seasonsObj,_ = models.seasons.objects.get_or_create(name=inSeason,season_group_id=seasonGroupsObj.pk,location_id=locationsObj.pk) # get or create the season   
@@ -84,10 +88,13 @@ def createPath(request):
 		
 		if segmentsObj:
 			errorStr = 'SEGMENT %s HAS ALREADY BEEN CREATED' % inSegment
+			logging.warning('SEGMENT %s of SEASON %s WAS ALREADY CREATED.',inSegment,inSeason)
 			return utility.response(0,errorStr,{})
 		
 		#Create the segment if it does not exist.
 		segmentsObj,_ = models.segments.objects.get_or_create(season_id=seasonsObj.pk,radar_id=radarsObj.pk,name=inSegment,geom=linePathGeom)
+		
+		logging.info('Segment %s of season %s has been created.',inSegment,inSeason)
 		
 		frmPks = []
 		for frmId in range(int(inFrameCount)):
@@ -107,7 +114,8 @@ def createPath(request):
 				pointPathGeom = GEOSGeometry('POINT Z ('+repr(ptGeom[0])+' '+repr(ptGeom[1])+' '+str(inElevation[ptIdx])+')',srid=4326) # create a point geometry object
 				# Write the row to the temp csv file
 				fwrite.writerow([locationsObj.pk, seasonsObj.pk, segmentsObj.pk,frmId,inGpsTime[ptIdx], inRoll[ptIdx], inPitch[ptIdx], inHeading[ptIdx], str(pointPathGeom.hexewkb)])
-				
+			
+		logging.info('Point paths CSV for segment %s of season %s has now been created (%s).',inSegment,inSeason,f.name)	
 		# Create a cursor to interact with the database
 		cursor = connection.cursor()
 		try:	
@@ -116,10 +124,12 @@ def createPath(request):
 			# Copy the point paths from the temp csv to the databse. 
 			copySql = "COPY {app}_point_paths (location_id,season_id,segment_id,frame_id,gps_time,roll,pitch,heading,geom) FROM %s DELIMITER ',';".format(app=app)
 			cursor.execute(copySql, [f.name])
+			logging.info('Point paths CSV for segment %s of season %s has been copied to the database.',inSegment,inSeason)
 			# Remove the temporary file.
 			os.remove(f.name)
 			
 			### calculate and insert crossovers	###
+			logging.info('Non self-intersecting crossovers for segment %s of season %s are now being found.',inSegment,inSeason)
 			#Get the correct srid for the locaiton
 			proj = utility.epsgFromLocation(inLocationName)
 			# Create a GEOS Well Known Binary reader and initialize vars                 
@@ -166,6 +176,7 @@ def createPath(request):
 			# every linestring except the last linestring as a crossover and the
 			# first point of every linestring except the first linestring as a
 			# crossover.
+			logging.info('Self-intersecting crossovers for segment %s of season %s are now being found.',inSegment,inSeason)
 			sql_str = "WITH pts AS (SELECT id, geom FROM {app}_point_paths WHERE segment_id = {seg} ORDER BY gps_time) SELECT ST_UnaryUnion(ST_Transform(ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.id||')',4326)),{proj})) FROM pts;".format(app=app, proj=proj, seg=segmentsObj.pk)
 			cursor.execute(sql_str)
 			line = cursor.fetchone()
@@ -240,18 +251,22 @@ def createPath(request):
 	
 			# Check if any crossovers were found. 
 			if len(point_path_1_id) > 0:
+				logging.info('Crossovers for segment %s of season %s are being inserted.',inSegment,inSeason)
 				crossovers = []
 				#If so, package for bulk insert.
 				for i in range(len(point_path_1_id)):
 					crossovers.append(models.crossovers(point_path_1_id=point_path_1_id[i], point_path_2_id=point_path_2_id[i], angle=cross_angles[i], geom=cross_pts[i]))
 				#Bulk insert found crossovers into the database. 
 				_ = models.crossovers.objects.bulk_create(crossovers)
+			else:
+				logging.info('No crossovers for segment %s of season %s were found.',inSegment,inSeason)
 	
 		except: 
 			return utility.errorCheck(sys)
 		finally:
 			cursor.close()
 		
+		logging.info('Segment %s of season %s was successfully inserted.',inSegment,inSeason)
 		return utility.response(1,'SUCCESS: PATH INSERTION COMPLETED.',{})
 		
 	except:

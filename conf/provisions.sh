@@ -306,13 +306,16 @@ HOME=/
 0 2 * * * root rm -f $(find "$webDataDir"/datapacks/*.tar.gz -mtime +7);
 
 # VACUUM ANALYZE-ONLY THE ENTIRE OPS DATABASE AT 2 AM DAILY
-30 * * * * root su postgres -c 'psql -d "$dbName" -c 'VACCUM(analyze);'''
+0 2 * * * root su postgres -c 'psql -d "$dbName" -c 'VACCUM(analyze);'''
 
-# WEEKLY POSTGRESQL REPORT CREATION AT 11 PM SUNDAY
-0 23 * * 7 root pgbadger -f stderr -p '%t [%p]: [%l-1] user=%u,db=%d '  -O /cresis/snfs1/web/ops2/postgresql_reports/ -o postgresql_report_$(date +'%Y-%m-%d').html /cresis/snfs1/web/ops2/pgsql/9.3/pg_log/postgresql-*.log
+# WEEKLY POSTGRESQL REPORT CREATION AT 2 AM SUNDAY
+0 2 * * 7 root pgbadger -f stderr -p '%t [%p]: [%l-1] user=%u,db=%d '  -O /cresis/snfs1/web/ops2/postgresql_reports/ -o postgresql_report_$(date +'%Y-%m-%d').html /cresis/snfs1/web/ops2/pgsql/9.3/pg_log/postgresql-*.log;
 
-# REMOVE POSTGRESQL REPORTS OLDER THAN 2 MONTHS EVERY SUNDAY AT 11 PM
-0 23 * * 7 root rm -f $(find "$snfsBasePath"postgresql_reports/*.html -mtime +60);"
+# REMOVE POSTGRESQL REPORTS OLDER THAN 2 MONTHS EVERY SUNDAY AT 2 AM
+0 2 * * 7 root rm -f $(find "$snfsBasePath"postgresql_reports/*.html -mtime +60);
+
+# CLEAR THE CONTENTS OF THE DJANGO LOGS EVERY MONTH (FIRST OF MONTH, 2 AM)
+0 2 1 * * root > /cresis/snfs1/web/ops2/django_logs/createPath.log;"
 
 echo -n > /etc/crontab
 echo "$cronStr" > /etc/crontab
@@ -566,6 +569,8 @@ mkdir -m 777 -p $snfsBasePath"data/mat/"
 mkdir -m 777 -p $snfsBasePath"datapacktmp/"
 mkdir -m 777 -p  $snfsBasePath"data/datapacks/"
 mkdir -m 777 -p $snfsBasePath"data/reports/"
+mkdir -m 777 -P $snfsBasePath"postgresql_reports/"
+mkdir -m 777 -P $snfsBasePath"django_logs/"
 mkdir -m 777 -p /var/profile_logs/txt/
 
 # --------------------------------------------------------------------
