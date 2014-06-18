@@ -569,8 +569,8 @@ mkdir -m 777 -p $snfsBasePath"data/mat/"
 mkdir -m 777 -p $snfsBasePath"datapacktmp/"
 mkdir -m 777 -p  $snfsBasePath"data/datapacks/"
 mkdir -m 777 -p $snfsBasePath"data/reports/"
-mkdir -m 777 -P $snfsBasePath"postgresql_reports/"
-mkdir -m 777 -P $snfsBasePath"django_logs/"
+mkdir -m 777 -p $snfsBasePath"postgresql_reports/"
+mkdir -m 777 -p $snfsBasePath"django_logs/"
 mkdir -m 777 -p /var/profile_logs/txt/
 
 # --------------------------------------------------------------------
