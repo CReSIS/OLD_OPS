@@ -26,7 +26,7 @@ userProfile.accum_season_groups = [1,2]
 userProfile.kuband_season_groups = [1,2]
 userProfile.snow_season_groups = [1,2]
 userProfile.layerGroupRelease = True
-userProfile.bulkDeleteData = True
+userProfile.bulkDeleteData = False
 userProfile.createData = True
 userProfile.seasonRelease = True
 
