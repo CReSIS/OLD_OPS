@@ -24,10 +24,7 @@ DEBUG = False
 
 TEMPLATE_DEBUG = DEBUG
 
-ADMINS = (
-	('Kyle Purdon','kylepurdon@gmail.com'),
-	('Trey Stafford','treystaff@gmail.com'),
-)
+ADMINS = ()
 
 ALLOWED_HOSTS = ['ops.cresis.ku.edu','ops2.cresis.ku.edu','192.168.111.222']
 

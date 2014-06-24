@@ -462,6 +462,48 @@ echo $NEW_SECRET_KEY >> /etc/secret_key.txt
 # MODIFY THE DATABASE NAME
 sed -i "s,		'NAME': 'ops',		'NAME': '$dbName',g" /var/django/ops/ops/settings.py
 sed -i "s,		'USER': 'admin',		'USER': '$dbUser',,g" /var/django/ops/ops/settings.py
+
+#ADD DJANGO ADMINS.
+while true; do
+	if [[ -z "$adminStr" ]]; then
+		read -p "Do you wish to add an admin to Django (receives error messages)?" yn
+	else
+		read -p "Would you like to add another admin to Django (also receives error messages)?" yn
+	fi
+	case $yn in 
+		[Yy]* ) 
+			echo "Type the admin's name, followed by [ENTER]:";
+			read name;
+			echo "Type the admin's email, followed by [ENTER]:";
+			read email; 
+			read -p "are the name ($name) and email ($email) correct?" yn
+			case $yn in 
+				[Yy]* )adminStr="$adminStr \('$name'\, '$email'\)\,";;
+				* ) echo "Please answer yes or no.";;
+			esac;;
+		[Nn]* ) break;;
+		* ) echo "Please answer yes or no.";;
+	esac
+done
+sed -i "s,ADMINS = (),ADMINS = ($adminStr),g" /var/django/ops/ops/settings.py
+
+#OPTIONALLY SET DJANGO TO BE IN DEBUG MODE. 			
+while true; do		
+
+	read -p "Would you like to have Django operate in debug mode (DEVELOPMENT ENVIRONMENT ONLY!)?" yn
+	case $yn in 
+		[Yy]* ) 
+			read -p "ARE YOU SURE YOU WANT DJANGO TO BE IN DEBUG MODE? THIS IS FOR DEVELOPMENT ENVIRONMENTS ONLY." yn
+			case $yn in 
+				[Yy]* ) 
+					sed -i "s,DEBUG = False,DEBUG = True,g" /var/django/ops/ops/settings.py;
+					break;;
+				* ) echo "Please answer yes or no.";;
+			esac;;
+		[Nn]* ) break;;
+		* ) echo "Please answer yes or no.";;
+	esac
+done
 if [ $newDb -eq 1 ]; then
 
 	# SYNC THE DJANGO DEFINED DATABASE
