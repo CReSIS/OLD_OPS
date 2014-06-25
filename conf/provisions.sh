@@ -306,7 +306,7 @@ HOME=/
 0 2 * * * root rm -f $(find "$webDataDir"/datapacks/*.tar.gz -mtime +7);
 
 # VACUUM ANALYZE-ONLY THE ENTIRE OPS DATABASE AT 2 AM DAILY
-0 2 * * * root su postgres -c 'psql -d "$dbName" -c 'VACCUM(analyze);'''
+0 2 * * * root su postgres -c 'psql -d "$dbName" -c 'VACUUM ANALYZE;'''
 
 # WEEKLY POSTGRESQL REPORT CREATION AT 2 AM SUNDAY
 0 2 * * 7 root pgbadger -f stderr -p '%t [%p]: [%l-1] user=%u,db=%d '  -O /cresis/snfs1/web/ops2/postgresql_reports/ -o postgresql_report_$(date +'%Y-%m-%d').html /cresis/snfs1/web/ops2/pgsql/9.3/pg_log/postgresql-*.log;
