@@ -309,7 +309,7 @@ HOME=/
 0 2 * * * root sh /vagrant/conf/tools/vacuumAnalyze.sh ops
 
 # WEEKLY POSTGRESQL REPORT CREATION AT 2 AM SUNDAY
-0 2 * * 7 root sh /vagrant/conf/tools/createPostgresqlReport.sh
+0 2 * * 7 root sh /vagrant/conf/tools/createPostgresqlReport.sh "$snfsBasePath"postgresql_reports/
 
 # REMOVE POSTGRESQL REPORTS OLDER THAN 2 MONTHS EVERY SUNDAY AT 2 AM
 0 2 * * 7 root rm -f $(find "$snfsBasePath"postgresql_reports/*.html -mtime +60);
