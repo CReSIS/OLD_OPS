@@ -2,6 +2,10 @@
 #
 # UPDATE DJANGO FROM REPO
 
+# Keep a copy of any existing eclipse project files.
+cp -f /var/django/ops/.project /tmp/.project_tmp > /dev/null 2>&1
+cp -f /var/django/ops/.pydevproject /tmp/.pydevproject_tmp > /dev/null 2>&1
+
 cp -f /var/django/ops/ops/settings.py /tmp/DjangoSettings.old
 rm -rf /var/django/*
 cp -rf /vagrant/conf/django/* /var/django/
@@ -11,6 +15,7 @@ while true; do
 	read -p "Update settings.py?" yn
 	case $yn in 
 		[Yy]* ) 
+			rm -f /tmp/DjangoSettings.old;
 			while true; do
 				if [[ -z "$adminStr" ]]; then
 					read -p "Do you wish to add an admin to Django (receives error messages)?" yn
@@ -59,3 +64,7 @@ while true; do
 		* ) echo "Please answer yes or no.";;
 	esac
 done
+
+#Move any existing eclipse project files back in place.
+mv -f /tmp/.project_tmp /var/django/ops/.project > /dev/null 2>&1
+mv -f /tmp/.pydevproject_tmp /var/django/ops/.pydevproject > /dev/null 2>&1
