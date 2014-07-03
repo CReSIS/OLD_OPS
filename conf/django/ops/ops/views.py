@@ -336,7 +336,7 @@ def createLayer(request):
 		if isNew:
 			lyrGroupsObj.public = inGroupStatus
 			lyrGroupsObj.save(update_fields=['public'])
-			eval('userProfileObj.'+app+'_layer_groups.append(lyrGroupObj.pk)')
+			eval('userProfileObj.'+app+'_layer_groups.add(lyrGroupsObj.pk)') # add one new entry in opsuser_userprofile_sys_layer_groups
 			userProfileObj.save()
 		
 		lyrObj,isNew = models.layers.objects.get_or_create(name=inLyrName,layer_group_id=lyrGroupsObj.pk) # get or create the layer
