@@ -1720,10 +1720,9 @@ def getCrossoversReport(request):
 	Input:
 		location: (string)
 		lyr_name: (string or list of strings)
+			'all' will fetch crossovers for all layers
 		
 		seasons: (string or list of strings)
-			OR
-		point_path_id: (integer or list of integers)
 			OR
 		frame: (string or list of strings)
 		
@@ -1733,51 +1732,39 @@ def getCrossoversReport(request):
 	"""
 	try:
 		models,data,app,cookies = utility.getInput(request) # get the input and models
-		
+	
 		# parse the data input
-		
+	
 		inLocationName = utility.forceList(data['properties']['location'])
 		inLayerNames = utility.forceList(data['properties']['lyr_name'])
 		try:
-			getPointPathIds = False
 			inSeasonNames = utility.forceTuple(data['properties']['seasons'])
 		except:
-			inSeasonNames = False
+			inSeasonNames = False	
 			try:
-				getPointPathIds = False
-				inPointPathIds = utility.forceTuple(data['properties']['point_path_id'])
-		
+				inFrameNames = utility.forceTuple(data['properties']['frame'])
+			
 			except:
 			
-				try:
-				
-					getPointPathIds = True
-					inFrameNames = utility.forceList(data['properties']['frame'])
-				
-				except:
-				
-					return utility.response(0,'ERROR: POINT PATH IDS, FRAME NAMES, OR SEASON NAMES MUST BE GIVEN',{})
+				return utility.response(0,'ERROR: FRAME NAMES OR SEASON NAMES MUST BE GIVEN',{})
 	
 	
 		# perform the function logic
-
 		#Get layer ids: 
-		layerIds = utility.forceTuple(list(models.layers.objects.filter(name__in=inLayerNames).values_list('pk',flat=True)))
-			
-		if getPointPathIds:
+		if len(inLayerNames)==1 and inLayerNames[0].lower() == 'all':
+			layerIds = utility.forceTuple(list(models.layers.objects.values_list('pk',flat=True)))
+		else:
+			layerIds = utility.forceTuple(list(models.layers.objects.filter(name__in=inLayerNames).values_list('pk',flat=True)))
 		
-			# get the point path ids based on the given frames
-			inPointPathIds = utility.forceTuple(list(models.point_paths.objects.filter(frame_id__name__in=inFrameNames,location__name__in=inLocationName).values_list('pk',flat=True)))
-
 		cursor = connection.cursor() # create a database cursor
 		try:
 			#Create, execute, and retrieve results from query to get crossover error information. 
 			if inSeasonNames:
-				sql_str = "SELECT ABS(layer_elev_1-layer_elev_2), layer_elev_1, layer_elev_2, twtt_1, twtt_2, angle, (SELECT name FROM {app}_layers WHERE id = layer_id), season_1_name, season_2_name,frame_1_name,frame_2_name, gps_time_1, gps_time_2, ST_X(point_path_1_geom), ST_X(point_path_2_geom), ST_Y(point_path_1_geom), ST_Y(point_path_2_geom), ST_Z(point_path_1_geom), ST_Z(point_path_2_geom), ST_X(geom), ST_Y(geom) FROM {app}_crossover_errors WHERE layer_elev_1 IS NOT NULL AND layer_elev_2 IS NOT NULL AND layer_id IN %s AND (season_1_name IN %s OR season_2_name IN %s);".format(app=app)
-				cursor.execute(sql_str,[layerIds,inSeasonNames,inSeasonNames])
+				sql_str = "WITH cx1 AS (SELECT cx.point_path_1_id,cx.id, cx.angle, cx.geom, pp1.geom AS pp1_geom,pp1.gps_time, frm1.name AS frm1Name, ss1.name AS ss1Name, lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id JOIN {app}_frames frm1 ON pp1.frame_id=frm1.id JOIN {app}_seasons ss1 ON pp1.season_id=ss1.id  JOIN {app}_layer_points lp ON cx.point_path_1_id=lp.point_path_id AND lp.layer_id IN %s WHERE ss1.name IN %s), cx2 AS (SELECT cx.point_path_2_id, cx.id, pp2.geom AS pp2_geom,pp2.gps_time, frm2.name AS frm2Name, ss2.name AS ss2Name, lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id JOIN {app}_frames frm2 ON pp2.frame_id=frm2.id JOIN {app}_seasons ss2 ON pp2.season_id=ss2.id JOIN {app}_layer_points lp ON cx.point_path_2_id=lp.point_path_id AND lp.layer_id IN %s WHERE ss2.name IN %s) SELECT CASE WHEN COALESCE(cx1.layer_id,cx2.layer_id) = 1 THEN (ST_Z(cx1.pp1_geom) - cx1.twtt*299792458.0003452/2) ELSE (ST_Z(cx1.pp1_geom) - (SELECT twtt FROM {app}_layer_points WHERE layer_id=1 AND point_path_id = cx1.point_path_1_id)*299792458.0003452/2 - (cx1.twtt - (SELECT twtt FROM {app}_layer_points WHERE layer_id = 1 AND point_path_id = cx1.point_path_1_id))*299792458.0003452/2/sqrt(3.15)) END AS layer_elev_1, CASE WHEN COALESCE(cx1.layer_id,cx2.layer_id) = 1 THEN (ST_Z(cx2.pp2_geom) - cx2.twtt*299792458.0003452/2) ELSE (ST_Z(cx2.pp2_geom) - (SELECT twtt FROM {app}_layer_points WHERE layer_id=1 AND point_path_id = cx2.point_path_2_id)*299792458.0003452/2 - (cx2.twtt - (SELECT twtt FROM {app}_layer_points WHERE layer_id = 1 AND point_path_id = cx2.point_path_2_id))*299792458.0003452/2/sqrt(3.15)) END AS layer_elev_2,   cx1.twtt, cx2.twtt, cx1.angle, lyr.name, cx1.ss1Name,cx2.ss2Name, frm1Name, frm2Name, cx1.gps_time, cx2.gps_time, cx1.pp1_geom, cx2.pp2_geom, cx1.geom FROM cx1 JOIN cx2 ON cx1.id=cx2.id AND cx1.layer_id=cx2.layer_id JOIN {app}_layers lyr ON lyr.id=cx1.layer_id;".format(app=app)
+				cursor.execute(sql_str,[layerIds,inSeasonNames,layerIds,inSeasonNames])
 			else:
-				sql_str = "SELECT ABS(layer_elev_1-layer_elev_2), layer_elev_1, layer_elev_2, twtt_1, twtt_2, angle, (SELECT name FROM {app}_layers WHERE id = layer_id), season_1_name,season_2_name,frame_1_name, frame_2_name, gps_time_1, gps_time_2, ST_X(point_path_1_geom), ST_X(point_path_2_geom), ST_Y(point_path_1_geom), ST_Y(point_path_2_geom), ST_Z(point_path_1_geom), ST_Z(point_path_2_geom), ST_X(geom), ST_Y(geom) FROM {app}_crossover_errors WHERE layer_elev_1 IS NOT NULL AND layer_elev_2 IS NOT NULL AND layer_id IN %s AND (point_path_1_id IN %s OR point_path_2_id IN %s);".format(app=app)
-				cursor.execute(sql_str,[layerIds,inPointPathIds,inPointPathIds])
+				sql_str = "WITH cx1 AS (SELECT cx.point_path_1_id,cx.id, cx.angle, cx.geom, pp1.geom AS pp1_geom,pp1.gps_time, frm1.name AS frm1Name, ss1.name AS ss1Name, lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id JOIN {app}_frames frm1 ON pp1.frame_id=frm1.id JOIN {app}_seasons ss1 ON pp1.season_id=ss1.id  JOIN {app}_layer_points lp ON cx.point_path_1_id=lp.point_path_id AND lp.layer_id IN %s WHERE frm1.name IN %s), cx2 AS (SELECT cx.point_path_2_id, cx.id, pp2.geom AS pp2_geom,pp2.gps_time, frm2.name AS frm2Name, ss2.name AS ss2Name, lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id JOIN {app}_frames frm2 ON pp2.frame_id=frm2.id JOIN {app}_seasons ss2 ON pp2.season_id=ss2.id JOIN {app}_layer_points lp ON cx.point_path_2_id=lp.point_path_id AND lp.layer_id IN %s WHERE frm2.name IN %s) SELECT CASE WHEN COALESCE(cx1.layer_id,cx2.layer_id) = 1 THEN (ST_Z(cx1.pp1_geom) - cx1.twtt*299792458.0003452/2) ELSE (ST_Z(cx1.pp1_geom) - (SELECT twtt FROM {app}_layer_points WHERE layer_id=1 AND point_path_id = cx1.point_path_1_id)*299792458.0003452/2 - (cx1.twtt - (SELECT twtt FROM {app}_layer_points WHERE layer_id = 1 AND point_path_id = cx1.point_path_1_id))*299792458.0003452/2/sqrt(3.15)) END AS layer_elev_1, CASE WHEN COALESCE(cx1.layer_id,cx2.layer_id) = 1 THEN (ST_Z(cx2.pp2_geom) - cx2.twtt*299792458.0003452/2) ELSE (ST_Z(cx2.pp2_geom) - (SELECT twtt FROM {app}_layer_points WHERE layer_id=1 AND point_path_id = cx2.point_path_2_id)*299792458.0003452/2 - (cx2.twtt - (SELECT twtt FROM {app}_layer_points WHERE layer_id = 1 AND point_path_id = cx2.point_path_2_id))*299792458.0003452/2/sqrt(3.15)) END AS layer_elev_2,   cx1.twtt, cx2.twtt, cx1.angle, lyr.name, cx1.ss1Name,cx2.ss2Name, frm1Name, frm2Name, cx1.gps_time, cx2.gps_time, cx1.pp1_geom, cx2.pp2_geom, cx1.geom FROM cx1 JOIN cx2 ON cx1.id=cx2.id AND cx1.layer_id=cx2.layer_id JOIN {app}_layers lyr ON lyr.id=cx1.layer_id;".format(app=app)
+				cursor.execute(sql_str,[layerIds,inFrameNames,layerIds,inFrameNames])
 			crossoverRows = cursor.fetchall()
 			
 		except DatabaseError as dberror:
@@ -1800,34 +1787,63 @@ def getCrossoversReport(request):
 			
 			# write the csv file
 			with open(serverFn,'wb') as csvFile:
+				
+				# Create a GEOS Well Known Binary reader               
+				wkb_r = WKBReader()
+				
+				# Create a python csv writer 
 				csvWriter = csv.writer(csvFile,delimiter=',',quoting=csv.QUOTE_NONE)
+				
+				#Write the header to the csv file
 				csvWriter.writerow(csvHeader)
+				
+				#Write each crossover result to the csv file
 				for row in crossoverRows:
-					csvWriter.writerow([
-						"%.5f" % row[0], 
-						"%.5f" % row[1],
-						"%.5f" % row[2],
-						"%.8f" % row[3],
-						"%.8f" % row[4],
-						"%.3f" % row[5],
-						row[6], 
-						row[7],
-						row[8],
-						row[9],
-						row[10],
-						"%.3f" % (float(time.gmtime(row[11]).tm_hour*3600.0 + time.gmtime(row[11]).tm_min*60.0 + time.gmtime(row[11]).tm_sec)),
-						"%.3f" % (float(time.gmtime(row[12]).tm_hour*3600.0 + time.gmtime(row[12]).tm_min*60.0 + time.gmtime(row[12]).tm_sec)),
-						(time.strftime('%Y%m%d',time.gmtime(row[11]))),
-						(time.strftime('%Y%m%d',time.gmtime(row[12]))),
-						"%.8f" % row[13],
-						"%.8f" % row[14],
-						"%.5f" % row[15],
-						"%.8f" % row[16],
-						"%.8f" % row[17],
-						"%.5f" % row[18],
-						"%.8f" % row[19],
-						"%.8f" % row[20]
-					])
+
+					if row[0] is not None:
+						layerElev1 = "%.5f" % row[0]
+					else: 
+						layerElev1 = None
+					if row[1] is not None:
+						layerElev2 = "%.5f" % row[1]
+					else: 
+						layerElev2 = None
+					
+					# Only write the result if an error can be reported.
+					if layerElev1 is not None and layerElev2 is not None:
+						#Extract variables from each row for writing to csv
+						ppGeom1 = wkb_r.read(row[12])
+						ppGeom2 = wkb_r.read(row[13])
+						crossGeom = wkb_r.read(row[14])
+						error = "%.5f" % math.fabs(row[0]-row[1])
+						twtt1 = str(row[2].quantize(Decimal('0.00000001')))
+						twtt2 = str(row[3].quantize(Decimal('0.00000001')))
+						#Write each row as a record to a csv file
+						csvWriter.writerow([
+							error, 
+							layerElev1,
+							layerElev2,
+							twtt1,
+							twtt2,
+							"%.3f" % row[4],
+							row[5], 
+							row[6],
+							row[7],
+							row[8],
+							row[9],
+							"%.3f" % (float(time.gmtime(row[10]).tm_hour*3600.0 + time.gmtime(row[10]).tm_min*60.0 + time.gmtime(row[10]).tm_sec)),
+							"%.3f" % (float(time.gmtime(row[11]).tm_hour*3600.0 + time.gmtime(row[11]).tm_min*60.0 + time.gmtime(row[11]).tm_sec)),
+							(time.strftime('%Y%m%d',time.gmtime(row[10]))),
+							(time.strftime('%Y%m%d',time.gmtime(row[11]))),
+							"%.8f" % ppGeom1.x,
+							"%.8f" % ppGeom2.x,
+							"%.5f" % ppGeom1.y,
+							"%.8f" % ppGeom2.y,
+							"%.8f" % ppGeom1.z,
+							"%.5f" % ppGeom2.z,
+							"%.8f" % crossGeom.x,
+							"%.8f" % crossGeom.y
+						])
 			
 			# return the output
 			return utility.response(1,webFn,{})
