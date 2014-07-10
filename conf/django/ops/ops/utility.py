@@ -46,10 +46,11 @@ def ipAuth():
 		return wrapper
 	return decorator
 
-def errorCheck(sys):
+def errorCheck(exception,sys):
 	""" Creates a human readable error string from a system error object.
 	
 	Input:
+		exception: an exception instance
 		sys: a system error object occuring after a python exception
 		
 	Output:
@@ -63,10 +64,19 @@ def errorCheck(sys):
 		errorType = error[0]
 		errorFile = traceback.extract_tb(error[2])[0][0]
 		errorMod = traceback.extract_tb(error[2])[0][2]
-		errorOut = str(errorType)+' ERROR IN '+errorFile+'/'+ errorMod+' AT LINE '+str(errorLine)+':: ERROR: '+errorStr
+		try:
+			trace = traceback.extract_tb(error[2])[1]
+			errorOut = str(errorType)+' ERROR IN '+errorFile+'/'+ errorMod+' AT LINE '+str(errorLine)+':: ERROR: '+errorStr + '  | TRACEBACK: ' + trace[0] + ' LINE ' + str(trace[1])
+		except:
+			errorOut = str(errorType)+' ERROR IN '+errorFile+'/'+ errorMod+' AT LINE '+str(errorLine)+':: ERROR: '+errorStr
+		
 		return response(0, ujson.dumps(errorOut),{})
 	except:
-		return response(0, 'ERROR: ERROR CHECK FAILED ON EXCEPTION.',{})
+		try: 
+			#If error check fails, try to return some useful info. 
+			return response(0, str(exception),{})
+		except:
+			return response(0, 'ERROR: ERROR CHECK FAILED ON EXCEPTION.',{})
 
 def epsgFromLocation(locationName):
 	""" Gets an epsg code based on a mapped string location name.
@@ -85,7 +95,7 @@ def epsgFromLocation(locationName):
 	elif locationName == 'antarctic':
 		return 3031
 	else:
-		return response(0,'ERROR. ONLY MAPPED FOR (antarctic or arctic).',{})
+		raise Exception('ONLY (antarctic and arctic) MAPPED FOR epsgFromLocation().')
 
 def twttToRange(surfTwtt,layerTwtt):
 	""" Convert a layer's two-way travel time to range from aircraft in wgs1984 meters.
@@ -127,18 +137,17 @@ def getQuery(request):
 	
 	"""
 	if request.method == 'POST':
-		try:
-			query = request.POST.get('query')
-			cookies = request.COOKIES
 
-			if query is not None:
-				return query,cookies
-			else:
-				response(0,'VALUE ''query'' IS NOT VALID OR EMPTY',{})
-		except:
-			return errorCheck(sys)
+		query = request.POST.get('query')
+		cookies = request.COOKIES
+
+		if query is not None:
+			return query,cookies
+		else:
+			raise Exception('VALUE ''query'' IS NOT VALID OR EMPTY')
+
 	else:
-		response(0,'method must be POST',{})
+		raise Exception('method must be POST')
 
 def getData(request):
 	""" Gets data from POST.
@@ -158,11 +167,8 @@ def getData(request):
 			jsonData = request.POST.get('data')
 			
 			if jsonData is not None:
-				try:
-					data = json.loads(jsonData,parse_float=Decimal)
-				except:
-					errorCheck(sys)
-			
+				data = json.loads(jsonData,parse_float=Decimal)
+
 			# parse for MATLAB specific input (build "cookies")
 			try:
 				outCookies = {}
@@ -180,11 +186,11 @@ def getData(request):
 			if data is not None and app is not None:
 				return app,data,outCookies
 			else:
-				response(0,'ERROR: INPUT VARIABLE ''data'' OR ''app'' IS EMPTY',{}),''
+				raise Exception('INPUT VARIABLE ''data'' OR ''app'' IS EMPTY'),''
 		except:
-			response(0,'ERROR: COULD NOT GET POST',{}),''
+			raise Exception('COULD NOT GET POST'),''
 	else:
-		response(0,'ERROR: METHOD MUST BE POST',{}),''
+		raise Exception('METHOD MUST BE POST'),''
 
 def getAppModels(app):
 	""" Gets the Django models for a specified application.

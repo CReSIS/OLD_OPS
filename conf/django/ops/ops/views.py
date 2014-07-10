@@ -42,18 +42,17 @@ def createPath(request):
 	
 	"""
 
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	userProfileObj,status = utility.getUserProfile(cookies)
-	if status:
-		if not userProfileObj.isRoot and not userProfileObj.createData:
-			return utility.response(0,'ERROR: USER NOT AUTHORIZED TO CREATE DATA.',{})
-	else:
-		return utility.response(0,userProfileObj,{});
-	
-	# parse the data input
 	try:
-	
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+		
+		userProfileObj,status = utility.getUserProfile(cookies)
+		if status:
+			if not userProfileObj.isRoot and not userProfileObj.createData:
+				return utility.response(0,'ERROR: USER NOT AUTHORIZED TO CREATE DATA.',{})
+		else:
+			return utility.response(0,userProfileObj,{});
+		
+		# parse the data input
 		inLinePath = data['geometry']
 		inGpsTime = data['properties']['gps_time']
 		inElevation = data['properties']['elev']
@@ -68,10 +67,8 @@ def createPath(request):
 		inFrameCount = data['properties']['frame_count']
 		inFrameStartGpsTimes = utility.forceList(data['properties']['frame_start_gps_time'])
 		
-	except:
-		return utility.errorCheck(sys)
 	
-	try:
+	
 		#Set up the basic logging configuration for createPath:
 		logging.basicConfig(filename='/cresis/snfs1/web/ops2/django_logs/createPath.log',format='%(levelname)s :: %(asctime)s :: %(message)s',datefmt='%c', level=logging.DEBUG)
 		logging.info('Segment %s of season %s is now loading',inSegment,inSeason)
@@ -261,16 +258,16 @@ def createPath(request):
 			else:
 				logging.info('No crossovers for segment %s of season %s were found.',inSegment,inSeason)
 	
-		except: 
-			return utility.errorCheck(sys)
+		except Exception as e: 
+			return utility.errorCheck(e,sys)
 		finally:
 			cursor.close()
 		
 		logging.info('Segment %s of season %s was successfully inserted.',inSegment,inSeason)
 		return utility.response(1,'SUCCESS: PATH INSERTION COMPLETED.',{})
 		
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 @ipAuth()
 def createLayer(request): 
@@ -292,17 +289,17 @@ def createLayer(request):
 			lyr_group_id: (integer) id of the created/used layer group
 		
 	"""	
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	userProfileObj,status = utility.getUserProfile(cookies)
-	if status:
-		if not userProfileObj.isRoot and not userProfileObj.createData:
-			return utility.response(0,'ERROR: USER NOT AUTHORIZED TO CREATE DATA.',{})
-	else:
-		return utility.response(0,userProfileObj,{});
-	
-	# parse the data input
 	try:
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+		
+		userProfileObj,status = utility.getUserProfile(cookies)
+		if status:
+			if not userProfileObj.isRoot and not userProfileObj.createData:
+				return utility.response(0,'ERROR: USER NOT AUTHORIZED TO CREATE DATA.',{})
+		else:
+			return utility.response(0,userProfileObj,{});
+	
+		# parse the data input
 	
 		inLyrName = data['properties']['lyr_name']
 	
@@ -322,12 +319,9 @@ def createLayer(request):
 		except:
 			inGroupStatus = False
 	
-	except:
-		return utility.errorCheck(sys)
 		
-	# perform the function logic
-	try:
-		
+		# perform the function logic
+
 		lyrObjCount = models.layers.objects.filter(name=inLyrName,deleted=False).count() # make sure layer name is unique (ignoring groups)
 		if lyrObjCount > 0:
 			return utility.response(0,'ERROR: LAYER WITH THE SAME NAME EXISTS. (LAYER NAMES MUST BE UNIQUE, EVEN ACROSS GROUPS)',{}) # throw error, trying to create a duplicate layer
@@ -356,8 +350,8 @@ def createLayer(request):
 		# return the output
 		return utility.response(1,{'lyr_id':lyrObj.pk,'lyr_group_id':lyrGroupsObj.pk},{})
 	
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 @ipAuth()
 def deleteLayer(request): 
@@ -374,18 +368,13 @@ def deleteLayer(request):
 	No actual data is removed from the database, instead the layer entry is updated as deleted=True
 	
 	"""	
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	# parse the data input
 	try:
-		
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+	
+		# parse the data input
 		inLyrName = data['properties']['lyr_name']
 	
-	except:
-		return utility.errorCheck(sys)
-	
-	# perform the function logic
-	try:
+		# perform the function logic
 		
 		lyrObjs = models.layers.objects.get(name=inLyrName) # get the layers object
 		lyrObjs.deleted = True
@@ -394,8 +383,8 @@ def deleteLayer(request):
 		# return the output
 		return utility.response(1,{'lyr_id':lyrObjs.pk},{})
 		
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 @ipAuth()
 @transaction.atomic()
@@ -414,18 +403,17 @@ def createLayerPoints(request):
 		data: string status message
 	
 	"""	
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	userProfileObj,status = utility.getUserProfile(cookies)
-	if status:
-		if not userProfileObj.isRoot and not userProfileObj.createData:
-			return utility.response(0,'ERROR: USER NOT AUTHORIZED TO CREATE DATA.',{})
-	else:
-		return utility.response(0,userProfileObj,{});
-	
-	# parse the data input
 	try:
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+		
+		userProfileObj,status = utility.getUserProfile(cookies)
+		if status:
+			if not userProfileObj.isRoot and not userProfileObj.createData:
+				return utility.response(0,'ERROR: USER NOT AUTHORIZED TO CREATE DATA.',{})
+		else:
+			return utility.response(0,userProfileObj,{});
 	
+		# parse the data input
 		inPointPathIds = utility.forceList(data['properties']['point_path_id'])
 		
 		# Get the layer name or ID:
@@ -443,11 +431,7 @@ def createLayerPoints(request):
 		inQuality = utility.forceList(data['properties']['quality'])
 		inUserName = cookies['userName']
 	
-	except:
-		return utility.errorCheck(sys)
-	
-	# perform the function logic
-	try:
+		# perform the function logic
 	
 		# delete all layer points passed in
 		layerPointsObj = models.layer_points.objects.filter(point_path_id__in=inPointPathIds,layer_id=layerId)
@@ -481,8 +465,8 @@ def createLayerPoints(request):
 		
 		return utility.response(1,'SUCCESS: LAYER POINTS INSERTION COMPLETED.',{})
 		
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 @ipAuth()
 def deleteLayerPoints(request): 
@@ -508,10 +492,10 @@ def deleteLayerPoints(request):
 		data: string status message
 	
 	"""	
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	# parse the data input
 	try:
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+	
+		# parse the data input
 	
 		inMinTwtt = data['properties']['min_twtt']
 		inMaxTwtt = data['properties']['max_twtt']
@@ -528,7 +512,6 @@ def deleteLayerPoints(request):
 		
 		# parse the optional inputs
 		try:
-		
 			useGpsTimes = True
 			inStartGpsTime = data['properties']['start_gps_time']
 			inStopGpsTime = data['properties']['stop_gps_time']
@@ -536,17 +519,12 @@ def deleteLayerPoints(request):
 			inLocationName = data['properties']['location'] 
 		
 		except:
-		
-				useGpsTimes = False
-				inStartPointPathId = data['properties']['start_point_path_id']
-				inStopPointPathId = data['properties']['stop_point_path_id']
-				
-	except:
-		return utility.errorCheck(sys)	
-	
-	# perform the function logic
-	try:
-	
+			useGpsTimes = False
+			inStartPointPathId = data['properties']['start_point_path_id']
+			inStopPointPathId = data['properties']['stop_point_path_id']
+					
+		# perform the function logic
+
 		if useGpsTimes:
 		
 			inStartGpsTimeN = inStartGpsTime.next_minus() # get the next possible value (ensures boundary points are deleted)
@@ -578,8 +556,8 @@ def deleteLayerPoints(request):
 			# return the output
 			return utility.response(1,'SUCCESS: LAYER POINTS DELETION COMPLETED.',{})
 	
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 @ipAuth()
 def deleteBulk(request): 
@@ -602,30 +580,27 @@ def deleteBulk(request):
 	If full is not given only layer points are deleted
 	
 	"""
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	#Get user profile 
-	userProfileObj,status = utility.getUserProfile(cookies)
-	if status:
-		if not userProfileObj.isRoot and not userProfileObj.bulkDeleteData:
-			return utility.response(0,'ERROR: USER NOT AUTHORIZED TO BULK DELETE DATA.',{})
-	else:
-		return utility.response(0,userProfileObj,{});
-	
-	# parse the data input
 	try:
+		models,data,app,cookies = utility.getInput(request) # get the input and models
 	
+		#Get user profile 
+		userProfileObj,status = utility.getUserProfile(cookies)
+		if status:
+			if not userProfileObj.isRoot and not userProfileObj.bulkDeleteData:
+				return utility.response(0,'ERROR: USER NOT AUTHORIZED TO BULK DELETE DATA.',{})
+		else:
+			return utility.response(0,userProfileObj,{});
+	
+		# parse the data input
+
 		inSeasonNames = utility.forceList(data['properties']['season'])
 	
 		inSegmentNames = utility.forceList(data['properties']['segment'])
 		
 		deleteOnlyLayerPoints=data['properties']['only_layer_points']
 			
-	except:
-		return utility.errorCheck(sys)
 	
-	# perform the function logic
-	try:
+		# perform the function logic
 		
 		if len(inSegmentNames) == 1 and not inSegmentNames[0]:
 		
@@ -645,8 +620,8 @@ def deleteBulk(request):
 		# return the output
 		return utility.response(1,'SUCCESS: BULK DELETION COMPLETED',{})		
 	
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 @ipAuth()
 def releaseLayerGroup(request):
@@ -660,18 +635,14 @@ def releaseLayerGroup(request):
 		data: string status message
 
 	"""
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	# parse the data input
 	try:
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+	
+		# parse the data input
 	
 		inLyrGroupName = data['properties']['lyr_group_name']
-	
-	except:
-		return utility.errorCheck(sys)
-	
-	# perform the function logic
-	try:
+		
+		# perform the function logic
 		
 		# update the groups public status
 		lyrGroupsObj = models.layer_groups.objects.filter(name=inLyrGroupName).update(public=True)
@@ -679,8 +650,8 @@ def releaseLayerGroup(request):
 		# return the output
 		return utility.response(1,'SUCCESS: LAYER GROUP IS NOW PUBLIC',{});
 	
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 # =======================================
 # DATA OUTPUT FUNCTIONS
@@ -705,10 +676,10 @@ def getPath(request):
 			Y: (float) y value of point path/s
 	
 	"""
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	# parse the data input
 	try:
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+	
+		# parse the data input
 	
 		inLocationName = data['properties']['location']
 		inSeasonName = data['properties']['season']
@@ -721,10 +692,7 @@ def getPath(request):
 		except:
 			nativeGeom = False
 		
-	except:
-		return utility.errorCheck(sys)
-		
-	try:
+		# Perform the function logic
 		
 		epsg = utility.epsgFromLocation(inLocationName) # get epsg for the input location
 		
@@ -741,8 +709,8 @@ def getPath(request):
 		# return the output
 		return utility.response(1,{'id':pks,'gps_time':gpsTimes,'elev':elev,'X':xCoords,'Y':yCoords},{})
 		
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 def getFrameClosest(request): 
 	""" Gets the closest frame from the OPS database.
@@ -771,10 +739,10 @@ def getFrameClosest(request):
 			echograms: (list of strings) urls of the ftp echograms of the closest frame
 	
 	"""
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	# parse the data input
 	try:
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+	
+		# parse the data input
 		inLocationName = data['properties']['location']
 		inPointX = data['properties']['x']
 		inPointY = data['properties']['y']
@@ -800,10 +768,7 @@ def getFrameClosest(request):
 			inSeasonStatus = [True]
 		"""
 		
-	except:
-		return utility.errorCheck(sys)
-	
-	try:
+		# Perform the function logic
 		
 		if useAllSeasons:
 		
@@ -841,8 +806,8 @@ def getFrameClosest(request):
 		# returns the output
 		return utility.response(1,{'season':pointPathsObj[0][2],'segment_id':pointPathsObj[0][1],'start_gps_time':min(gpsTimes),'stop_gps_time':max(gpsTimes),'frame':pointPathsObj[0][0],'echograms':outEchograms,'X':xCoords,'Y':yCoords,'gps_time':gpsTimes},{})
 		
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 def getLayers(request): 
 	""" Returns all layers that are public and not deleted.
@@ -862,11 +827,10 @@ def getLayers(request):
 			lyr_group_name: (list of strings) a list of layer group names
 	
 	"""
-	
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	# perform function logic
 	try:
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+	
+		# perform function logic
 	
 		# get the user profile
 		userProfileObj,status = utility.getUserProfile(cookies)
@@ -884,8 +848,8 @@ def getLayers(request):
 		# return the output
 		return utility.response(1,{'lyr_id':outLayersObj[0],'lyr_name':outLayersObj[1],'lyr_group_name':outLayersObj[2]},{})
 		
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 def getLayerPoints(request):
 	""" Returns all layer points for the input parameters.
@@ -930,147 +894,144 @@ def getLayerPoints(request):
 	If point_path_id is given location, season, segment or segment_id and start/stop_gps_time will be ignored.
 	
 	"""
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-
-	# parse the data input
 	try:
-
-		usePointPathIds = True
-		inPointPathIds = data['properties']['point_path_id']
-
-	except:
-
-		usePointPathIds = False
-
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+	
+		try:
+			# parse the data input
+	
+			usePointPathIds = True
+			inPointPathIds = data['properties']['point_path_id']
+	
+		except:
+	
+			usePointPathIds = False
+	
 		# parse optional inputs (dependent of point_path_id)
+
+		inLocationName = data['properties']['location']
+		inSeasonName = data['properties']['season']
+
 		try:
 
-			inLocationName = data['properties']['location']
-			inSeasonName = data['properties']['season']
-
-			try:
-
-				segName = False
-				inSegment = data['properties']['segment_id']
-
-			except:
-
-				segName = True
-				inSegment = data['properties']['segment']
-
-			try:
-
-				useAllGps = False
-				inStartGpsTime = data['properties']['start_gps_time']
-				inStopGpsTime = data['properties']['stop_gps_time']
-
-			except:
-
-				useAllGps = True
+			segName = False
+			inSegment = data['properties']['segment_id']
 
 		except:
-			return utility.errorCheck(sys)
 
-	# parse additional optional inputs (not dependent on point_path_id)
-	try:
+			segName = True
+			inSegment = data['properties']['segment']
 
-		useAllLyr = False
-		inLyrNames = utility.forceList(data['properties']['lyr_name'])
+		try:
 
-	except:
+			useAllGps = False
+			inStartGpsTime = data['properties']['start_gps_time']
+			inStopGpsTime = data['properties']['stop_gps_time']
 
-		useAllLyr = True
+		except:
 
-	try:
-
-		returnGeom = True
-		inGeomType = data['properties']['return_geom']
-		if inGeomType == 'proj':
-			inLocationName = data['properties']['location']
-
-	except:
-
-		returnGeom = False
+			useAllGps = True
 
 
-	# perform function logic
-	try:
-		
-		if not usePointPathIds:
-
-			# get a segment object with a pk field
-			if segName:
-				segmentId = models.segments.objects.filter(name=inSegment).values_list('pk',flat=True)
-				if segmentId.exists():
-					segmentId = segmentId[0]
+		# parse additional optional inputs (not dependent on point_path_id)
+		try:
+	
+			useAllLyr = False
+			inLyrNames = utility.forceList(data['properties']['lyr_name'])
+	
+		except:
+	
+			useAllLyr = True
+	
+		try:
+	
+			returnGeom = True
+			inGeomType = data['properties']['return_geom']
+			if inGeomType == 'proj':
+				inLocationName = data['properties']['location']
+	
+		except:
+	
+			returnGeom = False
+	
+	
+			# perform function logic
+			
+			if not usePointPathIds:
+	
+				# get a segment object with a pk field
+				if segName:
+					segmentId = models.segments.objects.filter(name=inSegment).values_list('pk',flat=True)
+					if segmentId.exists():
+						segmentId = segmentId[0]
+					else:
+						return utility.response(0,'ERROR: SEGMENT DOES NOT EXIST.',{})
 				else:
-					return utility.response(0,'ERROR: SEGMENT DOES NOT EXIST.',{})
+					segmentId = inSegment
+	
+				# get the start/stop gps times
+				if useAllGps:
+					pointPathsObj = models.point_paths.objects.filter(segment_id=segmentId,location__name=inLocationName).aggregate(Max('gps_time'),Min('gps_time'))
+					inStartGpsTime = pointPathsObj['gps_time__min']
+					inStopGpsTime = pointPathsObj['gps_time__max']
+	
+				# get the point path ids
+				inPointPathIds = models.point_paths.objects.filter(segment_id=segmentId,location__name=inLocationName,gps_time__range=(inStartGpsTime,inStopGpsTime)).values_list('pk',flat=True)
+	
+			# get the user profile
+			userProfileObj,status = utility.getUserProfile(cookies)
+			authLayerGroups = eval('userProfileObj.'+app+'_layer_groups.values_list("pk",flat=True)')
+			
+			# get a layers object
+			if useAllLyr:
+				if userProfileObj.isRoot:
+					layerIds = models.layers.objects.filter(deleted=False).values_list('pk',flat=True)
+				else:
+					layerIds = models.layers.objects.filter(deleted=False,layer_group__in=authLayerGroups).values_list('pk',flat=True)
 			else:
-				segmentId = inSegment
-
-			# get the start/stop gps times
-			if useAllGps:
-				pointPathsObj = models.point_paths.objects.filter(segment_id=segmentId,location__name=inLocationName).aggregate(Max('gps_time'),Min('gps_time'))
-				inStartGpsTime = pointPathsObj['gps_time__min']
-				inStopGpsTime = pointPathsObj['gps_time__max']
-
-			# get the point path ids
-			inPointPathIds = models.point_paths.objects.filter(segment_id=segmentId,location__name=inLocationName,gps_time__range=(inStartGpsTime,inStopGpsTime)).values_list('pk',flat=True)
-
-		# get the user profile
-		userProfileObj,status = utility.getUserProfile(cookies)
-		authLayerGroups = eval('userProfileObj.'+app+'_layer_groups.values_list("pk",flat=True)')
-		
-		# get a layers object
-		if useAllLyr:
-			if userProfileObj.isRoot:
-				layerIds = models.layers.objects.filter(deleted=False).values_list('pk',flat=True)
+				if userProfileObj.isRoot:
+					layerIds = models.layers.objects.filter(name__in=inLyrNames,deleted=False).values_list('pk',flat=True)
+				else:
+					layerIds = models.layers.objects.filter(name__in=inLyrNames,deleted=False,layer_group__in=authLayerGroups).values_list('pk',flat=True)
+			
+			if not returnGeom:
+	
+				# get a layer points object (no geometry)
+				layerPointsObj = models.layer_points.objects.select_related('point_path__gps_time').filter(point_path_id__in=inPointPathIds,layer_id__in=layerIds).values_list('point_path','layer_id','point_path__gps_time','twtt','type','quality')
+	
+				if len(layerPointsObj) == 0:
+					return utility.response(2,'WARNING: NO LAYER POINTS FOUND FOR THE GIVEN PARAMETERS.',{})
+	
+				layerPoints = zip(*layerPointsObj) # unzip the layerPointsObj
+	
+				# return the output
+				return utility.response(1,{'point_path_id':layerPoints[0],'lyr_id':layerPoints[1],'gps_time':layerPoints[2],'twtt':layerPoints[3],'type':layerPoints[4],'quality':layerPoints[5]},{})
+	
 			else:
-				layerIds = models.layers.objects.filter(deleted=False,layer_group__in=authLayerGroups).values_list('pk',flat=True)
-		else:
-			if userProfileObj.isRoot:
-				layerIds = models.layers.objects.filter(name__in=inLyrNames,deleted=False).values_list('pk',flat=True)
-			else:
-				layerIds = models.layers.objects.filter(name__in=inLyrNames,deleted=False,layer_group__in=authLayerGroups).values_list('pk',flat=True)
-		
-		if not returnGeom:
+	
+				# get a layer points object (with geometry)
+				layerPointsObj = models.layer_points.objects.select_related('point_path__gps_time','point_path__geom').filter(point_path_id__in=inPointPathIds,layer_id__in=layerIds).values_list('point_path','layer_id','point_path__gps_time','twtt','type','quality','point_path__geom')
+	
+				if len(layerPointsObj) == 0:
+					return utility.response(2,'WARNING: NO LAYER POINTS FOUND FOR THE GIVEN PARAMETERS.',{})
+	
+				pointPathId,layerIds,gpsTimes,twtts,types,qualitys,pointPaths = zip(*layerPointsObj) # unzip the layerPointsObj
+	
+				outLon = []; outLat = []; outElev = [];
+				for pointObj in pointPaths:
+					ptGeom = GEOSGeometry(pointObj)
+					if inGeomType == 'proj':
+						epsg = utility.epsgFromLocation(inLocationName) # get the input epsg
+						ptGeom.transform(epsg)
+					outLon.append(ptGeom.x);
+					outLat.append(ptGeom.y);
+					outElev.append(ptGeom.z);
+	
+				# return the output
+				return utility.response(1,{'point_path_id':pointPathId,'lyr_id':layerIds,'gps_time':gpsTimes,'twtt':twtts,'type':types,'quality':qualitys,'lon':outLon,'lat':outLat,'elev':outElev},{})
 
-			# get a layer points object (no geometry)
-			layerPointsObj = models.layer_points.objects.select_related('point_path__gps_time').filter(point_path_id__in=inPointPathIds,layer_id__in=layerIds).values_list('point_path','layer_id','point_path__gps_time','twtt','type','quality')
-
-			if len(layerPointsObj) == 0:
-				return utility.response(2,'WARNING: NO LAYER POINTS FOUND FOR THE GIVEN PARAMETERS.',{})
-
-			layerPoints = zip(*layerPointsObj) # unzip the layerPointsObj
-
-			# return the output
-			return utility.response(1,{'point_path_id':layerPoints[0],'lyr_id':layerPoints[1],'gps_time':layerPoints[2],'twtt':layerPoints[3],'type':layerPoints[4],'quality':layerPoints[5]},{})
-
-		else:
-
-			# get a layer points object (with geometry)
-			layerPointsObj = models.layer_points.objects.select_related('point_path__gps_time','point_path__geom').filter(point_path_id__in=inPointPathIds,layer_id__in=layerIds).values_list('point_path','layer_id','point_path__gps_time','twtt','type','quality','point_path__geom')
-
-			if len(layerPointsObj) == 0:
-				return utility.response(2,'WARNING: NO LAYER POINTS FOUND FOR THE GIVEN PARAMETERS.',{})
-
-			pointPathId,layerIds,gpsTimes,twtts,types,qualitys,pointPaths = zip(*layerPointsObj) # unzip the layerPointsObj
-
-			outLon = []; outLat = []; outElev = [];
-			for pointObj in pointPaths:
-				ptGeom = GEOSGeometry(pointObj)
-				if inGeomType == 'proj':
-					epsg = utility.epsgFromLocation(inLocationName) # get the input epsg
-					ptGeom.transform(epsg)
-				outLon.append(ptGeom.x);
-				outLat.append(ptGeom.y);
-				outElev.append(ptGeom.z);
-
-			# return the output
-			return utility.response(1,{'point_path_id':pointPathId,'lyr_id':layerIds,'gps_time':gpsTimes,'twtt':twtts,'type':types,'quality':qualitys,'lon':outLon,'lat':outLat,'elev':outElev},{})
-
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 def getLayerPointsCsv(request):
 	""" Creates a CSV file from layer points and writes it to the server.
@@ -1092,10 +1053,11 @@ def getLayerPointsCsv(request):
 	Output is limited to 2 million points
 	
 	"""
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	# parse the data input
 	try:
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+	
+		# parse the data input
+
 	
 		inLocationName = data['properties']['location']
 		inBoundaryWkt = data['properties']['bound']
@@ -1118,11 +1080,8 @@ def getLayerPointsCsv(request):
 		except:
 			getAllPoints = False
 	
-	except:
-		utility.errorCheck(sys)
 
-	# perform function logic
-	try:
+		# perform function logic
 		#Get location id 
 		locationId = models.locations.objects.filter(name=inLocationName).values_list('pk',flat=True)[0]
 		
@@ -1205,8 +1164,8 @@ def getLayerPointsCsv(request):
 		return utility.response(1,webFn,{})
 
 		
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 def getLayerPointsKml(request):
 	""" Creates a KML file of point paths and writes it to the server.
@@ -1227,10 +1186,10 @@ def getLayerPointsKml(request):
 	Output is limited to 5 million points
 	
 	"""
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	# parse the data input
 	try:
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+	
+		# parse the data input
 	
 		inLocationName = data['properties']['location']
 		inBoundaryWkt = data['properties']['bound']
@@ -1249,12 +1208,9 @@ def getLayerPointsKml(request):
 		except:
 			useAllSeasons = True
 	
-	except:
-		utility.errorCheck(sys)
 
-	# perform function logic
-	try:
-	
+		# perform function logic
+
 		if useAllSeasons:
 		
 			inSeasonNames = models.seasons.objects.filter(location_id__name=inLocationName,season_group__public=True).values_list('name',flat=True) # get all the public seasons
@@ -1288,8 +1244,8 @@ def getLayerPointsKml(request):
 		# return the output
 		return utility.response(1,webFn,{})
 	
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 def getLayerPointsMat(request):
 	""" Creates a MAT file of layer points and writes it to the server.
@@ -1312,10 +1268,11 @@ def getLayerPointsMat(request):
 	All points will be returned (csv type) and there may be NaN values for layers.
 	
 	"""
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	# parse the data input
 	try:
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+	
+		# parse the data input
+	
 		inLocationName = data['properties']['location']
 		inBoundaryWkt = data['properties']['bound']
 		
@@ -1337,11 +1294,8 @@ def getLayerPointsMat(request):
 		except:
 			inSeasons = models.seasons.objects.filter(season_group__public=True).values_list('name',flat=True)
 		
-	except:
-		return utility.errorCheck(sys)
 	
-	# perform the function logic
-	try:
+		# perform the function logic
 	
 		# make sure surface and bottom are in the layers list
 		if 'surface' not in inLayers:
@@ -1480,8 +1434,8 @@ def getLayerPointsMat(request):
 		# return the output
 		return utility.response(1,webFn,{})
 	
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 def getLayerPointsNetcdf(request):
 	""" Creates a NetCDF file of layer points and writes it to the server.
@@ -1508,8 +1462,8 @@ def getLayerPointsNetcdf(request):
 	
 		return utility.response(1,'NetCDF Output Is Not Implemented',{})
 
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 def getSystemInfo(request): 
 	"""Get basic information about data in the OPS.
@@ -1529,11 +1483,10 @@ def getSystemInfo(request):
 			{'system':[string],'season':[string],'location':[string]}
 
 	"""
-	
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	# perform the function logic
 	try:
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+	
+		# perform the function logic
 	
 		# get the user profile
 		userProfileObj,status = utility.getUserProfile(cookies)
@@ -1566,8 +1519,8 @@ def getSystemInfo(request):
 		# return the output
 		return utility.response(1,outData,{})
 		
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 def getSegmentInfo(request):
 	""" Get information about a given segment from the OPS.
@@ -1587,24 +1540,22 @@ def getSegmentInfo(request):
 			stop_gps_time: (list of floats) stop gps time of each frame
 	
 	"""
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	# parse the input data
 	try:
-		inSegmentId = data['properties']['segment_id']
-	except:
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+	
+		# parse the input data
 		try:
+			inSegmentId = data['properties']['segment_id']
+		except:
 			inSegment = data['properties']['segment']
 			inSegmentId = models.segments.objects.filter(name=inSegment).values_list('pk',flat=True)
 			if inSegmentId.exists():
 				inSegmentId = inSegmentId[0]
 			else:
 				return utility.response(0,'ERROR: SEGMENT DOES NOT EXIST.',{})
-		except:
-			utility.errorCheck(sys)
 	
-	# perform the function logic
-	try:
+		
+		# perform the function logic
 	
 		# get the segment name, season name, frame names, and frame ids
 		pointPathsObj = models.point_paths.objects.select_related('seasons__name','segments__name','frames__name').filter(segment_id=inSegmentId).order_by('frame').distinct('frame').values_list('season__name','segment__name','frame__name','frame')
@@ -1625,8 +1576,8 @@ def getSegmentInfo(request):
 		# return the output
 		return utility.response(1,{'season':seasonNames[0],'segment':segmentNames[0],'frame':frameNames,'start_gps_time':startGpsTimes,'stop_gps_time':stopGpsTimes},{})
 			
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 def getCrossovers(request): 
 	""" Get crossover values from the OPS.
@@ -1655,10 +1606,11 @@ def getCrossovers(request):
 			abs_error: (list of float/s) absolute difference (meters) between the source and crossover layer points
 		
 	"""
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	# parse the data input
 	try:
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+	
+		# parse the data input
+
 		inLocationName = utility.forceList(data['properties']['location'])
 		inLayerNames = utility.forceList(data['properties']['lyr_name'])
 		try:
@@ -1671,12 +1623,10 @@ def getCrossovers(request):
 				inFrameNames = []
 			except:
 				return utility.response(0,'ERROR: EITHER POINT PATH IDS OR FRAME NAMES MUST BE GIVEN',{})
-	except:
-		return utility.errorCheck(sys)
+
 	
-	# perform the function logic
-	try:
-		
+		# perform the function logic
+
 		#Set up variables for the creation of outputs
 		sourcePointPathIds = []; crossPointPathIds = []; sourceElev = []; crossElev = []; 
 		crossTwtt = []; crossAngle = []; crossFrameName = []; layerId = []; absError = [];
@@ -1761,9 +1711,8 @@ def getCrossovers(request):
 		else:	
 			#No crossovers found. Return empty response. 
 			return utility.response(1,{'source_point_path_id':[],'cross_point_path_id':[],'source_elev':[],'cross_elev':[],'layer_id':[],'season_name':[],'segment_id':[],'frame_name':[],'twtt':[],'angle':[],'abs_error':[], 'cross_quality':[]},{})
-	except:
-		return utility.errorCheck(sys)
-
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 def getCrossoversReport(request):
 	""" Get crossover error report from the OPS.
@@ -1782,11 +1731,11 @@ def getCrossoversReport(request):
 		status: (integer) 0:error 1:success 2:warning
 		data: url to crossover report .csv on the server
 	"""
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	# parse the data input
 	try:
-	
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+		
+		# parse the data input
+		
 		inLocationName = utility.forceList(data['properties']['location'])
 		inLayerNames = utility.forceList(data['properties']['lyr_name'])
 		try:
@@ -1809,12 +1758,10 @@ def getCrossoversReport(request):
 				
 					return utility.response(0,'ERROR: POINT PATH IDS, FRAME NAMES, OR SEASON NAMES MUST BE GIVEN',{})
 	
-	except:
-		return utility.errorCheck(sys)
 	
-	# perform the function logic
-	try:
-	#Get layer ids: 
+		# perform the function logic
+
+		#Get layer ids: 
 		layerIds = utility.forceTuple(list(models.layers.objects.filter(name__in=inLayerNames).values_list('pk',flat=True)))
 			
 		if getPointPathIds:
@@ -1886,8 +1833,8 @@ def getCrossoversReport(request):
 			return utility.response(1,webFn,{})
 		else: 
 			return utility.response(2, "No crossover errors found with specified parameters.",{})
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 def getFrameSearch(request): 
 	""" Get a frame based on input search parameters.
@@ -1913,32 +1860,26 @@ def getFrameSearch(request):
 	Only the first frame that matches the search string is returned
 	
 	"""
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	# parse the data input
 	try:
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+	
+		# parse the data input
+
 	
 		inLocationName = data['properties']['location']
 		inSearchStr = data['properties']['search_str']
 	
 		# parse the optional input
 		try:
-		
 			useAllSeasons = False
 			inSeasonNames = data['properties']['season']
 		
 		except:
-		
 			useAllSeasons = True
 	
-	except:
-		return utility.errorCheck(sys)
-	
-	# perform the function logic
-	try:
+		# perform the function logic
 		
 		if useAllSeasons:
-		
 			inSeasonNames = models.seasons.objects.filter(location__name=inLocationName,season_group__public=True).values_list('name',flat=True) # get all the public seasons
 		
 		# get the first matching frame object
@@ -1964,8 +1905,8 @@ def getFrameSearch(request):
 		# return the output
 		return utility.response(1,{'season':pointPathsData[0][0],'segment_id':pointPathsData[1][0],'frame': framesObj.name,'X':lon,'Y':lat,'gps_time':pointPathsData[3]},{})
 	
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 def getInitialData(request): 
 	""" Create data packs for initial data loading on the server.
@@ -1985,10 +1926,10 @@ def getInitialData(request):
 	Ignores data from tables that are loaded in the django fixtures (django default initial data)
 	
 	"""
-	models,data,app,cookies = utility.getInput(request) # get the input
-	
-	# parse the data input
 	try:
+		models,data,app,cookies = utility.getInput(request) # get the input
+	
+		# parse the data input
 	
 		inSeasons = utility.forceList(data['properties']['seasons'])
 		inRadars = utility.forceList(data['properties']['radars'])
@@ -1996,19 +1937,14 @@ def getInitialData(request):
 		
 		# parse the optional inputs
 		try:
-		
 			useAllLyr = False
 			inLyrNames = utility.forceList(data['properties']['layers'])
 		
 		except:
-		
 			useAllLyr = True
 	
-	except:
-		return utility.errorCheck(sys)
 		
-	# perform the function logic
-	try:
+		# perform the function logic
 		
 		# get point path, frame, segment, location, season, and radar ids
 		pointPathsObj = models.point_paths.objects.select_related('segment__radar_id').filter(segment__name__in=inSegments,season__name__in=inSeasons,segment__radar__name__in=inRadars).values_list('pk','location_id','season_id','segment_id','frame_id','segment__radar_id')
@@ -2095,8 +2031,8 @@ def getInitialData(request):
 		# return the output
 		return utility.response(1,webFn,{})
 
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 def getUserProfileData(request):
 	""" Gets the user profile for a specified user is that user is authenticated.
@@ -2113,10 +2049,10 @@ def getUserProfileData(request):
 		data: (string) status message
 	
 	"""
-	_,data,_,cookies = utility.getInput(request) # get the input and models
-	
-	# perform function logic
 	try:
+		_,data,_,cookies = utility.getInput(request) # get the input and models
+	
+		# perform function logic
 	
 		# get the user profile
 		uPObj,status = utility.getUserProfile(cookies)
@@ -2147,8 +2083,8 @@ def getUserProfileData(request):
 		# return the output
 		return utility.response(1,{'rds_season_groups':rdsSg,'rds_season_group_ids':rdsSgId,'rds_layer_groups':rdsLg,'rds_layer_group_ids':rdsLgId,'accum_season_groups':accumSg,'accum_season_group_ids':accumSgId,'accum_layer_groups':accumLg,'accum_layer_group_ids':accumLgId,'snow_season_groups':snowSg,'snow_season_group_ids':snowSgId,'snow_layer_groups':snowLg,'snow_layer_group_ids':snowLgId,'kuband_season_groups':kubandSg,'kuband_season_group_ids':kubandSgId,'kuband_layer_groups':kubandLg,'kuband_layer_group_ids':kubandLgId,'layerGroupRelease':uPObj.layerGroupRelease,'seasonRelease':uPObj.seasonRelease,'createData':uPObj.createData,'bulkDeleteData':uPObj.bulkDeleteData},{})
 		
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 # =======================================
 # UTILITY FUNCTIONS
@@ -2167,10 +2103,8 @@ def createUser(request):
 		data: (string) status message
 	
 	"""
-	
-	_,data,_,cookies = utility.getInput(request) # get the input and models
-	
 	try:
+		_,data,_,cookies = utility.getInput(request) # get the input and models
 	
 		inUsername = data['properties']['userName']
 		inPassword = data['properties']['password']
@@ -2185,8 +2119,8 @@ def createUser(request):
 		
 		return utility.response(1,'SUCCESS: NEW USER CREATED',{})
 		
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 def loginUser(request):
 	""" Logs in a user to the browser session.
@@ -2200,9 +2134,8 @@ def loginUser(request):
 		data: (string) status message
 	
 	"""
-	_,data,_,cookies = utility.getInput(request) # get the input and models
-	
 	try:
+		_,data,_,cookies = utility.getInput(request) # get the input and models
 	
 		# get inputs
 		inUsername = data['properties']['userName']
@@ -2229,8 +2162,8 @@ def loginUser(request):
 		else:
 			return utility.response(0,'ERROR: USER AUTHENTICATION FAILED.',{'userName':'','isAuthenticated':0})
 	
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 def logoutUser(request):
 	""" Logs out a user from the browser session.
@@ -2252,8 +2185,8 @@ def logoutUser(request):
 		
 		return utility.response(1,'SUCESS: USER LOGGED OUT',{'userName':'','isAuthenticated':0})
 
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 @ipAuth()
 def query(request):
@@ -2269,10 +2202,10 @@ def query(request):
 	If no rows are returned from the query a warning is returned (status=2)
 	
 	"""
-	queryStr,cookies = utility.getQuery(request) # get the input
-	
-	# perform the function logic
 	try:
+		queryStr,cookies = utility.getQuery(request) # get the input
+	
+		# perform the function logic
 		
 		cursor = connection.cursor() # create a database cursor
 		cursor.execute(queryStr) # execute the query
@@ -2299,18 +2232,13 @@ def analyze(request):
 		data: string status message
 	
 	"""
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	# parse the input data
 	try:
-		
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+	
+		# parse the input data
 		tables = utility.forceList(data['properties']['tables'])
-	
-	except:
-		return utility.errorCheck(sys)
 		
-	# perform the function logic
-	try:
+		# perform the function logic
 	
 		cursor = connection.cursor() # create a database cursor
 		try:
@@ -2327,8 +2255,8 @@ def analyze(request):
 		# return the output
 		return utility.response(1, "SUCESS: DATABASE TABLES ANALYZED.",{})
 	
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 @ipAuth()
 def profile(request): 
@@ -2370,5 +2298,5 @@ def profile(request):
 		# return the output (from the function call)
 		return viewResponse
 	
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
