@@ -230,6 +230,7 @@ def getInput(request):
 		models: (named tuple) django model objects for the given application
 		data: (dictionary) decoded JSON data
 		app: (string) application name
+		cookies
 	
 	"""
 	app,data,cookies = getData(request)
@@ -276,6 +277,14 @@ def forceTuple(var):
 	else:
 		return var
 
+def forceBool(var):
+	if str(var).lower() in ['true','t','1','y','yes']:
+		return True
+	elif str(var).lower() in ['false','f','0','n','no']:
+		return False
+	else:
+		raise Exception('forceBool() CANNOT CONVERT ' + str(var) + ' TO BOOLEAN')
+	
 def buildEchogramList(app,seasonName,frameName):
 	""" Builds a list of echogram URLs using the known structure of the CReSIS FTP
 	
@@ -312,6 +321,6 @@ def getUserProfile(cookies):
 
 	# get the user profile
 	userObj = User.objects.get(username__exact=userName)
-	userProfileObj = userObj.get_profile()
+	userProfileObj = userObj.profile
 		
 	return userProfileObj,True

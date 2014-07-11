@@ -20,6 +20,7 @@ urlpatterns = patterns('',
 	url(r'^query$','ops.views.query'),
 	url(r'^profile$','ops.views.profile'),
 	url(r'^analyze$','ops.views.analyze'),
+    url(r'^alter/user/permissions$','ops.views.alterUserPermissions'),
 	
 	# INPUT VIEWS
 	url(r'^create/path$','ops.views.createPath'),

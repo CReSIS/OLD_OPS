@@ -2097,7 +2097,7 @@ def getUserProfileData(request):
 		kubandLgId = list(uPObj.kuband_layer_groups.values_list('pk',flat=True))
 		
 		# return the output
-		return utility.response(1,{'rds_season_groups':rdsSg,'rds_season_group_ids':rdsSgId,'rds_layer_groups':rdsLg,'rds_layer_group_ids':rdsLgId,'accum_season_groups':accumSg,'accum_season_group_ids':accumSgId,'accum_layer_groups':accumLg,'accum_layer_group_ids':accumLgId,'snow_season_groups':snowSg,'snow_season_group_ids':snowSgId,'snow_layer_groups':snowLg,'snow_layer_group_ids':snowLgId,'kuband_season_groups':kubandSg,'kuband_season_group_ids':kubandSgId,'kuband_layer_groups':kubandLg,'kuband_layer_group_ids':kubandLgId,'layerGroupRelease':uPObj.layerGroupRelease,'seasonRelease':uPObj.seasonRelease,'createData':uPObj.createData,'bulkDeleteData':uPObj.bulkDeleteData},{})
+		return utility.response(1,{'rds_season_groups':rdsSg,'rds_season_group_ids':rdsSgId,'rds_layer_groups':rdsLg,'rds_layer_group_ids':rdsLgId,'accum_season_groups':accumSg,'accum_season_group_ids':accumSgId,'accum_layer_groups':accumLg,'accum_layer_group_ids':accumLgId,'snow_season_groups':snowSg,'snow_season_group_ids':snowSgId,'snow_layer_groups':snowLg,'snow_layer_group_ids':snowLgId,'kuband_season_groups':kubandSg,'kuband_season_group_ids':kubandSgId,'kuband_layer_groups':kubandLg,'kuband_layer_group_ids':kubandLgId,'layerGroupRelease':uPObj.layerGroupRelease,'seasonRelease':uPObj.seasonRelease,'createData':uPObj.createData,'bulkDeleteData':uPObj.bulkDeleteData, 'isRoot':uPObj.isRoot},{})
 		
 	except Exception as e:
 		return utility.errorCheck(e,sys)
@@ -2110,7 +2110,7 @@ def createUser(request):
 	""" Creates a user in the OPS database
 	
 	Input:
-		username: (string)
+		userName: (string)
 		email: (string)
 		password: (string)
 		
@@ -2137,6 +2137,131 @@ def createUser(request):
 		
 	except Exception as e:
 		return utility.errorCheck(e,sys)
+
+@ipAuth()	
+@transaction.atomic()
+def alterUserPermissions(request):
+	""" Alters a user's permissions in the database. 
+		MUST BE A ROOT USER TO CHANGE ANOTHER USER'S PERMISSIONS.
+	
+	Input:
+		user_name: (string; the username of the user for which permissions will be changed)
+		Optional permissions to change:	
+			sys_layer_groups
+			sys_season_groups
+			layerGroupRelease
+			bulkDeleteData
+			createData
+			seasonRelease
+			isRoot
+			
+		FROM MATLAB:
+			mat: (boolean) true
+			userName: (string) username of an authenticated user (or anonymous)
+			isAuthenticated (boolean) authentication status of a user
+		
+	Output:
+		status: (integer) 0:error 1:success 2:warning
+		data: (string) status message
+	
+	"""
+	try:
+		_,data,app,cookies = utility.getInput(request) # get the input
+		inUserName = data['properties']['user_name']
+		
+		#Get the user profile from the user initiating the changes
+		userProfileObj,status = utility.getUserProfile(cookies)
+		if status:
+			if userProfileObj.isRoot:
+				#Get user from database
+				try: 
+					userObj = User.objects.get(username__exact=inUserName)
+					if userObj is None:
+						return utility.response(2,'USER ' + inUserName + ' DOES NOT EXIST',{})
+				except:
+					return utility.response(2,'USER ' + inUserName + ' DOES NOT EXIST',{})
+				
+				alteredPermissions = []
+				#Extract optional parameters
+				# Layer groups
+				try:
+					sysLayerGroups = utility.forceList(data['properties']['sys_layer_groups'])
+				except KeyError: pass
+				else:
+					if '+' in sysLayerGroups:
+						sysLayerGroups.remove('+')
+						sysLayerGroups.extend(eval("userObj.profile."+app+"_layer_groups.values_list('pk',flat=True)"))
+						
+					exec('userObj.profile.'+app+'_layer_groups = list(set(sysLayerGroups))')	
+					alteredPermissions.append(app+'_layer_groups')
+					
+				# Season groups
+				try:
+					sysSeasonGroups = utility.forceList(data['properties']['sys_season_groups'])
+				except KeyError: pass
+				else:
+					if '+' in sysSeasonGroups:
+						sysSeasonGroups.extend(eval("userObj.profile."+app+"_season_groups.values_list('pk',flat=True)"))
+					 
+					exec('userObj.profile.'+app+'_season_groups = list(set(sysSeasonGroups))')
+					alteredPermissions.append(app+'_season_groups')
+						
+				# Layer group release	
+				try:
+					layerGroupRelease = utility.forceList(data['properties']['layerGroupRelease'])
+				except KeyError: pass
+				else:
+					userObj.profile.layerGroupRelease = layerGroupRelease
+					alteredPermissions.append('layerGroupRelease')
+				
+				# Bulk Delete	
+				try:
+					bulkDeleteData = utility.forceBool(data['properties']['bulkDeleteData'])
+				except KeyError: pass
+				else:
+					userObj.profile.bulkDeleteData = bulkDeleteData
+					alteredPermissions.append('bulkDeleteData')
+				
+				# Create data	
+				try:
+					createData = utility.forceBool(data['properties']['createData'])
+				except KeyError: pass
+				else:
+					userObj.profile.createData = createData
+					alteredPermissions.append('createData')
+				
+				# Season release	
+				try:
+					seasonRelease = utility.forceBool(data['properties']['seasonRelease'])
+				except KeyError: pass
+				else:
+					userObj.profile.seasonRelease = seasonRelease
+					alteredPermissions.append('seasonRelease')
+				
+				# Root user	
+				try:
+					isRoot = utility.forceBool(data['properties']['isRoot'])
+				except KeyError: pass
+				else:	
+					userObj.profile.isRoot = isRoot
+					alteredPermissions.append('isRoot')
+				
+				if len(alteredPermissions) > 0:
+					userObj.profile.save()
+					returnStr = 'The following permissions were altered: '
+					for permission in alteredPermissions:	
+						 returnStr = returnStr + permission + '; '
+					return utility.response(1,returnStr,{})
+				else:
+					return utility.response(1,'No permissions for '+inUsername+' were changed',{})
+			else:
+				return utility.response(0,'ERROR: YOU ARE NOT AUTHORIZED TO CHANGE PERMISSIONS.',{})
+		else:
+			return utility.response(0,userProfileObj,{});
+		
+	except Exception as e:
+		return utility.errorCheck(e,sys)
+		
 
 def loginUser(request):
 	""" Logs in a user to the browser session.

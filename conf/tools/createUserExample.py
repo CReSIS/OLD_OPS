@@ -13,22 +13,19 @@ userPassword=''
 # create the new user
 newUser = User.objects.create_user(userName, userEmail, userPassword)
 
-# get the new users profile
-userProfile = newUser.get_profile()
-
 # set the user profile options (example for cresis superuser)
-userProfile.rds_layer_groups = [1,2,4] #4=atm(OPS2)
-userProfile.accum_layer_groups = [1,2]
-userProfile.kuband_layer_groups = [1,2]
-userProfile.snow_layer_groups = [1,2]
-userProfile.rds_season_groups = [1,2]
-userProfile.accum_season_groups = [1,2]
-userProfile.kuband_season_groups = [1,2]
-userProfile.snow_season_groups = [1,2]
-userProfile.layerGroupRelease = True
-userProfile.bulkDeleteData = False
-userProfile.createData = True
-userProfile.seasonRelease = True
+newUser.profile.rds_layer_groups = [1,2,4] #4=atm(OPS2)
+newUser.profile.accum_layer_groups = [1,2]
+newUser.profile.kuband_layer_groups = [1,2]
+newUser.profile.snow_layer_groups = [1,2]
+newUser.profile.rds_season_groups = [1,2]
+newUser.profile.accum_season_groups = [1,2]
+newUser.profile.kuband_season_groups = [1,2]
+newUser.profile.snow_season_groups = [1,2]
+newUser.profile.layerGroupRelease = True
+newUser.profile.bulkDeleteData = False
+newUser.profile.createData = True
+newUser.profile.seasonRelease = True
 
 # save the user profile
-userProfile.save()
+newUser.profile.save()
