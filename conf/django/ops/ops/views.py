@@ -423,7 +423,7 @@ def createLayerPoints(request):
 			layerId = models.layers.objects.filter(name=inLyrName,deleted=False).values_list('pk',flat=True)[0] # get the layer object
 			if not layerId:
 				return utility.response(0,'NO LAYER BY THE GIVEN NAME FOUND',{})
-		except:
+		except KeyError:
 			layerId = data['properties']['lyr_id']
 			
 		inTwtt = utility.forceList(data['properties']['twtt'])
@@ -597,7 +597,7 @@ def deleteBulk(request):
 	
 		inSegmentNames = utility.forceList(data['properties']['segment'])
 		
-		deleteOnlyLayerPoints=data['properties']['only_layer_points']
+		deleteOnlyLayerPoints = utility.forceBool(data['properties']['only_layer_points'])
 			
 	
 		# perform the function logic
@@ -688,8 +688,8 @@ def getPath(request):
 		
 		# parse optional inputs
 		try:
-			nativeGeom = data['properties']['nativeGeom']
-		except:
+			nativeGeom = utility.forceBool(data['properties']['nativeGeom'])
+		except KeyError:
 			nativeGeom = False
 		
 		# Perform the function logic
@@ -955,80 +955,80 @@ def getLayerPoints(request):
 			returnGeom = False
 	
 	
-			# perform function logic
-			
-			if not usePointPathIds:
-	
-				# get a segment object with a pk field
-				if segName:
-					segmentId = models.segments.objects.filter(name=inSegment).values_list('pk',flat=True)
-					if segmentId.exists():
-						segmentId = segmentId[0]
-					else:
-						return utility.response(0,'ERROR: SEGMENT DOES NOT EXIST.',{})
+		# perform function logic
+		
+		if not usePointPathIds:
+
+			# get a segment object with a pk field
+			if segName:
+				segmentId = models.segments.objects.filter(name=inSegment).values_list('pk',flat=True)
+				if segmentId.exists():
+					segmentId = segmentId[0]
 				else:
-					segmentId = inSegment
-	
-				# get the start/stop gps times
-				if useAllGps:
-					pointPathsObj = models.point_paths.objects.filter(segment_id=segmentId,location__name=inLocationName).aggregate(Max('gps_time'),Min('gps_time'))
-					inStartGpsTime = pointPathsObj['gps_time__min']
-					inStopGpsTime = pointPathsObj['gps_time__max']
-	
-				# get the point path ids
-				inPointPathIds = models.point_paths.objects.filter(segment_id=segmentId,location__name=inLocationName,gps_time__range=(inStartGpsTime,inStopGpsTime)).values_list('pk',flat=True)
-	
-			# get the user profile
-			userProfileObj,status = utility.getUserProfile(cookies)
-			authLayerGroups = eval('userProfileObj.'+app+'_layer_groups.values_list("pk",flat=True)')
-			
-			# get a layers object
-			if useAllLyr:
-				if userProfileObj.isRoot:
-					layerIds = models.layers.objects.filter(deleted=False).values_list('pk',flat=True)
-				else:
-					layerIds = models.layers.objects.filter(deleted=False,layer_group__in=authLayerGroups).values_list('pk',flat=True)
+					return utility.response(0,'ERROR: SEGMENT DOES NOT EXIST.',{})
 			else:
-				if userProfileObj.isRoot:
-					layerIds = models.layers.objects.filter(name__in=inLyrNames,deleted=False).values_list('pk',flat=True)
-				else:
-					layerIds = models.layers.objects.filter(name__in=inLyrNames,deleted=False,layer_group__in=authLayerGroups).values_list('pk',flat=True)
-			
-			if not returnGeom:
-	
-				# get a layer points object (no geometry)
-				layerPointsObj = models.layer_points.objects.select_related('point_path__gps_time').filter(point_path_id__in=inPointPathIds,layer_id__in=layerIds).values_list('point_path','layer_id','point_path__gps_time','twtt','type','quality')
-	
-				if len(layerPointsObj) == 0:
-					return utility.response(2,'WARNING: NO LAYER POINTS FOUND FOR THE GIVEN PARAMETERS.',{})
-	
-				layerPoints = zip(*layerPointsObj) # unzip the layerPointsObj
-	
-				# return the output
-				return utility.response(1,{'point_path_id':layerPoints[0],'lyr_id':layerPoints[1],'gps_time':layerPoints[2],'twtt':layerPoints[3],'type':layerPoints[4],'quality':layerPoints[5]},{})
-	
+				segmentId = inSegment
+
+			# get the start/stop gps times
+			if useAllGps:
+				pointPathsObj = models.point_paths.objects.filter(segment_id=segmentId,location__name=inLocationName).aggregate(Max('gps_time'),Min('gps_time'))
+				inStartGpsTime = pointPathsObj['gps_time__min']
+				inStopGpsTime = pointPathsObj['gps_time__max']
+
+			# get the point path ids
+			inPointPathIds = models.point_paths.objects.filter(segment_id=segmentId,location__name=inLocationName,gps_time__range=(inStartGpsTime,inStopGpsTime)).values_list('pk',flat=True)
+
+		# get the user profile
+		userProfileObj,status = utility.getUserProfile(cookies)
+		authLayerGroups = eval('userProfileObj.'+app+'_layer_groups.values_list("pk",flat=True)')
+		
+		# get a layers object
+		if useAllLyr:
+			if userProfileObj.isRoot:
+				layerIds = models.layers.objects.filter(deleted=False).values_list('pk',flat=True)
 			else:
-	
-				# get a layer points object (with geometry)
-				layerPointsObj = models.layer_points.objects.select_related('point_path__gps_time','point_path__geom').filter(point_path_id__in=inPointPathIds,layer_id__in=layerIds).values_list('point_path','layer_id','point_path__gps_time','twtt','type','quality','point_path__geom')
-	
-				if len(layerPointsObj) == 0:
-					return utility.response(2,'WARNING: NO LAYER POINTS FOUND FOR THE GIVEN PARAMETERS.',{})
-	
-				pointPathId,layerIds,gpsTimes,twtts,types,qualitys,pointPaths = zip(*layerPointsObj) # unzip the layerPointsObj
-	
-				outLon = []; outLat = []; outElev = [];
-				for pointObj in pointPaths:
-					ptGeom = GEOSGeometry(pointObj)
-					if inGeomType == 'proj':
-						epsg = utility.epsgFromLocation(inLocationName) # get the input epsg
-						ptGeom.transform(epsg)
-					outLon.append(ptGeom.x);
-					outLat.append(ptGeom.y);
-					outElev.append(ptGeom.z);
-	
-				# return the output
-				return utility.response(1,{'point_path_id':pointPathId,'lyr_id':layerIds,'gps_time':gpsTimes,'twtt':twtts,'type':types,'quality':qualitys,'lon':outLon,'lat':outLat,'elev':outElev},{})
+				layerIds = models.layers.objects.filter(deleted=False,layer_group__in=authLayerGroups).values_list('pk',flat=True)
+		else:
+			if userProfileObj.isRoot:
+				layerIds = models.layers.objects.filter(name__in=inLyrNames,deleted=False).values_list('pk',flat=True)
+			else:
+				layerIds = models.layers.objects.filter(name__in=inLyrNames,deleted=False,layer_group__in=authLayerGroups).values_list('pk',flat=True)
+		
+		if not returnGeom:
+
+			# get a layer points object (no geometry)
+			layerPointsObj = models.layer_points.objects.select_related('point_path__gps_time').filter(point_path_id__in=inPointPathIds,layer_id__in=layerIds).values_list('point_path','layer_id','point_path__gps_time','twtt','type','quality')
+
+			if len(layerPointsObj) == 0:
+				return utility.response(2,'WARNING: NO LAYER POINTS FOUND FOR THE GIVEN PARAMETERS.',{})
+
+			layerPoints = zip(*layerPointsObj) # unzip the layerPointsObj
+
+			# return the output
+			return utility.response(1,{'point_path_id':layerPoints[0],'lyr_id':layerPoints[1],'gps_time':layerPoints[2],'twtt':layerPoints[3],'type':layerPoints[4],'quality':layerPoints[5]},{})
+
+		else:
+
+			# get a layer points object (with geometry)
+			layerPointsObj = models.layer_points.objects.select_related('point_path__gps_time','point_path__geom').filter(point_path_id__in=inPointPathIds,layer_id__in=layerIds).values_list('point_path','layer_id','point_path__gps_time','twtt','type','quality','point_path__geom')
+
+			if len(layerPointsObj) == 0:
+				return utility.response(2,'WARNING: NO LAYER POINTS FOUND FOR THE GIVEN PARAMETERS.',{})
+
+			pointPathId,layerIds,gpsTimes,twtts,types,qualitys,pointPaths = zip(*layerPointsObj) # unzip the layerPointsObj
+
+			outLon = []; outLat = []; outElev = [];
+			for pointObj in pointPaths:
+				ptGeom = GEOSGeometry(pointObj)
+				if inGeomType == 'proj':
+					epsg = utility.epsgFromLocation(inLocationName) # get the input epsg
+					ptGeom.transform(epsg)
+				outLon.append(ptGeom.x);
+				outLat.append(ptGeom.y);
+				outElev.append(ptGeom.z);
+
+			# return the output
+			return utility.response(1,{'point_path_id':pointPathId,'lyr_id':layerIds,'gps_time':gpsTimes,'twtt':twtts,'type':types,'quality':qualitys,'lon':outLon,'lat':outLat,'elev':outElev},{})
 
 	except Exception as e:
 		return utility.errorCheck(e,sys)
