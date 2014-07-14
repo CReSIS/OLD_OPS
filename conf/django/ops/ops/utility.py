@@ -186,11 +186,11 @@ def getData(request):
 			if data is not None and app is not None:
 				return app,data,outCookies
 			else:
-				raise Exception('INPUT VARIABLE ''data'' OR ''app'' IS EMPTY'),''
+				raise Exception('INPUT VARIABLE ''data'' OR ''app'' IS EMPTY')
 		except:
-			raise Exception('COULD NOT GET POST'),''
+			raise Exception('COULD NOT GET POST')
 	else:
-		raise Exception('METHOD MUST BE POST'),''
+		raise Exception('METHOD MUST BE POST')
 
 def getAppModels(app):
 	""" Gets the Django models for a specified application.
