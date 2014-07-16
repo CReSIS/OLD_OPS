@@ -2379,6 +2379,8 @@ def analyze(request):
 		# parse the input data
 		tables = utility.forceList(data['properties']['tables'])
 		
+		if len(tables) == 0:
+			return utility.response(2, "WARNING: NO TABLES ARE ANALYZED.",{})
 		# perform the function logic
 	
 		cursor = connection.cursor() # create a database cursor
