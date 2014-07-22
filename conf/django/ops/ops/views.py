@@ -270,6 +270,98 @@ def createPath(request):
 		return utility.errorCheck(e,sys)
 
 @ipAuth()
+def alterPathResolution(request):
+	""" Alters a segment's resolution (vertex point spacing along line).
+	
+	Input:
+		segment: (string(s)) OR segment_id (integer(s))
+		resolution: (double) number of meters between each point
+		
+	Output:
+		status: (integer) 0:error 1:success 2:warning
+		data: string status message
+	
+	"""
+	try:
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+		
+		#Authenticate the user. Must be able to create data.
+		userProfileObj,status = utility.getUserProfile(cookies)
+		if status:
+			if not userProfileObj.isRoot and not userProfileObj.createData:
+				return utility.response(0,'ERROR: USER NOT AUTHORIZED TO CREATE DATA.',{})
+		else:
+			return utility.response(0,userProfileObj,{});
+		
+		#Get the input
+		try:
+			inSegmentName = utility.forceList(data['properties']['segment'])
+			segmentObjs = models.segments.objects.filter(name__in=inSegmentName)
+			if len(segmentObjs) == 0:
+				return utility.response(0,'No segment(s) with the specified name(s) exist.',{})
+
+		except KeyError:
+			inSegmentId = utility.forceList(data['properties']['segment_id'])
+			segmentObjs = models.segments.objects.filter(id__in=inSegmentId)
+			if len(segmentObjs) == 0:
+				return utility.response(0,'No segment(s) with the specified id(s) exist.',{})
+
+		resolution = data['properties']['resolution']
+
+		#Perform the function logic	
+		
+		messageStr = 'Resolution has successfully been altered for the following segments: ' 
+		#Create a cursor connected to the database.
+		cursor = connection.cursor()
+		try:
+			for segmentObj in segmentObjs:
+			
+				#Create a linepath constructed from the point paths.
+				sqlStr = 'WITH pts AS (SELECT loc.name, ST_Force_2D(pp.geom) as geom FROM {app}_point_paths pp JOIN {app}_locations loc ON pp.location_id = loc.id WHERE pp.segment_id = %s ORDER BY gps_time) SELECT DISTINCT(name), ST_MakeLine(ST_Force_2D(geom)) FROM pts GROUP BY name'.format(app=app)
+				cursor.execute(sqlStr,[segmentObj.pk])
+				pointLine = cursor.fetchone()
+				
+				#determine the projection
+				proj = utility.epsgFromLocation(pointLine[0])
+				
+				#Get the line object and transform to correct projection
+				line = GEOSGeometry(pointLine[1])
+				line.transform(proj)
+				
+				#Interpolate new points at the desired resolution
+				newLine = []
+				dist = 0
+				while dist < line.length:
+					newLine.append(line.interpolate(dist))
+					dist = dist + resolution
+				if dist < line.length:
+					newLine.append(line[-1])
+				
+			 	#Construct the new linestring
+		 		newLine = LineString(newLine,srid=proj)
+		 		
+		 		#Transform the line back for storage in DB
+		 		newLine.transform(4326)
+		 		
+		 		#Alter the segment's geometry
+		 		segmentObj.geom = newLine	
+				segmentObj.save()
+				messageStr += segmentObj.name + '; '
+				
+		except DatabaseError as dberror:
+			return utility.response(0,dberror[0],{})
+		finally: 
+			#Close the cursor's connection to the database
+			cursor.close()
+				
+		#return the response. 
+		 
+		return utility.response(1,messageStr,{})
+	
+	except Exception as e:
+		return utility.errorCheck(e,sys)
+	
+@ipAuth()
 def createLayer(request): 
 	""" Creates an entry in the layers table (or modifies the status of an existing layer).
 	
