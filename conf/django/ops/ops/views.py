@@ -11,6 +11,7 @@ import utility,sys,os,datetime,line_profiler,simplekml,ujson,csv,time,math,tempf
 from scipy.io import savemat
 import numpy as np
 from collections import OrderedDict
+from django.db.models.base import ModelState
 
 # =======================================
 # DATA INPUT/DELETE FUNCTIONS
@@ -1246,7 +1247,58 @@ def getLayerPointsKml(request):
 	
 	except Exception as e:
 		return utility.errorCheck(e,sys)
-
+	
+def getFramesWithinPolygon(request):
+	""" Return the list of frames located inside a WKT polygon boundary.
+	
+	Input:
+		bound: (WKT) well-known text polygon geometry
+		location: (string) name of the location
+		
+	Optional Inputs:
+		season: (string or list of string) a/ season name to limit the output
+		
+	Output:
+		status: (integer) 0:error 1:success 2:warning
+		data:  List of frames, ordered by segments
+		
+	
+	"""	
+	
+	try:
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+		
+		# parse the data input
+		inLocationName = data['properties']['location']		
+		inBoundaryWkt = data['properties']['bound']
+		
+		# parse the optional data input
+		try:
+			inSeasonNames = utility.forceList(data['properties']['season'])
+			useAllSeasons = False
+		except:
+			useAllSeasons = True
+			
+		# perform function logic
+		
+		if useAllSeasons:
+			inSeasonNames = models.seasons.objects.filter(location_id__name=inLocationName,season_group__public = True).values_list('name',flat = True)
+		
+		inPoly = GEOSGeometry(inBoundaryWkt, srid = 4326)
+			
+		# get the segments/frames object
+		frameNames = models.point_paths.objects.select_related('frames__name').filter(season_id__name__in = inSeasonNames, geom__within = inPoly).order_by('frame').distinct('frame').values_list('frame__name',flat=True)	
+			
+		frameNames = list(frameNames)
+			
+		if len(frameNames) == 0:
+			return utility.response(2, "WARNING: THERE ARE NO FRAMES IN THIS POLYGON.",{})
+		else:
+			return utility.response(1,{'frame':list(frameNames)},{})	
+	
+	except Exception as e:
+		return utility.errorCheck(e,sys)
+	
 def getLayerPointsMat(request):
 	""" Creates a MAT file of layer points and writes it to the server.
 	
