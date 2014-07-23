@@ -24,6 +24,7 @@ urlpatterns = patterns('',
 	
 	# INPUT VIEWS
 	url(r'^create/path$','ops.views.createPath'),
+    url(r'^alter/path/resolution$','ops.views.alterPathResolution'),
 	url(r'^create/layer$','ops.views.createLayer'),
 	url(r'^delete/layer$','ops.views.deleteLayer'),
 	url(r'^create/layer/points$','ops.views.createLayerPoints'),
