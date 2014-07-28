@@ -39,7 +39,7 @@ def checkStatus(self,response):
 	self.assertEqual(response.status_code,200, 'SERVER ERROR: %s' % str(response.status_code)) 
 
 	#Check OPS status code
-	self.assertEqual(ujson.loads(response.content)['status'],1,ujson.loads(response.content)['data'])
+	self.assertEqual(ujson.loads(response.content)['status'],1,getData(response))
 
 #Define a setup subclass
 def setUp(self):	
