@@ -49,4 +49,5 @@ urlpatterns = patterns('',
 	url(r'^get/frame/search$','ops.views.getFrameSearch'),
 	url(r'^get/initial/data$','ops.views.getInitialData'),
 	url(r'^get/user/profile/data$','ops.views.getUserProfileData'),
+    url(r'^get/frame/polygon$','ops.views.getFramesWithinPolygon'),
 )
