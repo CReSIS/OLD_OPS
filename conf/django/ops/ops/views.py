@@ -842,62 +842,60 @@ def getFrameClosest(request):
 	
 		# parse the optional data input
 		try:
-			inSeasonNames = utility.forceList(data['properties']['season'])
+			inSeasonNames = utility.forceTuple(data['properties']['season'])
 			useAllSeasons = False
-		except:
+		except KeyError:
 			useAllSeasons = True
 		
 		try:
 			inStartSeg = data['properties']['startseg']
 			inStopSeg = data['properties']['stopseg']
-		except:
+		except KeyError:
 			inStartSeg = '00000000_00'
 			inStopSeg = '99999999_99'
 			
-		"""
-		try:
-			inSeasonStatus = data['properties']['status']
-		except:
-			inSeasonStatus = [True]
-		"""
 		
 		# Perform the function logic
 		
+		#Get all of the season names if useAllSeasons=True
 		if useAllSeasons:
-		
-			inSeasonNames = models.seasons.objects.filter(location_id__name=inLocationName,season_group__public=True).values_list('name',flat=True) # get all the public seasons
+			inSeasonNames = utility.forceTuple(models.seasons.objects.filter(location_id__name=inLocationName,season_group__public=True).values_list('name',flat=True)) # get all the public seasons
 		
 		epsg = utility.epsgFromLocation(inLocationName) # get the input epsg
-		inPoint = GEOSGeometry('POINT ('+str(inPointX)+' '+str(inPointY)+')', srid=epsg) # create a point geometry object
 		
-		# get the segment_id of the closest segment path
-		closestSegmentId = models.segments.objects.filter(season_id__name__in=inSeasonNames,name__range=(inStartSeg,inStopSeg)).transform(epsg).distance(inPoint).order_by('distance').values_list('pk','distance')[0][0]
-
-		# get the frame id of the closest point path
-		# closestFrameId = models.point_paths.objects.filter(location_id__name=inLocationName,season_id__name__in=inSeasonNames,segment_id__name__range=(inStartSeg,inStopSeg)).transform(epsg).distance(inPoint).order_by('distance').values_list('frame_id','distance')[0][0]
+		#Get the location id
+		location_id = models.locations.objects.filter(name=inLocationName).values_list('pk',flat=True)[0]
 		
-		# get the frame_id of the point_path for the closest segment
-		closestFrameId = models.point_paths.objects.filter(segment_id=closestSegmentId).transform(epsg).distance(inPoint).order_by('distance').values_list('frame_id','distance')[0][0]
-
-		# get the frame name,segment id, season name, path, and gps_time from point_paths for the frame id above
-		pointPathsObj = models.point_paths.objects.select_related('frames__name','seasons_name').filter(frame_id=closestFrameId).transform(epsg).order_by('gps_time').values_list('frame__name','segment_id','season__name','geom','gps_time')
+		#Prepare the input point as text for ST_GeomFromText
+		pointTxt = 'POINT(%s %s)' % (inPointX,inPointY)
 		
-		# get the (x,y,z) coords from pointPathsObj
-		#pointPathsGeoms = [(pointPath[3].x,pointPath[3].y,pointPath[4]) for pointPath in pointPathsObj]
-		#xCoords,yCoords,gpsTimes = zip(*pointPathsGeoms)
+		#Create a connection to the database.
+		cursor = connection.cursor()
+		try:
+			#Get the closest frame to the input point as a linestring.
+			queryStr = "WITH pt AS (SELECT pp.frame_id FROM {app}_point_paths pp JOIN {app}_seasons ss ON pp.season_id=ss.id WHERE ss.name IN %s AND pp.location_id = %s ORDER BY ST_Transform(pp.geom,%s) <-> ST_GeomFromText(%s,%s) LIMIT 1) SELECT ss.name, pp.segment_id,  min(pp.gps_time), max(pp.gps_time), frm.name, ST_MakeLine(ST_Transform(ST_GeomFromText('POINTZ('|| ST_X(pp.geom)|| ' ' || ST_Y(pp.geom)|| ' ' || pp.gps_time||')',4326),%s)) FROM pt, {app}_point_paths pp JOIN {app}_seasons ss ON pp.season_id=ss.id JOIN {app}_frames frm ON pp.frame_id=frm.id WHERE pt.frame_id = pp.frame_id GROUP BY ss.name,pp.segment_id,frm.name;".format(app=app)
+			cursor.execute(queryStr,[inSeasonNames,location_id,epsg,pointTxt,epsg,epsg])
+			closestFrame = cursor.fetchone()
+		except DatabaseError as dberror:
+			return utility.response(0,dberror[0],{})
+			
+		finally: 
+			cursor.close()
 
-		xCoords = []; yCoords = []; gpsTimes = [];
-		numPoints = len(pointPathsObj)
-		for pointIdx in range(0,numPoints,7):
-			xCoords.append(pointPathsObj[pointIdx][3].x)
-			yCoords.append(pointPathsObj[pointIdx][3].y)
-			gpsTimes.append(pointPathsObj[pointIdx][4])
+		#Extract x,y, and gps_time from linestring
+		xCoords, yCoords, gpsTimes = zip(*GEOSGeometry(closestFrame[-1]))
+		
+		#Sort the results.
+		xCoords = [x for (gps,x) in sorted(zip(gpsTimes,xCoords))]
+		yCoords = [y for (gps,y) in sorted(zip(gpsTimes,yCoords))]
+		gpsTimes = list(gpsTimes)
+		gpsTimes.sort()
 		
 		# build the echogram image urls list
-		outEchograms = utility.buildEchogramList(app,pointPathsObj[0][2],pointPathsObj[0][0])
+		outEchograms = utility.buildEchogramList(app,closestFrame[0],closestFrame[4])
 		
 		# returns the output
-		return utility.response(1,{'season':pointPathsObj[0][2],'segment_id':pointPathsObj[0][1],'start_gps_time':min(gpsTimes),'stop_gps_time':max(gpsTimes),'frame':pointPathsObj[0][0],'echograms':outEchograms,'X':xCoords,'Y':yCoords,'gps_time':gpsTimes},{})
+		return utility.response(1,{'season':closestFrame[0],'segment_id':closestFrame[1],'start_gps_time':closestFrame[2],'stop_gps_time':closestFrame[3],'frame':closestFrame[4],'echograms':outEchograms,'X':xCoords,'Y':yCoords,'gps_time':gpsTimes},{})
 		
 	except Exception as e:
 		return utility.errorCheck(e,sys)
