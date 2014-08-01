@@ -46,74 +46,7 @@
     <entry key="JDBC_VIRTUAL_TABLE">
       <virtualTable>
         <name>snow_crossover_errors</name>
-        <sql>SELECT &#xd;
-	cx.geom, ABS(cx.layer_elev_1-cx.layer_elev_2) AS error &#xd;
-FROM &#xd;
-	snow_crossover_errors cx &#xd;
-JOIN &#xd;
-	snow_segments sgs1 ON cx.segment_1_id=sgs1.id&#xd;
-JOIN &#xd;
-	snow_segments sgs2 ON cx.segment_2_id=sgs2.id&#xd;
-JOIN &#xd;
-	snow_seasons ss1 ON cx.season_1_name=ss1.name&#xd;
-JOIN&#xd;
-	snow_seasons ss2 ON cx.season_2_name=ss2.name&#xd;
-WHERE &#xd;
-	(layer_id = %layer_id% OR layer_id IS NULL) &#xd;
-AND &#xd;
-	cx.location_id = %location_id%&#xd;
-AND&#xd;
-	ss1.season_group_id IN (%season_group_ids%)&#xd;
-AND&#xd;
-	ss2.season_group_id IN (%season_group_ids%)&#xd;
-AND&#xd;
-	ss1.name IN (%season_name%)&#xd;
-AND&#xd;
-	ss2.name IN (%season_name%)&#xd;
-AND &#xd;
-	sgs1.name &gt; %start_seg% &#xd;
-AND &#xd;
-	sgs1.name &lt; %stop_seg%&#xd;
-AND &#xd;
-	sgs2.name &gt; %start_seg%&#xd;
-AND &#xd;
-	sgs2.name &lt; %stop_seg%&#xd;
-UNION SELECT &#xd;
-	cx.geom, NULL AS error &#xd;
-FROM &#xd;
-	snow_crossovers cx &#xd;
-JOIN &#xd;
-	snow_point_paths pp1 ON cx.point_path_1_id=pp1.id&#xd;
-JOIN &#xd;
-	snow_point_paths pp2 ON cx.point_path_2_id=pp2.id&#xd;
-JOIN &#xd;
-	snow_seasons ss1 ON pp1.season_id=ss1.id&#xd;
-JOIN&#xd;
-	snow_seasons ss2 ON pp2.season_id=ss2.id&#xd;
-JOIN&#xd;
-	snow_segments sgs1 ON pp1.segment_id=sgs1.id&#xd;
-JOIN&#xd;
-	snow_segments sgs2 ON pp2.segment_id=sgs2.id&#xd;
-WHERE &#xd;
-	pp1.location_id= %location_id% &#xd;
-AND&#xd;
-	ss1.season_group_id IN (%season_group_ids%)&#xd;
-AND&#xd;
-	ss2.season_group_id IN (%season_group_ids%)&#xd;
-AND&#xd;
-	ss1.name IN (%season_name%)&#xd;
-AND&#xd;
-	ss2.name IN (%season_name%)&#xd;
-AND &#xd;
-	sgs1.name &gt; %start_seg% &#xd;
-AND &#xd;
-	sgs1.name &lt; %stop_seg%&#xd;
-AND &#xd;
-	sgs2.name &gt; %start_seg%&#xd;
-AND &#xd;
-	sgs2.name &lt; %stop_seg% &#xd;
-AND &#xd;
-	cx.id NOT IN (SELECT cross_id FROM snow_crossover_errors WHERE layer_id=%layer_id%)
+        <sql>WITH cx1 AS (SELECT pp1.location_id,cx.point_path_1_id,cx.id, cx.geom, lp.layer_id, lp.twtt, pp1.geom AS pp1_geom FROM snow_crossovers cx JOIN snow_point_paths pp1 ON cx.point_path_1_id=pp1.id JOIN snow_segments seg ON pp1.segment_id=seg.id JOIN snow_seasons ss1 ON pp1.season_id=ss1.id  LEFT JOIN snow_layer_points lp ON cx.point_path_1_id=lp.point_path_id AND lp.layer_id = %layer_id%  WHERE ss1.name IN (%season_name%) AND ss1.season_group_id IN (%season_group_ids%) AND seg.name &gt; %start_seg% AND seg.name &lt; %stop_seg%), cx2 AS (SELECT cx.point_path_2_id, cx.id, lp.layer_id, lp.twtt, pp2.geom AS pp2_geom FROM snow_crossovers cx JOIN snow_point_paths pp2 ON cx.point_path_2_id=pp2.id JOIN snow_segments seg ON pp2.segment_id=seg.id JOIN snow_seasons ss2 ON pp2.season_id=ss2.id LEFT JOIN snow_layer_points lp ON cx.point_path_2_id=lp.point_path_id AND lp.layer_id=%layer_id% WHERE ss2.name IN (%season_name%) AND ss2.season_group_id IN (%season_group_ids%) AND seg.name &gt; %start_seg% AND seg.name &lt; %stop_seg%) SELECT cx1.geom, CASE WHEN COALESCE(cx1.layer_id,cx2.layer_id) = 1 THEN ABS((ST_Z(cx1.pp1_geom) - cx1.twtt*299792458.0003452/2) - (ST_Z(cx2.pp2_geom) - cx2.twtt*299792458.0003452/2)) ELSE ABS((ST_Z(cx1.pp1_geom) - (SELECT twtt FROM snow_layer_points WHERE layer_id=1 AND point_path_id = cx1.point_path_1_id)*299792458.0003452/2 - (cx1.twtt - (SELECT twtt FROM snow_layer_points WHERE layer_id = 1 AND point_path_id = cx1.point_path_1_id))*299792458.0003452/2/sqrt(3.15)) - (ST_Z(cx2.pp2_geom) - (SELECT twtt FROM snow_layer_points WHERE layer_id=1 AND point_path_id = cx2.point_path_2_id)*299792458.0003452/2 - (cx2.twtt - (SELECT twtt FROM snow_layer_points WHERE layer_id = 1 AND point_path_id = cx2.point_path_2_id))*299792458.0003452/2/sqrt(3.15))) END AS error FROM cx1 JOIN cx2 ON cx1.id=cx2.id AND (cx1.layer_id=cx2.layer_id OR (cx1.layer_id IS NULL OR cx2.layer_id IS NULL)) WHERE cx1.location_id = %location_id%
 </sql>
         <escapeSql>false</escapeSql>
         <geometry>
@@ -127,23 +60,23 @@ AND &#xd;
           <regexpValidator>^[\w\d\s\&apos;\,]+$</regexpValidator>
         </parameter>
         <parameter>
-          <name>layer_id</name>
-          <defaultValue>2</defaultValue>
-          <regexpValidator>^[\d]+$</regexpValidator>
-        </parameter>
-        <parameter>
           <name>stop_seg</name>
           <defaultValue>&apos;99999999_99&apos;</defaultValue>
           <regexpValidator>^[\w\d\s\&apos;\,]+$</regexpValidator>
         </parameter>
         <parameter>
-          <name>season_group_ids</name>
-          <defaultValue>1</defaultValue>
-          <regexpValidator>^[\w\d\s\&apos;\,]+$</regexpValidator>
+          <name>layer_id</name>
+          <defaultValue>2</defaultValue>
+          <regexpValidator>^[\d]+$</regexpValidator>
         </parameter>
         <parameter>
           <name>season_name</name>
           <defaultValue>select name from snow_seasons</defaultValue>
+          <regexpValidator>^[\w\d\s\&apos;\,]+$</regexpValidator>
+        </parameter>
+        <parameter>
+          <name>season_group_ids</name>
+          <defaultValue>1</defaultValue>
           <regexpValidator>^[\w\d\s\&apos;\,]+$</regexpValidator>
         </parameter>
         <parameter>
