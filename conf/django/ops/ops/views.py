@@ -614,7 +614,7 @@ def deleteLayerPoints(request):
 			inSegmentName = data['properties']['segment'] 
 			inLocationName = data['properties']['location'] 
 		
-		except:
+		except KeyError:
 			useGpsTimes = False
 			inStartPointPathId = data['properties']['start_point_path_id']
 			inStopPointPathId = data['properties']['stop_point_path_id']
@@ -626,20 +626,17 @@ def deleteLayerPoints(request):
 			inStartGpsTimeN = inStartGpsTime.next_minus() # get the next possible value (ensures boundary points are deleted)
 			inStopGpsTimeN = inStopGpsTime.next_plus()
 			
-			# get the point path ids
-			inPointPathIds = models.point_paths.objects.filter(segment__name=inSegmentName,location__name=inLocationName,gps_time__range=(inStartGpsTimeN,inStopGpsTimeN)).values_list('pk',flat=True)
-		
-		else:
+			# get the min/max point_path_id
+			PointPathObj = models.point_paths.objects.filter(segment__name=inSegmentName,location__name=inLocationName,gps_time__range=(inStartGpsTimeN,inStopGpsTimeN)).aggregate(Max('pk'),Min('pk'))
+			inStartPointPathId = PointPathObj['pk__min']
+			inStopPointPathId = PointPathObj['pk__max']
 			
-			# get the point path ids 
-			inPointPathIds = models.point_paths.objects.filter(pk__range=(inStartPointPathId,inStopPointPathId)).values_list('pk',flat=True)
-
 		# get the next possible value after properly quantizing twtt (ensures boundary points are deleted)
 		minTwttN = inMinTwtt.quantize(Decimal(10) ** -11).next_minus()
 		maxTwttN = inMaxTwtt.quantize(Decimal(10) ** -11).next_plus()
 		
 		# get the layer points objects for deletion
-		layerPointsObj = models.layer_points.objects.filter(point_path_id__in=inPointPathIds,twtt__range=(minTwttN,maxTwttN),layer_id=layerId)
+		layerPointsObj = models.layer_points.objects.filter(point_path_id__range=(inStartPointPathId,inStopPointPathId),twtt__range=(minTwttN,maxTwttN),layer_id=layerId)
 		
 		if len(layerPointsObj) == 0:
 		
