@@ -108,12 +108,15 @@ class layer_links(models.Model):
 
 class layer_points(models.Model):
 
+	#import User for 'user_id' column
+	from django.contrib.auth.models import User
+	
 	layer = models.ForeignKey('layers')
 	point_path = models.ForeignKey('point_paths')
 	twtt = models.DecimalField(max_digits=12,decimal_places=11,blank=True,null=True)
 	type = models.IntegerField(blank=True,null=True) # 1:manual,2:auto
 	quality = models.IntegerField(blank=True,null=True) # 1:good,2:moderate,3:derived
-	user = models.CharField(max_length=20)
+	user = models.ForeignKey(User,related_name='accum_user_id_fk')
 	last_updated = models.DateTimeField(auto_now=True)
 	
 	class Meta:

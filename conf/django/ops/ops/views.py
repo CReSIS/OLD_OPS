@@ -523,8 +523,11 @@ def createLayerPoints(request):
 		inType = utility.forceList(data['properties']['type'])
 		inQuality = utility.forceList(data['properties']['quality'])
 		inUserName = cookies['userName']
-	
+		
 		# perform the function logic
+	
+		# Get the user's id:
+		userObj = User.objects.get(username__exact=inUserName)
 	
 		# delete all layer points passed in
 		layerPointsObj = models.layer_points.objects.filter(point_path_id__in=inPointPathIds,layer_id=layerId)
@@ -540,7 +543,7 @@ def createLayerPoints(request):
 			if inPointPathIds[ptIdx] in donePointPaths: # prevent duplicate points from being inserted
 				continue
 			donePointPaths.append(inPointPathIds[ptIdx])
-			layerPointsObjs.append(models.layer_points(layer_id=layerId,point_path_id=inPointPathIds[ptIdx],twtt=inTwtt[ptIdx],type=inType[ptIdx],quality=inQuality[ptIdx],user=inUserName))
+			layerPointsObjs.append(models.layer_points(layer_id=layerId,point_path_id=inPointPathIds[ptIdx],twtt=inTwtt[ptIdx],type=inType[ptIdx],quality=inQuality[ptIdx],user_id=userObj.id))
 			# Don't insert more than 500 points in a single bulk_create.
 			if len(layerPointsObjs) > 500:
 				try:
@@ -628,7 +631,7 @@ def deleteLayerPoints(request):
 		
 		else:
 			
-			# get the point path ids
+			# get the point path ids 
 			inPointPathIds = models.point_paths.objects.filter(pk__range=(inStartPointPathId,inStopPointPathId)).values_list('pk',flat=True)
 
 		# get the next possible value after properly quantizing twtt (ensures boundary points are deleted)
