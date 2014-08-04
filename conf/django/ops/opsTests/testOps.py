@@ -5,7 +5,6 @@
 #
 # =========================================================================================
 
-
 ####    Necessary imports    ####
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -165,7 +164,7 @@ class createLayerPointsTests(TestCase):
 		checkStatus(self,response)
 		
 		#Make sure the points were inserted properly
-		self.assertEqual(self.models.layer_points.objects.filter(point_path_id__in=[4,5,6],user='admin',layer_id=1).count(),3)
+		self.assertEqual(self.models.layer_points.objects.filter(point_path_id__in=[4,5,6],user_id__username='admin',layer_id=1).count(),3)
 		
 #Test deleteLayerPoints() view
 class deleteLayerPointsTests(TestCase):
@@ -269,7 +268,7 @@ class getFrameClosestTests(TestCase):
 	def test_getFrameClosest(self):
 		setUp(self)
 		# Set the json string
-		jsonStr = '{ "properties": { "location": "arctic", "x": 1, "y": 1, "season": "fixtureTest", "startseg": "11111111_01", "stopseg": "22222222_02"} }'
+		jsonStr = '{ "properties": { "location": "arctic", "x": 8857530.81742116, "y": -8116431.61282304, "season": "fixtureTest", "startseg": "11111111_01", "stopseg": "22222222_02"} }'
 		
 		#Create the request from the above app & jsonStr
 		request = self.factory.post('get/frame/closest',{'app':'rds','data':jsonStr})
@@ -281,7 +280,7 @@ class getFrameClosestTests(TestCase):
 		
 		#Make sure the correct frame is returned
 		data = getData(response)
-		self.assertEqual(data['frame'],'22222222_02_002')
+		self.assertEqual(data['frame'],'22222222_02_001')
 
 #Test the getLayers() view
 class getLayersTests(TestCase):	
