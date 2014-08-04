@@ -169,7 +169,7 @@ class createLayerPointsTests(TestCase):
 #Test deleteLayerPoints() view
 class deleteLayerPointsTests(TestCase):
 	fixtures = testFixtures()
-	def test_deleteLayerPoints(self):
+	def test_deleteLayerPoints_start_stop_point_path_id(self):
 		setUp(self)
 		# Set the json string
 		jsonStr = '{ "properties": { "start_point_path_id": 2, "stop_point_path_id": 2, "max_twtt": 2.5170715674515201e-006, "min_twtt": 2.3170513543513799e-006, "lyr_name": "fixtureTest" } }'
@@ -184,7 +184,23 @@ class deleteLayerPointsTests(TestCase):
 		
 		#Make sure the layer points were actually removed (There are 3 layer points w/ layer_id=3 from testFixtures).
 		self.assertEqual(self.models.layer_points.objects.filter(layer_id=3,point_path_id__in=[1,3]).count(),2)
-
+		
+	def test_deleteLayerPoints_start_stop_gps_time(self):
+		setUp(self)
+		# Set the json string
+		jsonStr = '{ "properties": { "location": "arctic", "segment": "11111111_01", "start_gps_time": 1301569766.964949, "stop_gps_time": 1301569766.964949, "max_twtt": 2.5170715674515201e-006, "min_twtt": 2.3170513543513799e-006, "lyr_name": "fixtureTest" } }'
+		
+		#Create the request from the above app & jsonStr
+		request = self.factory.post('delete/layer/points',{'app':'rds','data':jsonStr})
+		#Get the response
+		response = views.deleteLayerPoints(request)
+		
+		#Check the status
+		checkStatus(self,response)
+		
+		#Make sure the layer points were actually removed (There are 3 layer points w/ layer_id=3 from testFixtures).
+		self.assertEqual(self.models.layer_points.objects.filter(layer_id=3,point_path_id__in=[1,3]).count(),2)
+		
 #Test the deleteBulk() view
 class deleteBulkTests(TestCase):
 	fixtures = testFixtures()
