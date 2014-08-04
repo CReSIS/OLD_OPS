@@ -862,7 +862,7 @@ def getFrameClosest(request):
 		
 		#Get all of the season names if useAllSeasons=True
 		if useAllSeasons:
-			inSeasonNames = utility.forceTuple(models.seasons.objects.filter(location_id__name=inLocationName,season_group__public=True).values_list('name',flat=True)) # get all the public seasons
+			inSeasonNames = utility.forceTuple(list(models.seasons.objects.filter(location_id__name=inLocationName,season_group__public=True).values_list('name',flat=True))) # get all the public seasons
 		
 		epsg = utility.epsgFromLocation(inLocationName) # get the input epsg
 		
