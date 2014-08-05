@@ -1322,7 +1322,7 @@ def getFramesWithinPolygon(request):
 	""" Return the list of frames located inside a WKT polygon boundary.
 	
 	Input:
-		bound: (WKT) well-known text polygon geometry
+		bound: (WKT) well-known text polygon geometry (WGS84)
 		location: (string) name of the location
 		
 	Optional Inputs:
@@ -2012,16 +2012,17 @@ def getFrameSearch(request):
 			useAllSeasons = False
 			inSeasonNames = data['properties']['season']
 		
-		except:
+		except KeyError:
 			useAllSeasons = True
 	
 		# perform the function logic
 		
-		if useAllSeasons:
-			inSeasonNames = models.seasons.objects.filter(location__name=inLocationName,season_group__public=True).values_list('name',flat=True) # get all the public seasons
-		
 		# get the first matching frame object
-		framesObj = models.frames.objects.filter(name__istartswith=inSearchStr,segment__season__location__name=inLocationName).order_by('pk')
+		if useAllSeasons:
+			framesObj = models.frames.objects.filter(name__istartswith=inSearchStr,segment__season__location__name=inLocationName).order_by('pk')
+		else:
+			framesObj = models.frames.objects.filter(name__istartswith=inSearchStr,segment__season__location__name=inLocationName,segment__season__name__in=inSeasonNames).order_by('pk')
+			
 		if framesObj.exists():
 			framesObj = framesObj[0]
 		else:
@@ -2029,19 +2030,26 @@ def getFrameSearch(request):
 		
 		epsg = utility.epsgFromLocation(inLocationName) # get the input epsg
 		
-		# get the season name, segment id, X, Y, and gps time for the frame (transform the geometry)
-		pointPathsObj = models.point_paths.objects.select_related('season__name').filter(frame_id=framesObj.pk).transform(epsg).values_list('season__name','segment_id','geom','gps_time').order_by('gps_time')
+		#Create a connection to the database. 
+		cursor = connection.cursor()
+		try:
+			#Query for the rquired information (get the points as a linestring w/ z value of gps_time)
+			queryStr = "SELECT ss.name, pp.segment_id, ST_Transform(ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(geom) ||' ' || ST_Y(geom)||' ' || pp.gps_time||')',4326)),%s) FROM {app}_point_paths pp JOIN {app}_seasons ss ON pp.season_id=ss.id WHERE pp.frame_id=%s GROUP BY ss.name, pp.segment_id;".format(app=app)
+			cursor.execute(queryStr,[epsg,framesObj.pk])
+			pointPathsObj = cursor.fetchone()
+		except DatabaseError as dberror:
+			return utility.response(0,dberror[0],{})
+		finally:
+			cursor.close()
 		
-		pointPathsData = zip(*pointPathsObj) # extract all the elements
+		# extract all the elements
+		seasonName = pointPathsObj[0]
+		segmentId = pointPathsObj[1]
+		lon,lat,gps_time = zip(*GEOSGeometry(pointPathsObj[2])) #break apart the linestring.
 		del pointPathsObj
 		
-		lon = []; lat = []; # parse the geometry and extract longitude and latitude
-		for ptIdx in range(len(pointPathsData[2])):
-			lon.append(pointPathsData[2][ptIdx].x)
-			lat.append(pointPathsData[2][ptIdx].y)
-		
 		# return the output
-		return utility.response(1,{'season':pointPathsData[0][0],'segment_id':pointPathsData[1][0],'frame': framesObj.name,'X':lon,'Y':lat,'gps_time':pointPathsData[3]},{})
+		return utility.response(1,{'season':seasonName,'segment_id':segmentId,'frame': framesObj.name,'X':lon,'Y':lat,'gps_time':gps_time},{})
 	
 	except Exception as e:
 		return utility.errorCheck(e,sys)
