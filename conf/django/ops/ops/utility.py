@@ -270,9 +270,11 @@ def forceTuple(var):
 	
 	"""
 	if not isinstance(var,tuple):
-		if isinstance(var,list) or isinstance(var,set):
+		if isinstance(var,str):
+			return (var,)
+		try:
 			return tuple(var)
-		else:
+		except TypeError:
 			return (var,)
 	else:
 		return var
