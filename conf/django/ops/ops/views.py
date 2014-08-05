@@ -988,68 +988,52 @@ def getLayerPoints(request):
 	try:
 		models,data,app,cookies = utility.getInput(request) # get the input and models
 	
+	
+	
 		try:
 			# parse the data input
-	
 			usePointPathIds = True
 			inPointPathIds = data['properties']['point_path_id']
-	
-		except:
-	
+		except KeyError:
 			usePointPathIds = False
+	
+		inLocationName = data['properties']['location']
+		inSeasonName = data['properties']['season']
 	
 		# parse optional inputs (dependent of point_path_id)
 
-		inLocationName = data['properties']['location']
-		inSeasonName = data['properties']['season']
-
 		try:
-
 			segName = False
 			inSegment = data['properties']['segment_id']
-
-		except:
-
+		except KeyError:
 			segName = True
 			inSegment = data['properties']['segment']
 
 		try:
-
 			useAllGps = False
 			inStartGpsTime = data['properties']['start_gps_time']
 			inStopGpsTime = data['properties']['stop_gps_time']
-
-		except:
-
+		except KeyError:
 			useAllGps = True
-
 
 		# parse additional optional inputs (not dependent on point_path_id)
 		try:
-	
 			useAllLyr = False
 			inLyrNames = utility.forceList(data['properties']['lyr_name'])
-	
-		except:
-	
+		except KeyError:
 			useAllLyr = True
 	
 		try:
-	
 			returnGeom = True
 			inGeomType = data['properties']['return_geom']
 			if inGeomType == 'proj':
 				inLocationName = data['properties']['location']
-	
-		except:
-	
+		except KeyError:
 			returnGeom = False
-	
 	
 		# perform function logic
 		
 		if not usePointPathIds:
-
 			# get a segment object with a pk field
 			if segName:
 				segmentId = models.segments.objects.filter(name=inSegment).values_list('pk',flat=True)
@@ -1060,14 +1044,12 @@ def getLayerPoints(request):
 			else:
 				segmentId = inSegment
 
-			# get the start/stop gps times
-			if useAllGps:
-				pointPathsObj = models.point_paths.objects.filter(segment_id=segmentId,location__name=inLocationName).aggregate(Max('gps_time'),Min('gps_time'))
-				inStartGpsTime = pointPathsObj['gps_time__min']
-				inStopGpsTime = pointPathsObj['gps_time__max']
-
 			# get the point path ids
-			inPointPathIds = models.point_paths.objects.filter(segment_id=segmentId,location__name=inLocationName,gps_time__range=(inStartGpsTime,inStopGpsTime)).values_list('pk',flat=True)
+			if useAllGps:
+				inPointPathIds = models.point_paths.objects.filter(segment_id=segmentId,location__name=inLocationName).values_list('pk',flat=True)
+			else:
+				
+				inPointPathIds = models.point_paths.objects.filter(segment_id=segmentId,location__name=inLocationName,gps_time__range=(inStartGpsTime,inStopGpsTime)).values_list('pk',flat=True)
 
 		# get the user profile
 		userProfileObj,status = utility.getUserProfile(cookies)
@@ -1086,7 +1068,6 @@ def getLayerPoints(request):
 				layerIds = models.layers.objects.filter(name__in=inLyrNames,deleted=False,layer_group__in=authLayerGroups).values_list('pk',flat=True)
 		
 		if not returnGeom:
-
 			# get a layer points object (no geometry)
 			layerPointsObj = models.layer_points.objects.select_related('point_path__gps_time').filter(point_path_id__in=inPointPathIds,layer_id__in=layerIds).values_list('point_path','layer_id','point_path__gps_time','twtt','type','quality')
 
@@ -1094,12 +1075,10 @@ def getLayerPoints(request):
 				return utility.response(2,'WARNING: NO LAYER POINTS FOUND FOR THE GIVEN PARAMETERS.',{})
 
 			layerPoints = zip(*layerPointsObj) # unzip the layerPointsObj
-
 			# return the output
 			return utility.response(1,{'point_path_id':layerPoints[0],'lyr_id':layerPoints[1],'gps_time':layerPoints[2],'twtt':layerPoints[3],'type':layerPoints[4],'quality':layerPoints[5]},{})
 
 		else:
-
 			# get a layer points object (with geometry)
 			layerPointsObj = models.layer_points.objects.select_related('point_path__gps_time','point_path__geom').filter(point_path_id__in=inPointPathIds,layer_id__in=layerIds).values_list('point_path','layer_id','point_path__gps_time','twtt','type','quality','point_path__geom')
 
@@ -1109,10 +1088,11 @@ def getLayerPoints(request):
 			pointPathId,layerIds,gpsTimes,twtts,types,qualitys,pointPaths = zip(*layerPointsObj) # unzip the layerPointsObj
 
 			outLon = []; outLat = []; outElev = [];
+			if inGeomType == 'proj':
+				epsg = utility.epsgFromLocation(inLocationName) # get the input epsg
 			for pointObj in pointPaths:
 				ptGeom = GEOSGeometry(pointObj)
 				if inGeomType == 'proj':
-					epsg = utility.epsgFromLocation(inLocationName) # get the input epsg
 					ptGeom.transform(epsg)
 				outLon.append(ptGeom.x);
 				outLat.append(ptGeom.y);
