@@ -315,7 +315,7 @@ HOME=/
 0 2 * * 7 root rm -f $(find "$snfsBasePath"postgresql_reports/*.html -mtime +60);
 
 # CLEAR THE CONTENTS OF THE DJANGO LOGS EVERY MONTH (FIRST OF MONTH, 2 AM)
-0 2 1 * * root > /cresis/snfs1/web/ops2/django_logs/createPath.log;
+0 2 1 * * root > "$snfsBasePath"django_logs/createPath.log;
 
 "
 
