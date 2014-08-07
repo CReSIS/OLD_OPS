@@ -13,7 +13,7 @@
 # =================================================================================
 
 #notify-send "Now building OpenPolarServer"
-#notify-send "Please watch for more prompts (there will only be one you need to act on). Thank you."
+#notify-send "Please watch for more prompts (there will be a few you need to act on). Thank you."
 
 printf "\n\n"
 printf "#########################################################################\n"
