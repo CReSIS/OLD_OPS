@@ -2051,6 +2051,13 @@ def getFrameSearch(request):
 		lon,lat,gps_time = zip(*GEOSGeometry(pointPathsObj[2])) #break apart the linestring.
 		del pointPathsObj
 		
+		#Sort the results.
+		lon = [x for (gps,x) in sorted(zip(gps_time,lon))]
+		lat = [y for (gps,y) in sorted(zip(gps_time,lat))]
+		gps_time = list(gps_time)
+		gps_time.sort()
+		
+		
 		# return the output
 		return utility.response(1,{'season':seasonName,'segment_id':segmentId,'frame': framesObj.name,'X':lon,'Y':lat,'gps_time':gps_time},{})
 	
