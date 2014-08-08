@@ -56,7 +56,29 @@ while true; do
 					* ) echo "Please answer yes or no.";;
 				esac
 			done
+			
+			#Set the OPS_DATA_PATH setting.  			
+			echo "PLEASE ENTER THE OPS_DATA_PATH (e.g., /cresis/snfs1/web/ops(2)/ OR /db/)"
+			read opsDataPath
+			while true; do
+					read -p "Is the following path correct: $opsDataPath?" yn
+							case $yn in
+							[Yy]* )
+									read -p "ARE YOU SURE THIS IS THE CORRECT OPS BASE PATH: $opsDataPath?" yn
+									case $yn in
+											[Yy]* )
+													sed -i "s,OPS_DATA_PATH = '',OPS_DATA_PATH = '$opsDataPath',g" /var/django/ops/ops/settings.py;
+													break;;
+											* ) echo "Please answer yes or no.";;
+									esac;;
+							[Nn]* )
+									echo "Please enter the correct path for OPS_DATA_PATH:"
+									read opsDataPath;;
+							* ) echo "Please answer yes or no.";;
+					esac
+			done
 			break;;	
+					
 		[Nn]* ) 
 			cp -f /tmp/DjangoSettings.old /var/django/ops/ops/settings.py;
 			rm -f /tmp/DjangoSettings.old;

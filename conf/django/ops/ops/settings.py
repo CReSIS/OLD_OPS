@@ -7,6 +7,8 @@ https://docs.djangoproject.com/en/1.6/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.6/ref/settings/
 """
+# OPS_DATA_PATH. This sets the path to the OPS data directory (e.g., '/cresis/snfs1/web/ops(2)/' OR '/db/')
+OPS_DATA_PATH = ''
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
@@ -26,7 +28,7 @@ TEMPLATE_DEBUG = DEBUG
 
 ADMINS = ()
 
-ALLOWED_HOSTS = ['ops.cresis.ku.edu','ops2.cresis.ku.edu','192.168.111.222']
+ALLOWED_HOSTS = ['ops.cresis.ku.edu','ops2.cresis.ku.edu','ops3.cresis.ku.edu','192.168.111.222']
 
 # Application definition
 INSTALLED_APPS = (

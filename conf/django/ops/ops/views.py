@@ -12,6 +12,7 @@ from scipy.io import savemat
 import numpy as np
 from collections import OrderedDict
 from django.db.models.base import ModelState
+import ops.settings as opsSettings
 
 # =======================================
 # DATA INPUT/DELETE FUNCTIONS
@@ -71,7 +72,7 @@ def createPath(request):
 	
 	
 		#Set up the basic logging configuration for createPath:
-		logging.basicConfig(filename='/cresis/snfs1/web/ops2/django_logs/createPath.log',format='%(levelname)s :: %(asctime)s :: %(message)s',datefmt='%c', level=logging.DEBUG)
+		logging.basicConfig(filename= opsSettings.OPS_DATA_PATH + 'django_logs/createPath.log',format='%(levelname)s :: %(asctime)s :: %(message)s',datefmt='%c', level=logging.DEBUG)
 		logging.info('Segment %s of season %s is now loading',inSegment,inSeason)
 		
 		locationsObj,_ = models.locations.objects.get_or_create(name=inLocationName.lower()) # get or create the location 
@@ -1177,7 +1178,7 @@ def getLayerPointsCsv(request):
 			cursor.close()
 		
 		# generate the output csv information
-		serverDir = '/cresis/snfs1/web/ops2/data/csv/'
+		serverDir = opsSettings.OPS_DATA_PATH + 'data/csv/'
 		webDir = 'data/csv/'
 		if getAllPoints:
 			tmpFn = 'OPS_CReSIS_L2_CSV_' + utility.randId(10) + '.csv'
@@ -1307,7 +1308,7 @@ def getLayerPointsKml(request):
 			newLineString.style.linestyle.color = simplekml.Color.blue
 		
 		# generate the output kml information
-		serverDir = '/cresis/snfs1/web/ops2/data/kml/'
+		serverDir = opsSettings.OPS_DATA_PATH + 'data/kml/'
 		webDir = 'data/kml/'
 		tmpFn = 'OPS_CReSIS_L2_KML_' + utility.randId(10) + '.kml'
 		webFn = webDir + tmpFn
@@ -1539,7 +1540,7 @@ def getLayerPointsMat(request):
 		del lpIds,lpLyrIds,lpPpIds,lpTwtts,lpTypes,lpQualitys,ppIds,ppGpsTimes,ppRolls,ppPitchs,ppHeadings,ppPaths,ppSeasonNames,ppFrameNames,lpLyrNames,lpPpLyrNames
 		
 		# generate the output mat information
-		serverDir = '/cresis/snfs1/web/ops2/data/mat/'
+		serverDir = opsSettings.OPS_DATA_PATH + 'data/mat/'
 		webDir = 'data/mat/'
 		tmpFn = 'OPS_CReSIS_L2_MAT_' + utility.randId(10) + '.mat'
 		webFn = webDir + tmpFn
@@ -1616,7 +1617,7 @@ def getSystemInfo(request):
 		# get the user profile
 		userProfileObj,status = utility.getUserProfile(cookies)
 		
-		from ops.settings import INSTALLED_APPS as apps # get a list of all the apps
+		apps = opsSettings.INSTALLED_APPS # get a list of all the apps
 
 		outData = []
 		
@@ -1900,7 +1901,7 @@ def getCrossoversReport(request):
 		if len(crossoverRows) > 0:
 		
 			# generate the output report information
-			serverDir = '/cresis/snfs1/web/ops2/data/reports/'
+			serverDir = opsSettings.OPS_DATA_PATH + 'data/reports/'
 			webDir = 'data/reports/'
 			tmpFn = 'OPS_CReSIS_Crossovers_Report_' + utility.randId(10) + '.csv'
 			webFn = webDir + tmpFn
@@ -2130,7 +2131,7 @@ def getInitialData(request):
 		layerGroupIds = utility.forceList(set(layerGroupIds))
 		
 		# create a temporary directory to store the csv files for compression
-		tmpDir = '/cresis/snfs1/web/ops2/datapacktmp/' + utility.randId(10)
+		tmpDir = opsSettings.OPS_DATA_PATH + 'datapacktmp/' + utility.randId(10)
 		sysCmd = 'mkdir -p -m 777 ' + tmpDir + ' && chown -R postgres:postgres ' + tmpDir
 		os.system(sysCmd)
 		
@@ -2175,7 +2176,7 @@ def getInitialData(request):
 			cursor.close() # close the cursor in case of exception
 		
 		# generate the output .tar.gz information
-		serverDir = '/cresis/snfs1/web/ops2/data/datapacks/'
+		serverDir = opsSettings.OPS_DATA_PATH + 'data/datapacks/'
 		webDir = 'data/datapacks/'
 		tmpFn = 'OPS_CReSIS_%s_DATAPACK' % (app.upper()) + '_' + utility.randId(10) + '.tar.gz'
 		webFn = webDir + tmpFn

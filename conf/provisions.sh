@@ -41,8 +41,8 @@ serverAdmin="root";
 appName="ops";
 dbName="ops";
 installPgData=0;
-snfsBasePath="/cresis/snfs1/web/ops2/";
-webDataDir=$snfsBasePath"data";
+opsDataPath="/db/";
+webDataDir=$opsDataPath"data";
 
 # --------------------------------------------------------------------
 # GET SOME INPUTS FROM THE USER
@@ -79,7 +79,7 @@ fi
 # --------------------------------------------------------------------
 # WRITE GEOSERVER_DATA_DIR TO ~/.bashrc
 
-geoServerStr="GEOSERVER_DATA_DIR="$snfsBasePath"geoserver"
+geoServerStr="GEOSERVER_DATA_DIR="$opsDataPath"geoserver"
 echo $geoServerStr >> ~/.bashrc
 . ~/.bashrc
 
@@ -309,13 +309,13 @@ HOME=/
 0 2 * * * root sh /vagrant/conf/tools/vacuumAnalyze.sh ops
 
 # WEEKLY POSTGRESQL REPORT CREATION AT 2 AM SUNDAY
-0 2 * * 7 root sh /vagrant/conf/tools/createPostgresqlReport.sh "$snfsBasePath"postgresql_reports/
+0 2 * * 7 root sh /vagrant/conf/tools/createPostgresqlReport.sh "$opsDataPath"postgresql_reports/
 
 # REMOVE POSTGRESQL REPORTS OLDER THAN 2 MONTHS EVERY SUNDAY AT 2 AM
-0 2 * * 7 root rm -f $(find "$snfsBasePath"postgresql_reports/*.html -mtime +60);
+0 2 * * 7 root rm -f $(find "$opsDataPath"postgresql_reports/*.html -mtime +60);
 
 # CLEAR THE CONTENTS OF THE DJANGO LOGS EVERY MONTH (FIRST OF MONTH, 2 AM)
-0 2 1 * * root > "$snfsBasePath"django_logs/createPath.log;
+0 2 1 * * root > "$opsDataPath"django_logs/createPath.log;
 
 "
 
@@ -360,8 +360,8 @@ rm -f ~/jai_imageio-1_1-lib-linux-amd64-jre.bin && cd ~
 # --------------------------------------------------------------------
 # INSTALL AND CONFIGURE POSTGRESQL + POSTGIS
 
-pgDir=$snfsBasePath'pgsql/9.3/'
-pgPth=$snfsBasePath'pgsql/'
+pgDir=$opsDataPath'pgsql/9.3/'
+pgPth=$opsDataPath'pgsql/'
 
 # EXCLUDE POSTGRESQL FROM THE BASE CentOS RPM
 sed -i -e '/^\[base\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
@@ -451,7 +451,7 @@ yum -y install geos-devel
 # INSTALL AND CONFIGURE DJANGO
 
 # INSTALL DJANGO
-pip install Django==1.6.4
+pip install Django==1.6.5
 
 # CREATE DIRECTORY AND COPY PROJECT
 mkdir -p /var/django/
@@ -460,6 +460,9 @@ cp -rf /vagrant/conf/django/* /var/django/
 # GENERATE A NEW SECRET_KEY
 NEW_SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9*^+()@' | fold -w 40 | head -n 1);
 echo $NEW_SECRET_KEY >> /etc/secret_key.txt
+
+# SET THE OPS_DATA_PATH
+sed -i "s,OPS_DATA_PATH = '',OPS_DATA_PATH = '$opsDataPath',g" /var/django/ops/ops/settings.py;
 
 # MODIFY THE DATABASE NAME
 sed -i "s,		'NAME': 'ops',		'NAME': '$dbName',g" /var/django/ops/ops/settings.py
@@ -509,8 +512,8 @@ done
 if [ $newDb -eq 1 ]; then
 
 	# SYNC THE DJANGO DEFINED DATABASE
-	python /var/django/$appName/manage.py syncdb --noinput 
-
+	python /var/django/$appName/manage.py syncdb --noinput
+	
 	# CREATE INDEXES ON POINT PATH GEOMETRIES
 	indexStr='psql -U postgres -d '$dbName' -c "CREATE INDEX app_antarctic_geom_idx ON app_point_paths USING gist (ST_Transform(geom,3031)) WHERE location_id = 2; CREATE INDEX app_arctic_geom_idx ON app_point_paths USING gist (ST_Transform(geom,3413)) WHERE location_id = 1;"'
 	eval ${indexStr//app/rds}
@@ -557,10 +560,10 @@ yum install -y tomcat6
 # CONFIGURE TOMCAT6
 echo 'JAVA_HOME="/usr/java/jre1.8.0/"' >> /etc/tomcat6/tomcat6.conf
 echo 'JAVA_OPTS="-server -Xms512m -Xmx512m -XX:+UseParallelGC -XX:+UseParallelOldGC"' >> /etc/tomcat6/tomcat6.conf
-echo 'CATALINA_OPTS="-DGEOSERVER_DATA_DIR='$snfsBasePath'geoserver"' >> /etc/tomcat6/tomcat6.conf
+echo 'CATALINA_OPTS="-DGEOSERVER_DATA_DIR='$opsDataPath'geoserver"' >> /etc/tomcat6/tomcat6.conf
 
 # MAKE THE EXTERNAL GEOSERVER DATA DIRECTORY (IF IT DOESNT EXIST)
-geoServerDataPath=$snfsBasePath"geoserver/"
+geoServerDataPath=$opsDataPath"geoserver/"
 if [ ! -d $geoServerDataPath ]; then
 	mkdir -p $geoServerDataPath
 fi
@@ -607,14 +610,14 @@ cp -rf /vagrant/conf/geoportal/* /var/www/html/ # COPY THE APPLICATION
 # sed -i "s,	 baseUrl: ""http://192.168.111.222"",	 baseUrl: ""$serverName"",g" /var/www/html/app.js
 
 # CREATE AND CONFIGURE ALL THE OUTPUT DIRECTORIES
-mkdir -m 777 -p $snfsBasePath"data/csv/"
-mkdir -m 777 -p $snfsBasePath"data/kml/"
-mkdir -m 777 -p $snfsBasePath"data/mat/"
-mkdir -m 777 -p $snfsBasePath"datapacktmp/"
-mkdir -m 777 -p  $snfsBasePath"data/datapacks/"
-mkdir -m 777 -p $snfsBasePath"data/reports/"
-mkdir -m 777 -p $snfsBasePath"postgresql_reports/"
-mkdir -m 777 -p $snfsBasePath"django_logs/"
+mkdir -m 777 -p $opsDataPath"data/csv/"
+mkdir -m 777 -p $opsDataPath"data/kml/"
+mkdir -m 777 -p $opsDataPath"data/mat/"
+mkdir -m 777 -p $opsDataPath"datapacktmp/"
+mkdir -m 777 -p  $opsDataPath"data/datapacks/"
+mkdir -m 777 -p $opsDataPath"data/reports/"
+mkdir -m 777 -p $opsDataPath"postgresql_reports/"
+mkdir -m 777 -p $opsDataPath"django_logs/"
 mkdir -m 777 -p /var/profile_logs/txt/
 
 # --------------------------------------------------------------------
