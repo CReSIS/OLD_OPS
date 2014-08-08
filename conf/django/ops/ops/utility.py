@@ -270,7 +270,7 @@ def forceTuple(var):
 	
 	"""
 	if not isinstance(var,tuple):
-		if isinstance(var,str):
+		if isinstance(var,str) or isinstance(var,unicode):
 			return (var,)
 		try:
 			return tuple(var)

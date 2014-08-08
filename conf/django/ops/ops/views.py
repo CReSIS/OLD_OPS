@@ -2013,7 +2013,7 @@ def getFrameSearch(request):
 		# parse the optional input
 		try:
 			useAllSeasons = False
-			inSeasonNames = data['properties']['season']
+			inSeasonNames = utility.forceList(data['properties']['season'])
 		
 		except KeyError:
 			useAllSeasons = True
