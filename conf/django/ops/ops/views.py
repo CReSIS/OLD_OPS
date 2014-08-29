@@ -1741,6 +1741,7 @@ def getCrossovers(request):
 		inLayerNames = utility.forceList(data['properties']['lyr_name'])
 		try:
 			inFrameNames = utility.forceTuple(data['properties']['frame'])
+			inSegmentIDs = utility.forceTuple(data['properties']['segment_id'])
 			inPointPathIds = []
 			
 		except:
@@ -1768,7 +1769,7 @@ def getCrossovers(request):
 		try:
 			#Get frame ids
 			if not inPointPathIds:
-				frameIds = utility.forceTuple(list(models.frames.objects.filter(name__in=inFrameNames).values_list('pk',flat=True)))
+				frameIds = utility.forceTuple(list(models.frames.objects.filter(name__in=inFrameNames,segment__in=inSegmentIDs).values_list('pk',flat=True)))
 			#Get crossover errors for each layer. 
 			for lyrId in layerIds:
 				if inPointPathIds:
