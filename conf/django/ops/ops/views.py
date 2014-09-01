@@ -1715,6 +1715,7 @@ def getCrossovers(request):
 		point_path_id: (integer or list of integers)
 			OR
 		frame: (string or list of strings)
+		segment_id: (integer or list of integers)
 		
 	Output:
 		status: (integer) 0:error 1:success 2:warning
@@ -1749,7 +1750,7 @@ def getCrossovers(request):
 				inPointPathIds = utility.forceTuple(data['properties']['point_path_id'])
 				inFrameNames = []
 			except:
-				return utility.response(0,'ERROR: EITHER POINT PATH IDS OR FRAME NAMES MUST BE GIVEN',{})
+				return utility.response(0,'ERROR: EITHER POINT PATH IDS OR FRAME NAMES/SEGMENT_IDS MUST BE GIVEN',{})
 
 	
 		# perform the function logic
