@@ -46,30 +46,7 @@
     <entry key="JDBC_VIRTUAL_TABLE">
       <virtualTable>
         <name>arctic_rds_quality_flightlines</name>
-        <sql>SELECT &#xd;
-	pp.id, lp.quality,pp.geom &#xd;
-FROM &#xd;
-	rds_point_paths AS pp &#xd;
-JOIN &#xd;
-	rds_segments AS segs ON pp.segment_id=segs.id&#xd;
-JOIN &#xd;
-	rds_seasons ss ON pp.season_id=ss.id&#xd;
-JOIN &#xd;
-	rds_season_groups sgs ON ss.season_group_id=sgs.id &#xd;
-LEFT JOIN &#xd;
-	rds_layer_points AS lp ON pp.id=lp.point_path_id &#xd;
-AND &#xd;
-	(lp.layer_id = %layer_id% OR lp IS NULL) &#xd;
-WHERE &#xd;
-	ss.location_id=%location_id% &#xd;
-AND &#xd;
-	ss.name IN (%season_name%) &#xd;
-AND &#xd;
-	sgs.id IN (%season_group_ids%) &#xd;
-AND &#xd;
-	segs.name &gt; %start_seg% &#xd;
-AND	&#xd;
-	segs.name &lt; %stop_seg%
+        <sql>SELECT * FROM rds_2009_quality
 </sql>
         <escapeSql>false</escapeSql>
         <geometry>
