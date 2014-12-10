@@ -1713,6 +1713,7 @@ def getSegmentInfo(request):
 		segment_id: (integer) segment id of a segment in the segments table
 			or
 		segment: (string) name of the segment
+		season: (string) name of the season
 		
 	Output:
 		status: (integer) 0:error 1:success 2:warning
@@ -1732,7 +1733,8 @@ def getSegmentInfo(request):
 			inSegmentId = data['properties']['segment_id']
 		except:
 			inSegment = data['properties']['segment']
-			inSegmentId = models.segments.objects.filter(name=inSegment).values_list('pk',flat=True)
+			inSeason = data['properties']['season']
+			inSegmentId = models.segments.objects.filter(name=inSegment,season_id__name = inSeason).values_list('pk',flat=True)
 			if inSegmentId.exists():
 				inSegmentId = inSegmentId[0]
 			else:
