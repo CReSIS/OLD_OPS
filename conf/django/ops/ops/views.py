@@ -585,6 +585,7 @@ def deleteLayerPoints(request):
 		max_twtt: (float) the maximum two-way travel time of the points for deletion
 		lyr_name OR lyr_id: (string) name of the layer  OR (integer) id of the layer for the points to delete
 		segment: (string) the name of the segment of the points for deletion
+		season: (string) the name of the season of the points for deletion
 		location: (string) the name of the location of the points for deletion
 		
 	Output:
@@ -615,7 +616,8 @@ def deleteLayerPoints(request):
 			useGpsTimes = True
 			inStartGpsTime = data['properties']['start_gps_time']
 			inStopGpsTime = data['properties']['stop_gps_time']
-			inSegmentName = data['properties']['segment'] 
+			inSegmentName = data['properties']['segment']
+			inSeasonName = data['properties']['season']
 			inLocationName = data['properties']['location'] 
 		
 		except KeyError:
@@ -631,7 +633,7 @@ def deleteLayerPoints(request):
 			inStopGpsTimeN = inStopGpsTime.next_plus()
 			
 			# get the min/max point_path_id
-			PointPathObj = models.point_paths.objects.filter(segment__name=inSegmentName,location__name=inLocationName,gps_time__range=(inStartGpsTimeN,inStopGpsTimeN)).aggregate(Max('pk'),Min('pk'))
+			PointPathObj = models.point_paths.objects.filter(segment__name=inSegmentName,season_id__name=inSeasonName,location__name=inLocationName,gps_time__range=(inStartGpsTimeN,inStopGpsTimeN)).aggregate(Max('pk'),Min('pk'))
 			inStartPointPathId = PointPathObj['pk__min']
 			inStopPointPathId = PointPathObj['pk__max']
 			
