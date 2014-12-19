@@ -1412,7 +1412,7 @@ def getPointsWithinPolygon(request):
 		
 		cursor = connection.cursor() #Create a database cursor		
 		try:
-			sqlStr = "WITH surflp AS (SELECT lp.twtt,lp.type,lp.quality,lp.point_path_id FROM {app}_layer_points lp WHERE lp.layer_id = 1), botlp AS (SELECT lp.twtt, lp.type, lp.quality, lp.point_path_id FROM {app}_layer_points lp WHERE lp.layer_id = 2) SELECT ST_Y(pp.geom) LAT, ST_X(pp.geom) LON, ST_Z(pp.geom) ELEVATION, pp.roll, pp.pitch, pp.heading, pp.gps_time, surflp.twtt*(299792458.0/2) surface, surflp.twtt*(299792458.0/2) + ((botlp.twtt-surflp.twtt)*(299792458.0/2/sqrt(3.15))) bottom,  ABS((surflp.twtt*(299792458.0/2)) - (surflp.twtt*(299792458.0/2) + ((botlp.twtt-surflp.twtt)*(299792458.0/2/sqrt(3.15))))) thickness, surflp.type, botlp.type, surflp.quality, botlp.quality,s.name SEASON, frm.name FRAME FROM {app}_point_paths pp JOIN surflp ON pp.id=surflp.point_path_id LEFT JOIN botlp ON pp.id=botlp.point_path_id JOIN {app}_seasons s ON s.id=pp.season_id JOIN {app}_frames frm ON frm.id=pp.frame_id WHERE pp.location_id = %s AND ST_Within(pp.geom,ST_GeomFromText(%s,4326));".format(app=app)
+			sqlStr = "WITH surflp AS (SELECT lp.twtt,lp.type,lp.quality,lp.point_path_id FROM {app}_layer_points lp WHERE lp.layer_id = 1), botlp AS (SELECT lp.twtt, lp.type, lp.quality, lp.point_path_id FROM {app}_layer_points lp WHERE lp.layer_id = 2) SELECT ST_Y(pp.geom) LAT, ST_X(pp.geom) LON, ST_Z(pp.geom) ELEVATION, pp.gps_time, surflp.twtt*(299792458.0/2) surface, surflp.twtt*(299792458.0/2) + ((botlp.twtt-surflp.twtt)*(299792458.0/2/sqrt(3.15))) bottom,  ABS((surflp.twtt*(299792458.0/2)) - (surflp.twtt*(299792458.0/2) + ((botlp.twtt-surflp.twtt)*(299792458.0/2/sqrt(3.15))))) thickness, surflp.quality, botlp.quality,s.name SEASON, frm.name FRAME FROM {app}_point_paths pp JOIN surflp ON pp.id=surflp.point_path_id LEFT JOIN botlp ON pp.id=botlp.point_path_id JOIN {app}_seasons s ON s.id=pp.season_id JOIN {app}_frames frm ON frm.id=pp.frame_id WHERE pp.location_id = %s AND ST_Within(pp.geom,ST_GeomFromText(%s,4326));".format(app=app)
 			
 			#Query the database and fetch results
 			cursor.execute(sqlStr,[locationId,inBoundaryWkt])	
@@ -1428,7 +1428,7 @@ def getPointsWithinPolygon(request):
 		else:
 			layerPoints = zip(*data) # unzip the layerPointsObj
 			# return the output
-			return utility.response(1,{'Lat':layerPoints[0],'Lon':layerPoints[1],'Elevation':layerPoints[2],'Gps_Time':layerPoints[6],'Surface':layerPoints[7],'Bottom':layerPoints[8],'Thickness':layerPoints[9],'Surface_Quality':layerPoints[12],'Bottom_Quality':layerPoints[13],'Season':layerPoints[14],'Frame':layerPoints[15]},{})
+			return utility.response(1,{'Lat':layerPoints[0],'Lon':layerPoints[1],'Elevation':layerPoints[2],'Gps_Time':layerPoints[3],'Surface':layerPoints[4],'Bottom':layerPoints[5],'Thickness':layerPoints[6],'Surface_Quality':layerPoints[7],'Bottom_Quality':layerPoints[8],'Season':layerPoints[9],'Frame':layerPoints[10]},{})
 			
 	except Exception as e:
 		return utility.errorCheck(e,sys)
