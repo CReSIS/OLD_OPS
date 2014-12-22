@@ -1428,7 +1428,7 @@ def getPointsWithinPolygon(request):
 		else:
 			layerPoints = zip(*data) # unzip the layerPointsObj
 			# return the output
-			return utility.response(1,{'Lat':layerPoints[0],'Lon':layerPoints[1],'Elevation':layerPoints[2],'Bottom':layerPoints[5],'Bottom_Quality':layerPoints[8],'Season':layerPoints[9],'Frame':layerPoints[10]},{})
+			return utility.response(1,{'Lat':layerPoints[0],'Lon':layerPoints[1],'Elevation':layerPoints[2],'Gps_Time':layerPoints[3],'Surface':layerPoints[4],'Bottom':layerPoints[5],'Thickness':layerPoints[6],'Surface_Quality':layerPoints[7],'Bottom_Quality':layerPoints[8],'Season':layerPoints[9],'Frame':layerPoints[10]},{})
 			
 	except Exception as e:
 		return utility.errorCheck(e,sys)
