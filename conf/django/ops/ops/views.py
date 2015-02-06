@@ -2566,6 +2566,38 @@ def query(request):
 	except DatabaseError as dbError:
 		return utility.response(0,dbError[0],{})
 
+@ipAuth()		
+def updateMaterializedView(request):
+	""" REFRESH MATERIALIZED VIEW xxx; on the database.
+	
+	Input:
+		query: (string) an SQL clause 'REFRESH MATERIALIZED VIEW xxx'
+		
+	Output:
+		status: (integer) 0:error 1:success
+		
+	
+	"""
+	try:
+		pydevd.settrace();
+		queryStr,cookies = utility.getQuery(request) # get the input
+	
+		# perform the function logic
+		
+		cursor = connection.cursor() # create a database cursor
+		cursor.execute(queryStr) # execute the query
+		connection.commit()
+
+		
+		return utility.response(1,"SUCESS: The materialized view has been updated.",{})
+			
+	except DatabaseError as dbError:
+		return utility.response(0,dbError[0],{})
+	
+	finally:
+			cursor.close() # close the connection if there is an error	
+
+
 @ipAuth()
 def analyze(request): 
 	""" ANALYZE a list of tables in the OPS database.
