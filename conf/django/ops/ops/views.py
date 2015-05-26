@@ -1,4 +1,4 @@
-from django.db import connection,DatabaseError,transaction
+from django.db import connection,DatabaseError,transaction,IntegrityError
 from django.db.models import Max,Min
 from django.contrib.gis.geos import GEOSGeometry,Point,LineString,WKBReader
 from django.contrib.gis.gdal import SpatialReference,CoordTransform
