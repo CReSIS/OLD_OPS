@@ -579,7 +579,7 @@ if [ -f /vagrant/data/geoserver/geoserver.zip ]; then
 else
 
 	# DOWNLOAD THE DATA PACK FROM CReSIS (MINIMAL LAYERS)
-	cd /vagrant/data/geoserver/ && wget https://ops.cresis.ku.edu/data/geoserver/geoserver.zip
+	cd /vagrant/data/geoserver/ && wget https://data.cresis.ku.edu/data/ops/geoserver.zip
 	
 	# UNZIP THE DOWNLOADED DATA PACK
 	unzip /vagrant/data/geoserver/geoserver.zip -d $geoServerDataPath"data/"
