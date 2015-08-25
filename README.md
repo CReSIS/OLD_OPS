@@ -52,6 +52,6 @@ password: pubAdmin```
 
 ### Adding CReSIS data to the system
 
-This can be done by placing CReSIS "data packs" into the /data/postgresql/ directory. Information on how and where to get these data packs is coming soon.
+This can be done by placing CReSIS "data packs" into the /data/postgresql/ directory. Information on how and where to get these data packs can be found [here.](https://github.com/CReSIS/OPS/wiki/Data-bulkload)
 
 Documentation still in progress...
