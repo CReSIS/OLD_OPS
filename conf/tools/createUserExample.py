@@ -1,7 +1,7 @@
 # run this with the following completed:
 #	(1) As root user (sudo -i)
 #	(2) VirtualEnv activated: (source /usr/bin/venv/bin/activate
-#	(3) Inside the Django shell (python /var/django/ops/mange.py shell)
+#	(3) Inside the Django shell (python /var/django/ops/manage.py shell)
 
 from django.contrib.auth.models import User
 
