@@ -33,6 +33,26 @@ printf "\n"
 startTime=$(date -u);
 
 # --------------------------------------------------------------------
+#PROMPT TO OPTIONALLY LOAD IN DATA (DATA BULKLOAD)
+installPgData=0;
+read -p "Would you like to pre-load the OpenPolarServer with data?" yn
+			case $yn in 
+				[Yy]* ) 
+					installPgData=1;
+					read -p "Would you like to load in a sample dataset from CReSIS (useful for testing and upgrading the system)?  
+					**NOTE** If not you must place the desired datapacks in /vagrant/data/postgresql/ before continuing.  See https://github.com/CReSIS/OPS/wiki/Data-bulkload for more details **NOTE**" yn
+								case $yn in 
+									[Yy]* ) 
+										# DOWNLOAD THE DATA PACK FROM CReSIS (MINIMAL LAYERS)
+										wget -P /vagrant/data/postgresql/ -- -m "https://data.cresis.ku.edu/data/ops/SampleData"
+										break;;
+									* ) echo "Please answer yes or no.";;
+								esac;;
+					break;;
+				* ) echo "Please answer yes or no.";;
+			esac;;
+
+# --------------------------------------------------------------------
 # SET SOME STATIC INPUTS
 preProv=1;
 newDb=1;
@@ -40,7 +60,7 @@ serverName="192.168.111.222";
 serverAdmin="root"; 
 appName="ops";
 dbName="ops";
-installPgData=0;
+
 opsDataPath="/db/";
 webDataDir=$opsDataPath"data";
 
