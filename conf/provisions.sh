@@ -40,13 +40,20 @@ while true; do
 	case $yn in 
 		[Yy]* ) 
 			installPgData=1;
-			read -p "Would you like to load in a sample dataset from CReSIS (useful for testing and upgrading the system)? \n 
+			read -p "Would you like to load in a sample dataset from CReSIS (useful for testing and upgrading the system)? 
 			**NOTE** If not you must place the desired datapacks in /vagrant/data/postgresql/ before continuing.  See https://github.com/CReSIS/OPS/wiki/Data-bulkload for more details **NOTE**" yn
 			case $yn in 
 				[Yy]* ) 
 					# DOWNLOAD A PREMADE DATA PACK FROM CReSIS (MINIMAL LAYERS)
-					wget -P /vagrant/data/postgresql/ -- -m 'https://drive.google.com/file/d/0B6OfLU-_ZDX0WXhyLVl6dFVqMXM/view?usp=sharing'  #"https://data.cresis.ku.edu/data/ops/SampleData"
-					unzip /vagrant/data/postgresql/SampleDeployment.zip && rm /vagrant/data/postgresql/SampleDeployment.zip
+					#wget https://data.cresis.ku.edu/data/ops/SampleData.zip -P /vagrant/data/postgresql/   
+					#unzip /vagrant/data/postgresql/SampleDeployment.zip && rm /vagrant/data/postgresql/SampleDeployment.zip
+					wget http://ops.cresis.ku.edu/data/datapacks/OPS_CReSIS_RDS_DATAPACK_6yk5WdN3sQ.tar.gz -P /vagrant/data/postgresql/   
+					wget http://ops.cresis.ku.edu/data/datapacks/OPS_CReSIS_SNOW_DATAPACK_sOR1SHScXR.tar.gz -P /vagrant/data/postgresql/   
+				 	wget http://ops.cresis.ku.edu/data/datapacks/OPS_CReSIS_ACCUM_DATAPACK_KqxD208PHP.tar.gz -P /vagrant/data/postgresql/   
+					wget http://ops.cresis.ku.edu/data/datapacks/OPS_CReSIS_KUBAND_DATAPACK_UQrQFw9Scs.tar.gz -P /vagrant/data/postgresql/   
+					wget http://ops.cresis.ku.edu/data/datapacks/OPS_CReSIS_RDS_DATAPACK_nu8g9yEwnK.tar.gz -P /vagrant/data/postgresql/   
+					wget http://ops.cresis.ku.edu/data/datapacks/OPS_CReSIS_SNOW_DATAPACK_2TroMf3wxQ.tar.gz -P /vagrant/data/postgresql/   
+					wget http://ops.cresis.ku.edu/data/datapacks/OPS_CReSIS_ACCUM_DATAPACK_bxgjhOjtQe.tar.gz -P /vagrant/data/postgresql/   
 					break;;
 				* ) echo "Please answer yes or no.";;
 			esac;;	
