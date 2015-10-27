@@ -43,8 +43,9 @@ read -p "Would you like to pre-load the OpenPolarServer with data?" yn
 					**NOTE** If not you must place the desired datapacks in /vagrant/data/postgresql/ before continuing.  See https://github.com/CReSIS/OPS/wiki/Data-bulkload for more details **NOTE**" yn
 								case $yn in 
 									[Yy]* ) 
-										# DOWNLOAD THE DATA PACK FROM CReSIS (MINIMAL LAYERS)
-										wget -P /vagrant/data/postgresql/ -- -m "https://data.cresis.ku.edu/data/ops/SampleData"
+										# DOWNLOAD A PREMADE DATA PACK FROM CReSIS (MINIMAL LAYERS)
+										wget -P /vagrant/data/postgresql/ -- -m 'https://drive.google.com/file/d/0B6OfLU-_ZDX0WXhyLVl6dFVqMXM/view?usp=sharing'  #"https://data.cresis.ku.edu/data/ops/SampleData"
+										unzip /vagrant/data/postgresql/SampleDeployment.zip && rm /vagrant/data/postgresql/SampleDeployment.zip
 										break;;
 									* ) echo "Please answer yes or no.";;
 								esac;;
