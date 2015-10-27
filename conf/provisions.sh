@@ -35,23 +35,25 @@ startTime=$(date -u);
 # --------------------------------------------------------------------
 #PROMPT TO OPTIONALLY LOAD IN DATA (DATA BULKLOAD)
 installPgData=0;
-read -p "Would you like to pre-load the OpenPolarServer with data?" yn
+while true; do
+	read -p "Would you like to pre-load the OpenPolarServer with data?" yn
+	case $yn in 
+		[Yy]* ) 
+			installPgData=1;
+			read -p "Would you like to load in a sample dataset from CReSIS (useful for testing and upgrading the system)? \n 
+			**NOTE** If not you must place the desired datapacks in /vagrant/data/postgresql/ before continuing.  See https://github.com/CReSIS/OPS/wiki/Data-bulkload for more details **NOTE**" yn
 			case $yn in 
 				[Yy]* ) 
-					installPgData=1;
-					read -p "Would you like to load in a sample dataset from CReSIS (useful for testing and upgrading the system)?  
-					**NOTE** If not you must place the desired datapacks in /vagrant/data/postgresql/ before continuing.  See https://github.com/CReSIS/OPS/wiki/Data-bulkload for more details **NOTE**" yn
-								case $yn in 
-									[Yy]* ) 
-										# DOWNLOAD A PREMADE DATA PACK FROM CReSIS (MINIMAL LAYERS)
-										wget -P /vagrant/data/postgresql/ -- -m 'https://drive.google.com/file/d/0B6OfLU-_ZDX0WXhyLVl6dFVqMXM/view?usp=sharing'  #"https://data.cresis.ku.edu/data/ops/SampleData"
-										unzip /vagrant/data/postgresql/SampleDeployment.zip && rm /vagrant/data/postgresql/SampleDeployment.zip
-										break;;
-									* ) echo "Please answer yes or no.";;
-								esac;;
+					# DOWNLOAD A PREMADE DATA PACK FROM CReSIS (MINIMAL LAYERS)
+					wget -P /vagrant/data/postgresql/ -- -m 'https://drive.google.com/file/d/0B6OfLU-_ZDX0WXhyLVl6dFVqMXM/view?usp=sharing'  #"https://data.cresis.ku.edu/data/ops/SampleData"
+					unzip /vagrant/data/postgresql/SampleDeployment.zip && rm /vagrant/data/postgresql/SampleDeployment.zip
 					break;;
 				* ) echo "Please answer yes or no.";;
-			esac;;
+			esac;;	
+		[Nn]* ) break;;
+		* ) echo "Please answer yes or no.";;
+	esac
+done
 
 # --------------------------------------------------------------------
 # SET SOME STATIC INPUTS
