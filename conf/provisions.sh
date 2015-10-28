@@ -36,11 +36,11 @@ startTime=$(date -u);
 #PROMPT TO OPTIONALLY LOAD IN DATA (DATA BULKLOAD)
 installPgData=0;
 while true; do
-	read -p "Would you like to pre-load the OpenPolarServer with data?" yn
+	read -p "Would you like to pre-load the OpenPolarServer with data? [y/n]" yn
 	case $yn in 
 		[Yy]* ) 
 			installPgData=1;
-			printf "Would you like to load in a sample dataset from CReSIS (useful for testing and upgrading the system)?\n"
+			printf "Would you like to load in a sample dataset from CReSIS (useful for testing and upgrading the system)? [y/n]\n"
 			printf "*****NOTE*****\n"
 			printf "If not you must place the desired datapacks in /vagrant/data/postgresql/ before continuing.\n"
 			printf "*****NOTE*****\n"
@@ -504,9 +504,9 @@ sed -i "s,		'USER': 'admin',		'USER': '$dbUser',,g" /var/django/ops/ops/settings
 #ADD DJANGO ADMINS.
 while true; do
 	if [[ -z "$adminStr" ]]; then
-		read -p "Do you wish to add an admin to Django (receives error messages)?" yn
+		read -p "Do you wish to add an admin to Django (receives error messages)? [y/n]" yn
 	else
-		read -p "Would you like to add another admin to Django (also receives error messages)?" yn
+		read -p "Would you like to add another admin to Django (also receives error messages)? [y/n]" yn
 	fi
 	case $yn in 
 		[Yy]* ) 
@@ -528,10 +528,10 @@ sed -i "s,ADMINS = (),ADMINS = ($adminStr),g" /var/django/ops/ops/settings.py
 #OPTIONALLY SET DJANGO TO BE IN DEBUG MODE. 			
 while true; do		
 
-	read -p "Would you like to have Django operate in debug mode (DEVELOPMENT ENVIRONMENT ONLY!)?" yn
+	read -p "Would you like to have Django operate in debug mode (DEVELOPMENT ENVIRONMENT ONLY!)? [y/n]" yn
 	case $yn in 
 		[Yy]* ) 
-			read -p "ARE YOU SURE YOU WANT DJANGO TO BE IN DEBUG MODE? THIS IS FOR DEVELOPMENT ENVIRONMENTS ONLY." yn
+			read -p "ARE YOU SURE YOU WANT DJANGO TO BE IN DEBUG MODE? THIS IS FOR DEVELOPMENT ENVIRONMENTS ONLY. [y/n]" yn
 			case $yn in 
 				[Yy]* ) 
 					sed -i "s,DEBUG = False,DEBUG = True,g" /var/django/ops/ops/settings.py;
