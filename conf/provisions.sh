@@ -50,13 +50,10 @@ while true; do
 					# DOWNLOAD A PREMADE DATA PACK FROM CReSIS (MINIMAL LAYERS)
 					#wgpubOet https://data.cresis.ku.edu/data/ops/SampleData.zip -P /vagrant/data/postgresql/   
 					#unzip /vagrant/data/postgresql/SampleDeployment.zip && rm /vagrant/data/postgresql/SampleDeployment.zip
-					wget http://ops.cresis.ku.edu/data/datapacks/OPS_CReSIS_RDS_DATAPACK_lrPDuKzkAF.tar.gz -P /vagrant/data/postgresql/   
-					wget http://ops.cresis.ku.edu/data/datapacks/OPS_CReSIS_SNOW_DATAPACK_sOR1SHScXR.tar.gz -P /vagrant/data/postgresql/   
-				 	wget http://ops.cresis.ku.edu/data/datapacks/OPS_CReSIS_ACCUM_DATAPACK_KqxD208PHP.tar.gz -P /vagrant/data/postgresql/   
-					wget http://ops.cresis.ku.edu/data/datapacks/OPS_CReSIS_KUBAND_DATAPACK_UQrQFw9Scs.tar.gz -P /vagrant/data/postgresql/   
-					wget http://ops.cresis.ku.edu/data/datapacks/OPS_CReSIS_RDS_DATAPACK_nu8g9yEwnK.tar.gz -P /vagrant/data/postgresql/   
-					wget http://ops.cresis.ku.edu/data/datapacks/OPS_CReSIS_SNOW_DATAPACK_2TroMf3wxQ.tar.gz -P /vagrant/data/postgresql/   
-					wget http://ops.cresis.ku.edu/data/datapacks/OPS_CReSIS_ACCUM_DATAPACK_bxgjhOjtQe.tar.gz -P /vagrant/data/postgresql/   
+					wget http://ops/data/datapacks/OPS_CReSIS_RDS_DATAPACK_msm6SdFaV3.tar.gz  -P /vagrant/data/postgresql/ 
+					wget http://ops/data/datapacks/OPS_CReSIS_ACCUM_DATAPACK_jMb9kgyIuQ.tar.gz  -P /vagrant/data/postgresql/   
+					wget http://ops/data/datapacks/OPS_CReSIS_SNOW_DATAPACK_uoSZ85E2Jh.tar.gz -P /vagrant/data/postgresql/   
+					wget http://ops/data/datapacks/OPS_CReSIS_KUBAND_DATAPACK_OchydfG0G1.tar.gz  -P /vagrant/data/postgresql/   
 					break;;
 				* ) echo "Please answer yes or no.";;
 			esac;;	
