@@ -17,7 +17,6 @@ class UserProfile(models.Model):
 	createData = models.BooleanField(default=False)
 	bulkDeleteData = models.BooleanField(default=False)
 	isRoot = models.BooleanField(default=False)
-	last_login = timezone.now()
 	
 	def create_profile(sender, instance, created, **kwargs):
 		if created:
