@@ -48,12 +48,8 @@ while true; do
 			case $yn in 
 				[Yy]* ) 
 					# DOWNLOAD A PREMADE DATA PACK FROM CReSIS (MINIMAL LAYERS)
-					#wgpubOet https://data.cresis.ku.edu/data/ops/SampleData.zip -P /vagrant/data/postgresql/   
-					#unzip /vagrant/data/postgresql/SampleDeployment.zip && rm /vagrant/data/postgresql/SampleDeployment.zip
-					wget http://ops/data/datapacks/OPS_CReSIS_RDS_DATAPACK_msm6SdFaV3.tar.gz  -P /vagrant/data/postgresql/ 
-					wget http://ops/data/datapacks/OPS_CReSIS_ACCUM_DATAPACK_jMb9kgyIuQ.tar.gz  -P /vagrant/data/postgresql/   
-					wget http://ops/data/datapacks/OPS_CReSIS_SNOW_DATAPACK_uoSZ85E2Jh.tar.gz -P /vagrant/data/postgresql/   
-					wget http://ops/data/datapacks/OPS_CReSIS_KUBAND_DATAPACK_OchydfG0G1.tar.gz  -P /vagrant/data/postgresql/   
+					wget https://data.cresis.ku.edu/data/ops/SampleData.zip -P /vagrant/data/postgresql/   
+					unzip /vagrant/data/postgresql/SampleDatat.zip && rm /vagrant/data/postgresql/SampleData.zip
 					break;;
 				* ) echo "Please answer yes or no.";;
 			esac;;	
