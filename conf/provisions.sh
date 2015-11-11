@@ -41,9 +41,9 @@ while true; do
 		[Yy]* ) 
 			installPgData=1;
 			printf "Would you like to load in a sample dataset from CReSIS (useful for testing and upgrading the system)?\n"
-			printf "*****NOTE*****\n"
+			printf "	*****NOTE*****\n"
 			printf "If not you must place the desired datapacks in /vagrant/data/postgresql/ before continuing.\n"
-			printf "*****NOTE*****\n"
+			printf "	*****NOTE*****\n"
 			read -p "[y/n]" yn
 			case $yn in 
 				[Yy]* ) 
@@ -488,11 +488,11 @@ NEW_SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9*^+()@' | fold -w 40 | head
 echo $NEW_SECRET_KEY >> /etc/secret_key.txt
 
 # SET THE OPS_DATA_PATH
-sed -i %s,OPS_DATA_PATH = '',OPS_DATA_PATH = '$opsDataPath',g% /var/django/ops/ops/settings.py;
+sed -i "s,OPS_DATA_PATH = '',OPS_DATA_PATH = '$opsDataPath',g% /var/django/ops/ops/settings.py;
 
 # MODIFY THE DATABASE NAME
-sed -i %s,		'NAME': 'ops',		'NAME': '$dbName',g% /var/django/ops/ops/settings.py
-sed -i %s,		'USER': 'admin',		'USER': '$dbUser',,g% /var/django/ops/ops/settings.py
+sed -i "s,		'NAME': 'ops',		'NAME': '$dbName',g" /var/django/ops/ops/settings.py
+sed -i "s,		'USER': 'admin',		'USER': '$dbUser',,g" /var/django/ops/ops/settings.py
 
 #ADD DJANGO ADMINS.
 while true; do
