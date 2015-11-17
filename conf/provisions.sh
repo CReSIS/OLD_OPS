@@ -477,7 +477,7 @@ yum -y install geos-devel
 # INSTALL AND CONFIGURE DJANGO
 
 # INSTALL DJANGO
-pip install Django==1.8.5
+pip install Django==1.6.5
 
 # CREATE DIRECTORY AND COPY PROJECT
 mkdir -p /var/django/
@@ -488,11 +488,11 @@ NEW_SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9*^+()@' | fold -w 40 | head
 echo $NEW_SECRET_KEY >> /etc/secret_key.txt
 
 # SET THE OPS_DATA_PATH
-sed -i "s,OPS_DATA_PATH = '',OPS_DATA_PATH = '$opsDataPath',g" !var!django!ops!ops!settings.py;
+sed -i "s,OPS_DATA_PATH = '',OPS_DATA_PATH = '$opsDataPath',/g" /var/django/ops/ops/settings.py;
 
 # MODIFY THE DATABASE NAME
-sed -i "s,		'NAME': 'ops',		'NAME': '$dbName',g" !var!django!ops!ops!settings.py
-sed -i "s,		'USER': 'admin',		'USER': '$dbUser',,g" !var!django!ops!ops!settings.py
+sed -i "s,		'NAME': 'ops',		'NAME': '$dbName',/g" /var/django/ops/ops/settings.py
+sed -i "s,		'USER': 'admin',		'USER': '$dbUser',,/g" /var/django/ops/ops/settings.py
 
 #ADD DJANGO ADMINS.
 while true; do
