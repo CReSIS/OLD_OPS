@@ -40,10 +40,10 @@ while true; do
 	case $yn in 
 		[Yy]* ) 
 			installPgData=1;
-			printf "Would you like to load in a sample dataset from CReSIS (useful for testing and upgrading the system)?\n"
-			printf "	*****NOTE*****\n"
+			printf "\nWould you like to load in a sample dataset from CReSIS (useful for testing and upgrading the system)?\n"
+			printf "				*****NOTE*****\n"
 			printf "If not you must place the desired datapacks in /vagrant/data/postgresql/ before continuing.\n"
-			printf "	*****NOTE*****\n"
+			printf "				*****NOTE*****\n"
 			read -p "[y/n]" yn
 			case $yn in 
 				[Yy]* ) 
