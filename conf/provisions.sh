@@ -491,8 +491,8 @@ echo $NEW_SECRET_KEY >> /etc/secret_key.txt
 sed -i "s,OPS_DATA_PATH = '',OPS_DATA_PATH = '$opsDataPath',/g" /var/django/ops/ops/settings.py;
 
 # MODIFY THE DATABASE NAME
-sed -i "s,		'NAME': 'ops',		'NAME': '$dbName',/g" /var/django/ops/ops/settings.py
-sed -i "s,		'USER': 'admin',		'USER': '$dbUser',,/g" /var/django/ops/ops/settings.py
+#sed -i "s,		'NAME': 'ops',		'NAME': '$dbName',/g" /var/django/ops/ops/settings.py
+#sed -i "s,		'USER': 'admin',		'USER': '$dbUser',,/g" /var/django/ops/ops/settings.py
 
 #ADD DJANGO ADMINS.
 while true; do
