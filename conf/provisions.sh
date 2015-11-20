@@ -469,7 +469,7 @@ pip install --pre line_profiler
 yum -y install atlas-devel blas-devel
 pip install numpy
 pip install scipy
-vim
+
 # INSTALL GEOS
 yum -y install geos-devel
 
