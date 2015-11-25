@@ -1,4 +1,3 @@
-TEST
 #!/bin/sh
 #
 # OpenPolarServer (Public) Build Tools
