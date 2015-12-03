@@ -33,6 +33,33 @@ printf "\n"
 startTime=$(date -u);
 
 # --------------------------------------------------------------------
+#PROMPT TO OPTIONALLY LOAD IN DATA (DATA BULKLOAD)
+installPgData=0;
+while true; do
+	read -p "Would you like to pre-load the OpenPolarServer with data? [y/n]" yn
+	case $yn in 
+		[Yy]* ) 
+			installPgData=1;
+			printf "\nWould you like to load in a sample dataset from CReSIS (useful for testing and upgrading the system)?\n"
+			printf "		*****NOTE*****\n"
+			printf "If not you must place the desired datapacks in \n/vagrant/data/postgresql/ before continuing.\n"
+			printf "		*****NOTE*****\n"
+			read -p "[y/n]" yn
+			case $yn in 
+				[Yy]* ) 
+					# DOWNLOAD A PREMADE DATA PACK FROM CReSIS (MINIMAL LAYERS)
+					wget https://data.cresis.ku.edu/data/ops/SampleData.zip -P /vagrant/data/postgresql/   
+					unzip /vagrant/data/postgresql/SampleData.zip -d /vagrant/data/postgresql/
+					rm /vagrant/data/postgresql/SampleData.zip
+					break;;
+				* ) echo "Please answer yes or no.";;
+			esac;;	
+		[Nn]* ) break;;
+		* ) echo "Please answer yes or no.";;
+	esac
+done
+
+# --------------------------------------------------------------------
 # SET SOME STATIC INPUTS
 preProv=1;
 newDb=1;
@@ -40,7 +67,7 @@ serverName="192.168.111.222";
 serverAdmin="root"; 
 appName="ops";
 dbName="ops";
-installPgData=0;
+
 opsDataPath="/db/";
 webDataDir=$opsDataPath"data";
 
@@ -462,18 +489,18 @@ NEW_SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9*^+()@' | fold -w 40 | head
 echo $NEW_SECRET_KEY >> /etc/secret_key.txt
 
 # SET THE OPS_DATA_PATH
-sed -i "s,OPS_DATA_PATH = '',OPS_DATA_PATH = '$opsDataPath',g" /var/django/ops/ops/settings.py;
+sed -i "s|OPS_DATA_PATH = ''|OPS_DATA_PATH = '$opsDataPath'|g" /var/django/ops/ops/settings.py;
 
 # MODIFY THE DATABASE NAME
-sed -i "s,		'NAME': 'ops',		'NAME': '$dbName',g" /var/django/ops/ops/settings.py
-sed -i "s,		'USER': 'admin',		'USER': '$dbUser',,g" /var/django/ops/ops/settings.py
+sed -i "s|		'NAME': 'ops'|		'NAME': '$dbName'|g" /var/django/ops/ops/settings.py
+sed -i "s|		'USER': 'admin'|		'USER': '$dbUser'|g" /var/django/ops/ops/settings.py
 
 #ADD DJANGO ADMINS.
 while true; do
 	if [[ -z "$adminStr" ]]; then
-		read -p "Do you wish to add an admin to Django (receives error messages)?" yn
+		read -p "Do you wish to add an admin to Django (receives error messages)? [y/n]" yn
 	else
-		read -p "Would you like to add another admin to Django (also receives error messages)?" yn
+		read -p "Would you like to add another admin to Django (also receives error messages)? [y/n]" yn
 	fi
 	case $yn in 
 		[Yy]* ) 
@@ -495,10 +522,10 @@ sed -i "s,ADMINS = (),ADMINS = ($adminStr),g" /var/django/ops/ops/settings.py
 #OPTIONALLY SET DJANGO TO BE IN DEBUG MODE. 			
 while true; do		
 
-	read -p "Would you like to have Django operate in debug mode (DEVELOPMENT ENVIRONMENT ONLY!)?" yn
+	read -p "Would you like to have Django operate in debug mode (DEVELOPMENT ENVIRONMENT ONLY!)? [y/n]" yn
 	case $yn in 
 		[Yy]* ) 
-			read -p "ARE YOU SURE YOU WANT DJANGO TO BE IN DEBUG MODE? THIS IS FOR DEVELOPMENT ENVIRONMENTS ONLY." yn
+			read -p "ARE YOU SURE YOU WANT DJANGO TO BE IN DEBUG MODE? THIS IS FOR DEVELOPMENT ENVIRONMENTS ONLY. [y/n]" yn
 			case $yn in 
 				[Yy]* ) 
 					sed -i "s,DEBUG = False,DEBUG = True,g" /var/django/ops/ops/settings.py;
