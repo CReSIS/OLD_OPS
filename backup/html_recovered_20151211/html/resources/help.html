@@ -1,0 +1,67 @@
+<div style="padding: 10px">
+<h2>
+    Setting Basic Selection Filters
+</h2>
+<p>
+    <strong>System</strong>
+    : Sets the active system, this controls what data is downloaded and selected on the map. Changing the selection in 'Map Layer Selection' DOES NOT change this.
+</p>
+<p>
+    <strong>Date</strong>
+    : Start/Stop dates control the range of data shown in the map and download.
+</p>
+<p>
+    <strong>Seasons/s:</strong>
+    Controls the selection of seasons shown on the map.
+</p>
+<h2>
+    Applying Basic Selection Filters
+</h2>
+<p>
+    To apply the section filters above click 'Apply Filters to Map'. Make sure to change the layer in the 'Map Layer Selection' panel
+    to match what you have selected. For example is you select 'rds' in the menu you must also check the 'rds' layer in the 'Map Layer Selection' panel.
+</p>
+<h2>
+    Setting Spatial Filters
+</h2>
+<p>
+    For more information about drawing a polygon click the 'map help' button above the map. To enter a polygon manually paste the WKT and select
+    the projection then click 'Render WKT Text'.
+</p>
+<h2>
+    Downloading Data
+</h2>
+<p>
+    To download data (1) Set Basic Selection Filters (2) Set Spatial Filters (3) Select the output format and (4) click 'Download File'. 
+	This could take a few minutes so please be patient. You will be notified when the download is finished and can check the 'Downloads' tab for 
+	the current status. You can submit any number of downloads before others have completed and can continue to interact with the interface while
+	waiting for downloads to complete.
+</p>
+<p>
+    <strong>Layer/s:</strong>
+    Selects layers (in addition to the radar surface) for download. Only the MAT file format supports this selection.
+</p>
+<h3>
+    Output Formats
+</h3>
+<p>
+    <strong>CSV Format</strong>
+    : The CSV download option includes 'all' CReSIS data, where there is a surface present (bed can be nan). The CSV file format is self explanatory.
+</p>
+<p>
+    <strong>CSV GOOD Format</strong>
+    : The CSV GOOD download option includes 'good' CReSIS data, where there is a bed present. The CSV file format is self explanatory.
+</p>
+<p>
+    <strong>KML Format</strong>
+    : The KML format downloads the entire path in the selected area in KML format. Complete segments are returned (even if they go outside of the selected area).
+</p>
+<p>
+    <strong>MAT Format</strong>
+    : The MAT format downloads the radar surface, and any additional layers from (Output Layer/s) and stores them in the MATLAB m-file format.
+</p>
+<p>
+    <strong>NetCDF Format</strong>
+    : The NetCDF format is not currently available from the OPS.
+</p>
+</div>
