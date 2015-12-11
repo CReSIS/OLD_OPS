@@ -1669,16 +1669,15 @@ def getSystemInfo(request):
 			{'system':[string],'season':[string],'location':[string]}
 
 	"""
-	
-	models,data,app,cookies = utility.getInput(request) # get the input and models
-	
-	# perform the function logic
 	try:
+		models,data,app,cookies = utility.getInput(request) # get the input and models
+	
+		# perform the function logic
 	
 		# get the user profile
-		userProfileObj = utility.getUserProfile(cookies)
+		userProfileObj,status = utility.getUserProfile(cookies)
 		
-		from ops.settings import INSTALLED_APPS as apps # get a list of all the apps
+		apps = opsSettings.INSTALLED_APPS # get a list of all the apps
 
 		outData = []
 		
@@ -1687,9 +1686,12 @@ def getSystemInfo(request):
 
 				models = utility.getAppModels(app) # get the models
 
+				if userProfileObj.isRoot:
+					seasonsObj = models.seasons.objects.select_related('locations__name').filter().values_list('name','location__name')
+				else:
 				# get all of the seasons (and location)
-				authSeasonGroups = eval('userProfileObj.'+app+'_season_groups.values_list("name",flat=True)')
-				seasonsObj = models.seasons.objects.select_related('locations__name').filter(season_group__name__in=authSeasonGroups).values_list('name','location__name')
+					authSeasonGroups = eval('userProfileObj.'+app+'_season_groups.values_list("name",flat=True)')
+					seasonsObj = models.seasons.objects.select_related('locations__name').filter(season_group__name__in=authSeasonGroups).values_list('name','location__name')
 
 				# if there are seasons populate the outData list
 				if not (len(seasonsObj) == 0):
@@ -1703,8 +1705,8 @@ def getSystemInfo(request):
 		# return the output
 		return utility.response(1,outData,{})
 		
-	except:
-		return utility.errorCheck(sys)
+	except Exception as e:
+		return utility.errorCheck(e,sys)
 
 def getSegmentInfo(request):
 	""" Get information about a given segment from the OPS.
