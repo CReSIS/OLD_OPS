@@ -667,6 +667,39 @@ chkconfig tomcat6 on
 yum update -y
 
 # --------------------------------------------------------------------
+# ADD ANONYMOUS USER (NESSESSARY FOR GEOPORTAL)
+sudo -i
+cd /vagrant
+source /usr/bin/venv/bin/activate
+python /var/django/ops/manage.py shell
+
+from django.contrib.auth.models import User
+# set new user properties
+userName='anonymous'
+userEmail='anonymous@KU.edu'
+userPassword='anonymous'
+
+# create the new user
+newUser = User.objects.create_user(userName, userEmail, userPassword)
+
+newUser.profile.rds_layer_groups = [1,2]
+newUser.profile.accum_layer_groups = [1,2]
+newUser.profile.kuband_layer_groups = [1,2]
+newUser.profile.snow_layer_groups = [1,2]
+newUser.profile.rds_season_groups = [1,2]
+newUser.profile.accum_season_groups = [1,2]
+newUser.profile.kuband_season_groups = [1,2]
+newUser.profile.snow_season_groups = [1,2]
+newUser.profile.layerGroupRelease = True
+newUser.profile.bulkDeleteData = False
+newUser.profile.createData = True
+newUser.profile.seasonRelease = True
+newUser.profile.save()
+
+exit();
+exit
+
+# --------------------------------------------------------------------
 # PRINT OUT THE COMPLETION NOTICE
 
 stopTime=$(date -u);
