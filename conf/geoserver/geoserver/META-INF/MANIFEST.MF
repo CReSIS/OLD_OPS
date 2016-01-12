@@ -1,19 +1,19 @@
 Manifest-Version: 1.0
-Build-Timestamp: 18-Mar-2014 16:08
+Build-Timestamp: 30-Sep-2015 21:59
 Implementation-Title: GeoServer Web Application
-Implementation-Version: 2.5
-Git-Revision: 8cf3edcf5f61db010f7ad3fcb4613e7c0eabeaff
+Implementation-Version: 2.8.0
+Git-Revision: 8e84a8a356073d09ed44b831c96ac4a2656e82ef
 Built-By: jenkins
-Specification-Vendor: The Open Planning Project
+Specification-Vendor: Open Source Geospatial Foundation
 Application-Name: 
 GeoServerModule: core
-Created-By: Apache Maven
-Implementation-Vendor: The Open Planning Project
+Created-By: Apache Maven 3.0.4
+Implementation-Vendor: Open Source Geospatial Foundation
 Iteration-Name: 
 Implementation-Vendor-Id: org.geoserver.web
-Build-Jdk: 1.6.0_22
-Project-Version: 2.5
+Build-Jdk: 1.7.0_51
+Project-Version: 2.8.0
 Specification-Title: GeoServer Web Application
-Specification-Version: 2.5
+Specification-Version: 2.8.0
 Archiver-Version: Plexus Archiver
 
