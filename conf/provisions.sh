@@ -478,7 +478,7 @@ yum -y install geos-devel
 # INSTALL AND CONFIGURE DJANGO
 
 # INSTALL DJANGO
-pip install Django==1.8.2
+pip install Django==1.6.5
 
 # CREATE DIRECTORY AND COPY PROJECT
 mkdir -p /var/django/
