@@ -48,9 +48,9 @@ while true; do
 			case $yn in 
 				[Yy]* ) 
 					# DOWNLOAD A PREMADE DATA PACK FROM CReSIS (MINIMAL LAYERS)
-					wget https://data.cresis.ku.edu/data/ops/FieldLoad.zip -P /vagrant/data/postgresql/   
-					unzip /vagrant/data/postgresql/FieldLoad.zip -d /vagrant/data/postgresql/
-					rm /vagrant/data/postgresql/FieldLoad.zip
+					wget https://data.cresis.ku.edu/data/ops/HalfGigFieldLoad.zip -P /vagrant/data/postgresql/   
+					unzip /vagrant/data/postgresql/HalfGigFieldLoad.zip -d /vagrant/data/postgresql/
+					rm /vagrant/data/postgresql/HalfGigFieldLoad.zip
 					break;;
 				* ) echo "Please answer yes or no.";;
 			esac;;	
