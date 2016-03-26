@@ -3,7 +3,7 @@
 #KEEP TIME
 START=$(date +%s)
 
-pgdir='/cresis/snfs1/web/ops/pgsql/9.3/'
+pgdir='/db/pgsql/9.3/'
 pgconfdir=$pgdir"postgresql.conf"
 
 #MODIFY POSTGRESQL.CONF
