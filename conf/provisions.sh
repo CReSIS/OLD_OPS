@@ -48,9 +48,9 @@ while true; do
 			case $yn in 
 				[Yy]* ) 
 					# DOWNLOAD A PREMADE DATA PACK FROM CReSIS (MINIMAL LAYERS)
-					wget https://data.cresis.ku.edu/data/ops/HalfGigFieldLoad.zip -P /vagrant/data/postgresql/   
-					unzip /vagrant/data/postgresql/HalfGigFieldLoad.zip -d /vagrant/data/postgresql/
-					rm /vagrant/data/postgresql/HalfGigFieldLoad.zip
+					wget https://data.cresis.ku.edu/data/ops/SampleData.zip -P /vagrant/data/postgresql/   
+					unzip /vagrant/data/postgresql/SampleData.zip -d /vagrant/data/postgresql/
+					rm /vagrant/data/postgresql/SampleData.zip
 					break;;
 				* ) echo "Please answer yes or no.";;
 			esac;;	
@@ -76,6 +76,12 @@ webDataDir=$opsDataPath"data";
 
 read -s -p "Database User (default=admin): " dbUser && printf "\n";
 read -s -p "Database Password (default=pubAdmin): " dbPswd && printf "\n";
+if [[ -z "${dbUser// }" ]]; then
+  dbUser="admin"
+fi
+if [[ -z "${dbPswd// }" ]]; then
+  dbPswd="pubAdmin"
+fi
 echo -e $dbPswd > /etc/db_pswd.txt;
 
 # --------------------------------------------------------------------
