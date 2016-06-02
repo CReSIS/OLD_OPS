@@ -188,7 +188,7 @@ class deleteLayerPointsTests(TestCase):
 	def test_deleteLayerPoints_start_stop_gps_time(self):
 		setUp(self)
 		# Set the json string
-		jsonStr = '{ "properties": { "location": "arctic", "segment": "11111111_01", "start_gps_time": 1301569766.964949, "stop_gps_time": 1301569766.964949, "max_twtt": 2.5170715674515201e-006, "min_twtt": 2.3170513543513799e-006, "lyr_name": "fixtureTest" } }'
+		jsonStr = '{ "properties": { "location": "arctic", "segment": "11111111_01", "start_gps_time": 1301569766.964949, "stop_gps_time": 1301569766.964949, "max_twtt": 2.5170715674515201e-006, "min_twtt": 2.3170513543513799e-006, "lyr_name": "fixtureTest", "userName": "admin", "isAuthenticated": true, "mat": true} }'
 		
 		#Create the request from the above app & jsonStr
 		request = self.factory.post('delete/layer/points',{'app':'rds','data':jsonStr})
@@ -390,7 +390,7 @@ class getCrossoversTests(TestCase):
 	def test_getCrossovers(self):
 		setUp(self)
 		# Set the json string
-		jsonStr = '{ "properties": { "location": "arctic", "lyr_name": "fixtureTest", "frame": [ "11111111_01_001", "11111111_01_002", "22222222_02_001", "22222222_02_002" ] } }'
+		jsonStr = '{ "properties": { "location": "arctic", "lyr_name": "fixtureTest", "frame": [ "11111111_01_001", "11111111_01_002", "22222222_02_001", "22222222_02_002" ], "userName": "admin", "isAuthenticated": true, "mat": true} }'
 		
 		#Create the request from the above app & jsonStr
 		request = self.factory.post('get/crossovers',{'app':'rds','data':jsonStr})
