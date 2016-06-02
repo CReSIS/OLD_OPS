@@ -132,7 +132,7 @@ rm -f pgdg-centos93-9.3-1.noarch.rpm
 
 # INSTALL DEPENDENCIES
 yum install -y python-pip zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel
-python-pip install --upgrade nose
+pip install --upgrade nose
 
 # INSTALL PYTHON 2.7.6
 cd ~ && cp -f /vagrant/conf/software/Python-2.7.6.tar.xz ./
