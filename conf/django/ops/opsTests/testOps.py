@@ -390,7 +390,7 @@ class getCrossoversTests(TestCase):
 	def test_getCrossovers(self):
 		setUp(self)
 		# Set the json string
-		jsonStr = '{ "properties": { "location": "arctic", "lyr_name": "fixtureTest", "frame": [ "11111111_01_001", "11111111_01_002", "22222222_02_001", "22222222_02_002" ], "segment_id": [ "11111111_01", "22222222_02" ],"userName": "admin", "isAuthenticated": true, "mat": true} }'
+		jsonStr = '{ "properties": { "location": "arctic", "lyr_name": "fixtureTest", "frame": [ "11111111_01_001", "11111111_01_002", "22222222_02_001", "22222222_02_002" ], "segment_id": [11111111, 22222222],"userName": "admin", "isAuthenticated": true, "mat": true} }'
 		
 		#Create the request from the above app & jsonStr
 		request = self.factory.post('get/crossovers',{'app':'rds','data':jsonStr})
