@@ -1,7 +1,9 @@
-# run this with the following completed:
-#	(1) As root user (sudo -i)
-#	(2) VirtualEnv activated: (source /usr/bin/venv/bin/activate
-#	(3) Inside the Django shell (python /var/django/ops/manage.py shell)
+# After editing the script (e.g. with gedit), run this script by following these steps:
+#	(1) Switch to root user: sudo -i
+#	(2) Activate VirtualEnv: source /usr/bin/venv/bin/activate
+#	(3) Open a Python shell with Django environment: python /var/django/ops/manage.py shell
+#       (4) Run this script: execfile('createUserExample.py')
+#       (5) Press ctrl-d or type quit() or exit()
 
 from django.contrib.auth.models import User
 
