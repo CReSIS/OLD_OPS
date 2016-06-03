@@ -26,16 +26,16 @@ while true; do
 			printf "		*****NOTE*****\n"
 			read -n1 -r -p "Press space to continue..." key
 			rm /var/www/html/debug
-			ln -s /opt/OPS-GEOPORTAl/ /var/www/html/debug
-			rm /opt/OPS-GEOPORTAl/GeoExt
-			ln -s /opt/OPS-GEOPORTAl/geoext/src/GeoExt  /opt/OPS-GEOPORTAl/GeoExt
-			chmod -R a+rX /opt/OPS-GEOPORTAl/
+			ln -s /opt/OPS-GEOPORTAL/ /var/www/html/debug
+			rm /opt/OPS-GEOPORTAL/GeoExt
+			ln -s /opt/OPS-GEOPORTAL/geoext/src/GeoExt  /opt/OPS-GEOPORTAL/GeoExt
+			chmod -R a+rX /opt/OPS-GEOPORTAL/
 			printf "http://192.168.111.222/debug/ should now point to the OPS-GEOPORTAL.\n"
 			break;;
 
 		[Nn]* )
 			rm /var/www/html/debug
-			rm /opt/OPS-GEOPORTAl/GeoExt
+			rm /opt/OPS-GEOPORTAL/GeoExt
 			break;;
 		* ) echo "Please answer yes or no.";;
 	esac
