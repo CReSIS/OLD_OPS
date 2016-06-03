@@ -36,24 +36,32 @@ startTime=$(date -u);
 #PROMPT TO OPTIONALLY LOAD IN DATA (DATA BULKLOAD)
 installPgData=0;
 while true; do
-	read -p "Would you like to pre-load the OpenPolarServer with data? [y/n]" yn
+	read -p "Would you like to bulk load the OpenPolarServer with data? [y/n]" yn
 	case $yn in 
 		[Yy]* ) 
 			installPgData=1;
-			printf "\nWould you like to load in a sample dataset from CReSIS (useful for testing and upgrading the system)?\n"
 			printf "		*****NOTE*****\n"
-			printf "If not you must place the desired datapacks in \n/vagrant/data/postgresql/ before continuing.\n"
+			printf "You must place the desired datapacks in \n/vagrant/data/postgresql/ before continuing.\n"
 			printf "		*****NOTE*****\n"
-			read -p "[y/n]" yn
-			case $yn in 
-				[Yy]* ) 
-					# DOWNLOAD A PREMADE DATA PACK FROM CReSIS (MINIMAL LAYERS)
-					wget https://data.cresis.ku.edu/data/ops/SampleData.zip -P /vagrant/data/postgresql/   
-					unzip /vagrant/data/postgresql/SampleData.zip -d /vagrant/data/postgresql/
-					rm /vagrant/data/postgresql/SampleData.zip
-					break;;
-				* ) echo "Please answer yes or no.";;
-			esac;;	
+			read -n1 -r -p "Press space to continue..." key
+			break;;
+
+		[Nn]* ) break;;
+		* ) echo "Please answer yes or no.";;
+	esac
+done
+
+while true; do
+	printf "\nWould you like to load in a sample dataset from CReSIS (useful for testing and upgrading the system)?\n"
+	read -p "[y/n]" yn
+	case $yn in 
+		[Yy]* ) 
+			installPgData=1;
+			# DOWNLOAD A PREMADE DATA PACK FROM CReSIS (MINIMAL LAYERS)
+			wget https://data.cresis.ku.edu/data/ops/SampleData.zip -P /vagrant/data/postgresql/   
+			unzip /vagrant/data/postgresql/SampleData.zip -d /vagrant/data/postgresql/
+			rm /vagrant/data/postgresql/SampleData.zip
+			break;;
 		[Nn]* ) break;;
 		* ) echo "Please answer yes or no.";;
 	esac
@@ -558,22 +566,21 @@ fi
 
 # --------------------------------------------------------------------
 # BULKLOAD DATA TO POSTGRESQL 
+		
+# INSTALL pg_bulkload AND DEPENDENCIES
+cd ~ && cp -f /vagrant/conf/software/pg_bulkload-3.1.5-1.pg93.rhel6.x86_64.rpm ./
+cd ~ && cp -f /vagrant/conf/software/compat-libtermcap-2.0.8-49.el6.x86_64.rpm ./
+yum install -y openssl098e;
+rpm -Uvh ./compat-libtermcap-2.0.8-49.el6.x86_64.rpm;
+rpm -ivh ./pg_bulkload-3.1.5-1.pg93.rhel6.x86_64.rpm;
+rm -f compat-libtermcap-2.0.8-49.el6.x86_64.rpm && rm -f pg_bulkload-3.1.5-1.pg93.rhel6.x86_64.rpm
+
+# ADD pg_bulkload FUNCTION TO THE DATABASE
+su postgres -c "psql -f /usr/pgsql-9.3/share/contrib/pg_bulkload.sql "$appName"";
 
 if [ $installPgData -eq 1 ]; then
 	fCount=$(ls -A /vagrant/data/postgresql/ | wc -l);
 	if [ $fCount -gt 1 ]; then
-		
-		# INSTALL pg_bulkload AND DEPENDENCIES
-		cd ~ && cp -f /vagrant/conf/software/pg_bulkload-3.1.5-1.pg93.rhel6.x86_64.rpm ./
-		cd ~ && cp -f /vagrant/conf/software/compat-libtermcap-2.0.8-49.el6.x86_64.rpm ./
-		yum install -y openssl098e;
-		rpm -Uvh ./compat-libtermcap-2.0.8-49.el6.x86_64.rpm;
-		rpm -ivh ./pg_bulkload-3.1.5-1.pg93.rhel6.x86_64.rpm;
-		rm -f compat-libtermcap-2.0.8-49.el6.x86_64.rpm && rm -f pg_bulkload-3.1.5-1.pg93.rhel6.x86_64.rpm
-		
-		# ADD pg_bulkload FUNCTION TO THE DATABASE
-		su postgres -c "psql -f /usr/pgsql-9.3/share/contrib/pg_bulkload.sql "$appName"";
-		
 		# LOAD INITIAL DATA INTO THE DATABASE
 		sh /vagrant/conf/bulkload/initdataload.sh
 	fi
