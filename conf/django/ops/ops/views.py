@@ -638,8 +638,8 @@ def deleteLayerPoints(request):
 			inStopPointPathId = PointPathObj['pk__max']
 			
 		# get the next possible value after properly quantizing twtt (ensures boundary points are deleted)
-		minTwttN = inMinTwtt.quantize(Decimal(10) ** -11).next_minus()
-		maxTwttN = inMaxTwtt.quantize(Decimal(10) ** -11).next_plus()
+		minTwttN = 1e-11*math.floor(float(inMinTwtt)*1e11-1)
+		maxTwttN = 1e-11*math.ceil(float(inMaxTwtt)*1e11+1)
 		
 		# get the layer points objects for deletion
 		layerPointsObj = models.layer_points.objects.filter(point_path_id__range=(inStartPointPathId,inStopPointPathId),twtt__range=(minTwttN,maxTwttN),layer_id=layerId)
