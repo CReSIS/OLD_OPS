@@ -629,8 +629,8 @@ def deleteLayerPoints(request):
 
 		if useGpsTimes:
 		
-			inStartGpsTimeN = inStartGpsTime.next_minus() # get the next possible value (ensures boundary points are deleted)
-			inStopGpsTimeN = inStopGpsTime.next_plus()
+			inStartGpsTimeN = inStartGpsTime-Decimal(0.00001) # To handle double precision rounding error
+			inStopGpsTimeN = inStopGpsTime+Decimal(0.00001)
 			
 			# get the min/max point_path_id
 			PointPathObj = models.point_paths.objects.filter(segment__name=inSegmentName,season_id__name=inSeasonName,location__name=inLocationName,gps_time__range=(inStartGpsTimeN,inStopGpsTimeN)).aggregate(Max('pk'),Min('pk'))
@@ -699,18 +699,17 @@ def deleteBulk(request):
 		deleteOnlyLayerPoints = utility.forceBool(data['properties']['only_layer_points'])
 			
 	
-		# perform the function logic
-		
+		# Get all the segments if no segments passed in
 		if len(inSegmentNames) == 1 and not inSegmentNames[0]:
-		
 			inSegmentNames = models.segments.objects.filter(season__name__in=inSeasonNames).values_list('name',flat=True) # get all the segments for the given seasons
 			
-		# delete layer points
+		# Delete layer points
 		_ = models.layer_points.objects.filter(point_path__season__name__in=inSeasonNames,point_path__segment__name__in=inSegmentNames).delete()
 		
+		# Delete segments as well if user requested
 		if not deleteOnlyLayerPoints:
 		
-			_ = models.segments.objects.filter(name__in=inSegmentNames).delete() # delete segments
+			_ = models.segments.objects.filter(name__in=inSegmentNames,season__name__in=inSeasonNames).delete() # delete segments
 			
 			if not models.segments.objects.filter(season__name__in=inSeasonNames):
 			
@@ -782,8 +781,8 @@ def getPath(request):
 	
 		inLocationName = data['properties']['location']
 		inSeasonName = data['properties']['season']
-		inStartGpsTime = data['properties']['start_gps_time']
-		inStopGpsTime = data['properties']['stop_gps_time']
+		inStartGpsTime = data['properties']['start_gps_time']-Decimal(0.00001) # To handle double precision rounding error
+		inStopGpsTime = data['properties']['stop_gps_time']+Decimal(0.00001)
 		
 		# parse optional inputs
 		try:
@@ -1017,8 +1016,8 @@ def getLayerPoints(request):
 
 		try:
 			useAllGps = False
-			inStartGpsTime = data['properties']['start_gps_time']
-			inStopGpsTime = data['properties']['stop_gps_time']
+			inStartGpsTime = data['properties']['start_gps_time']-Decimal(0.00001) # To handle double precision rounding error
+			inStopGpsTime = data['properties']['stop_gps_time']+Decimal(0.00001)
 		except KeyError:
 			useAllGps = True
 
@@ -1042,7 +1041,8 @@ def getLayerPoints(request):
 		if not usePointPathIds:
 			# get a segment object with a pk field
 			if segName:
-				segmentId = models.segments.objects.filter(name=inSegment).values_list('pk',flat=True)
+				seasonId = models.seasons.objects.filter(name=inSeasonName).values_list('pk',flat=True)
+				segmentId = models.segments.objects.filter(name=inSegment,season_id=seasonId).values_list('pk',flat=True)
 				if segmentId.exists():
 					segmentId = segmentId[0]
 				else:
@@ -1128,6 +1128,8 @@ def getLayerPointsCsv(request):
 		data:  url to [L2CSV].csv on the server
 		
 	Output is limited to 2 million points
+
+	KNOWN ISSUE: inSeasons is not actually used to restrict query
 	
 	"""
 	try:
@@ -1337,7 +1339,6 @@ def getFramesWithinPolygon(request):
 	Output:
 		status: (integer) 0:error 1:success 2:warning
 		data:  List of frames, ordered by segments
-		
 	
 	"""	
 	
@@ -1388,7 +1389,8 @@ def getPointsWithinPolygon(request):
 	Output:
 		status: (integer) 0:error 1:success 2:warning
 		data:  List of points, ordered by segments
-		
+
+	KNOWN ISSUE: inSeasonsNames is not actually used to restrict query
 	
 	"""	
 	
