@@ -763,6 +763,8 @@ def getPath(request):
 		season: (string) season of point path/s to retrieve
 		start_gps_time: (float) start gps time of point path/s to retrieve
 		stop_gps_time: (float) stop gps time of point path/s to retrieve
+			OR
+		point_path_id: (integer, list of integers) point path ids for output points
 		
 	Output:
 		status: (integer) 0:error 1:success 2:warning
@@ -778,11 +780,19 @@ def getPath(request):
 		models,data,app,cookies = utility.getInput(request) # get the input and models
 	
 		# parse the data input
+		try:
+			# parse the data input
+			usePointPathIds = True
+			inPointPathIds = data['properties']['point_path_id']
+		except KeyError:
+			usePointPathIds = False
 	
 		inLocationName = data['properties']['location']
-		inSeasonName = data['properties']['season']
-		inStartGpsTime = data['properties']['start_gps_time']-Decimal(0.00001) # To handle double precision rounding error
-		inStopGpsTime = data['properties']['stop_gps_time']+Decimal(0.00001)
+		
+		if not usePointPathIds:
+			inSeasonName = data['properties']['season']
+			inStartGpsTime = data['properties']['start_gps_time']-Decimal(0.00001) # To handle double precision rounding error
+			inStopGpsTime = data['properties']['stop_gps_time']+Decimal(0.00001)
 		
 		# parse optional inputs
 		try:
@@ -791,14 +801,19 @@ def getPath(request):
 			nativeGeom = False
 		
 		# Perform the function logic
-		
 		epsg = utility.epsgFromLocation(inLocationName) # get epsg for the input location
 		
-		# get point paths based on input 
-		if nativeGeom:
-			pointPathsObj = models.point_paths.objects.filter(season_id__name=inSeasonName, location_id__name=inLocationName, gps_time__gte=inStartGpsTime, gps_time__lte=inStopGpsTime).order_by('gps_time').values_list('pk','gps_time','geom')
+		if not usePointPathIds:
+			# get point paths based on input 
+			if nativeGeom:
+				pointPathsObj = models.point_paths.objects.filter(season_id__name=inSeasonName, location_id__name=inLocationName, gps_time__gte=inStartGpsTime, gps_time__lte=inStopGpsTime).order_by('gps_time').values_list('pk','gps_time','geom')
+			else:
+				pointPathsObj = models.point_paths.objects.filter(season_id__name=inSeasonName, location_id__name=inLocationName, gps_time__gte=inStartGpsTime, gps_time__lte=inStopGpsTime).transform(epsg).order_by('gps_time').values_list('pk','gps_time','geom')
 		else:
-			pointPathsObj = models.point_paths.objects.filter(season_id__name=inSeasonName, location_id__name=inLocationName, gps_time__gte=inStartGpsTime, gps_time__lte=inStopGpsTime).transform(epsg).order_by('gps_time').values_list('pk','gps_time','geom')
+			if nativeGeom:
+				pointPathsObj = models.point_paths.objects.filter(id__in=inPointPathIds, location_id__name=inLocationName).order_by('gps_time').values_list('pk','gps_time','geom')
+			else:
+				pointPathsObj = models.point_paths.objects.filter(id__in=inPointPathIds, location_id__name=inLocationName).transform(epsg).order_by('gps_time').values_list('pk','gps_time','geom')
 		
 		# unzip the data for output
 		pks,gpsTimes,pointPaths = zip(*pointPathsObj)
@@ -1041,8 +1056,7 @@ def getLayerPoints(request):
 		if not usePointPathIds:
 			# get a segment object with a pk field
 			if segName:
-				seasonId = models.seasons.objects.filter(name=inSeasonName).values_list('pk',flat=True)
-				segmentId = models.segments.objects.filter(name=inSegment,season_id=seasonId).values_list('pk',flat=True)
+				segmentId = models.segments.objects.filter(name=inSegment,season__name=inSeasonName).values_list('pk',flat=True)
 				if segmentId.exists():
 					segmentId = segmentId[0]
 				else:
