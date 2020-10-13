@@ -5,7 +5,7 @@ from django.contrib.gis.gdal import SpatialReference,CoordTransform
 from django.contrib.auth import authenticate,login,logout
 from django.contrib.auth.models import User
 from django.http import HttpResponse
-from utility import ipAuth
+from .utility import ipAuth
 from decimal import Decimal
 import utility,sys,os,datetime,line_profiler,simplekml,ujson,csv,time,math,tempfile,logging
 from scipy.io import savemat
@@ -197,7 +197,7 @@ def createPath(request):
 					
 					#Keep track of intersection point w/ dictionary:
 					i_point = lines[idx][-1]
-					if  i_point not in self_crosses.keys():
+					if  i_point not in list(self_crosses.keys()):
 						self_crosses[i_point] = []
 						nxt_pts[i_point] = []
 					
@@ -816,8 +816,8 @@ def getPath(request):
 				pointPathsObj = models.point_paths.objects.filter(id__in=inPointPathIds, location_id__name=inLocationName).transform(epsg).order_by('gps_time').values_list('pk','gps_time','geom')
 		
 		# unzip the data for output
-		pks,gpsTimes,pointPaths = zip(*pointPathsObj)
-		xCoords,yCoords,elev = zip(*pointPaths)
+		pks,gpsTimes,pointPaths = list(zip(*pointPathsObj))
+		xCoords,yCoords,elev = list(zip(*pointPaths))
 		
 		# return the output
 		return utility.response(1,{'id':pks,'gps_time':gpsTimes,'elev':elev,'X':xCoords,'Y':yCoords},{})
@@ -903,7 +903,7 @@ def getFrameClosest(request):
 			cursor.close()
 
 		#Extract x,y, and gps_time from linestring
-		xCoords, yCoords, gpsTimes = zip(*GEOSGeometry(closestFrame[-1]))
+		xCoords, yCoords, gpsTimes = list(zip(*GEOSGeometry(closestFrame[-1])))
 		
 		#Sort the results.
 		xCoords = [x for (gps,x) in sorted(zip(gpsTimes,xCoords))]
@@ -954,7 +954,7 @@ def getLayers(request):
 			layersObj = models.layers.objects.select_related('layer_group__name').filter(deleted=False,layer_group__name__in=authLayerGroups).order_by('pk').values_list('pk','name','layer_group__name')
 		
 		# unzip layers
-		outLayersObj = zip(*layersObj)
+		outLayersObj = list(zip(*layersObj))
 	
 		# return the output
 		return utility.response(1,{'lyr_id':outLayersObj[0],'lyr_name':outLayersObj[1],'lyr_group_name':outLayersObj[2]},{})
@@ -1094,7 +1094,7 @@ def getLayerPoints(request):
 			if len(layerPointsObj) == 0:
 				return utility.response(2,'WARNING: NO LAYER POINTS FOUND FOR THE GIVEN PARAMETERS.',{})
 
-			layerPoints = zip(*layerPointsObj) # unzip the layerPointsObj
+			layerPoints = list(zip(*layerPointsObj)) # unzip the layerPointsObj
 			# return the output
 			return utility.response(1,{'point_path_id':layerPoints[0],'lyr_id':layerPoints[1],'gps_time':layerPoints[2],'twtt':layerPoints[3],'type':layerPoints[4],'quality':layerPoints[5]},{})
 
@@ -1105,7 +1105,7 @@ def getLayerPoints(request):
 			if len(layerPointsObj) == 0:
 				return utility.response(2,'WARNING: NO LAYER POINTS FOUND FOR THE GIVEN PARAMETERS.',{})
 
-			pointPathId,layerIds,gpsTimes,twtts,types,qualitys,pointPaths = zip(*layerPointsObj) # unzip the layerPointsObj
+			pointPathId,layerIds,gpsTimes,twtts,types,qualitys,pointPaths = list(zip(*layerPointsObj)) # unzip the layerPointsObj
 
 			outLon = []; outLat = []; outElev = [];
 			if inGeomType == 'proj':
@@ -1313,7 +1313,7 @@ def getLayerPointsKml(request):
 		# get the segments object
 		segmentsObj = models.segments.objects.filter(season_id__name__in=inSeasonNames,name__range=(inStartSeg,inStopSeg),geom__intersects=inPoly).values_list('name','geom')
 		
-		segmentNames,segmentPaths = zip(*segmentsObj) # unzip the segmentsObj
+		segmentNames,segmentPaths = list(zip(*segmentsObj)) # unzip the segmentsObj
 		del segmentsObj
 		
 		kmlObj = simplekml.Kml() # create a new kml object
@@ -1442,7 +1442,7 @@ def getPointsWithinPolygon(request):
 		if len(data) == 0:
 			return utility.response(2, "WARNING: THERE ARE NO POINTS IN THIS POLYGON.",{})
 		else:
-			layerPoints = zip(*data) # unzip the layerPointsObj
+			layerPoints = list(zip(*data)) # unzip the layerPointsObj
 			# return the output
 			return utility.response(1,{'Lat':layerPoints[0],'Lon':layerPoints[1],'Elevation':layerPoints[2],'Gps_Time':layerPoints[3],'Surface':layerPoints[4],'Bottom':layerPoints[5],'Thickness':layerPoints[6],'Surface_Quality':layerPoints[7],'Bottom_Quality':layerPoints[8],'Season':layerPoints[9],'Frame':layerPoints[10]},{})
 			
@@ -1509,7 +1509,7 @@ def getLayerPointsMat(request):
 		pointPathsObj = models.point_paths.objects.select_related('season__name','frame__name').filter(location__name=inLocationName,season__name__in=inSeasons,segment__name__range=(inStartSeg,inStopSeg),geom__within=inPoly).order_by('frame__name','gps_time').values_list('pk','gps_time','roll','pitch','heading','geom','season__name','frame__name')[:2000000]
 		
 		# unzip the pointPathsObj into lists of values
-		ppIds,ppGpsTimes,ppRolls,ppPitchs,ppHeadings,ppPaths,ppSeasonNames,ppFrameNames = zip(*pointPathsObj)
+		ppIds,ppGpsTimes,ppRolls,ppPitchs,ppHeadings,ppPaths,ppSeasonNames,ppFrameNames = list(zip(*pointPathsObj))
 		del pointPathsObj
 		
 		# force the outputs to be lists (handles single element results)
@@ -1526,7 +1526,7 @@ def getLayerPointsMat(request):
 		layerPointsObj = models.layer_points.objects.select_related('layer__name').filter(point_path_id__in=ppIds,layer_id__name__in=inLayers).values_list('pk','layer_id','point_path_id','twtt','type','quality','layer__name')
 		
 		# unzip the layerPointsObj into lists of values
-		lpIds,lpLyrIds,lpPpIds,lpTwtts,lpTypes,lpQualitys,lpLyrNames = zip(*layerPointsObj)
+		lpIds,lpLyrIds,lpPpIds,lpTwtts,lpTypes,lpQualitys,lpLyrNames = list(zip(*layerPointsObj))
 		del layerPointsObj
 		
 		# force the outputs to be lists (handles single element results)
@@ -1565,7 +1565,7 @@ def getLayerPointsMat(request):
 				continue
 				
 			# get the layer names, and layer point indexes for each layer point found
-			lpPpLyrNames,lpIdx = zip(*[[lpLyrNames[idx],idx] for idx in lpPpIdxs])
+			lpPpLyrNames,lpIdx = list(zip(*[[lpLyrNames[idx],idx] for idx in lpPpIdxs]))
 			
 			# if there is a surface in the found layer names write the output
 			if 'surface' in lpPpLyrNames:
@@ -1712,7 +1712,7 @@ def getSystemInfo(request):
 				# if there are seasons populate the outData list
 				if not (len(seasonsObj) == 0):
 
-					data = zip(*seasonsObj)
+					data = list(zip(*seasonsObj))
 					
 					for dataIdx in range(len(data[0])):
 
@@ -1764,7 +1764,7 @@ def getSegmentInfo(request):
 		# get the segment name, season name, frame names, and frame ids
 		pointPathsObj = models.point_paths.objects.select_related('seasons__name','segments__name','frames__name').filter(segment_id=inSegmentId).order_by('frame').distinct('frame').values_list('season__name','segment__name','frame__name','frame')
 		
-		seasonNames,segmentNames,frameNames,frameIds = zip(*pointPathsObj) # extract all the elements
+		seasonNames,segmentNames,frameNames,frameIds = list(zip(*pointPathsObj)) # extract all the elements
 		
 		if len(frameNames) < 1:
 			return utility.response(2,'WARNING: NO FRAMES FOUND FOR THE GIVEN SEGMENT ID',{}) # return if there are no frames
@@ -2129,7 +2129,7 @@ def getFrameSearch(request):
 		# extract all the elements
 		seasonName = pointPathsObj[0]
 		segmentId = pointPathsObj[1]
-		lon,lat,gps_time = zip(*GEOSGeometry(pointPathsObj[2])) #break apart the linestring.
+		lon,lat,gps_time = list(zip(*GEOSGeometry(pointPathsObj[2]))) #break apart the linestring.
 		del pointPathsObj
 		
 		#Sort the results.
@@ -2186,7 +2186,7 @@ def getInitialData(request):
 		# get point path, frame, segment, location, season, and radar ids
 		pointPathsObj = models.point_paths.objects.select_related('segment__radar_id').filter(segment__name__in=inSegments,season__name__in=inSeasons,segment__radar__name__in=inRadars).values_list('pk','location_id','season_id','segment_id','frame_id','segment__radar_id')
 		
-		pointPathIds,locationIds,seasonIds,segmentIds,frameIds,radarIds = zip(*pointPathsObj) # extract all the elements
+		pointPathIds,locationIds,seasonIds,segmentIds,frameIds,radarIds = list(zip(*pointPathsObj)) # extract all the elements
 		del pointPathsObj
 		
 		# force objects to be lists (only keep unique location and radar ids)
@@ -2203,7 +2203,7 @@ def getInitialData(request):
 		else:
 			layersObj = models.layers.objects.filter(name__in=inLyrNames,deleted=False,layer_group__public=True).values_list('pk','layer_group_id')
 			
-		layerIds,layerGroupIds = zip(*layersObj) # extract all the elements
+		layerIds,layerGroupIds = list(zip(*layersObj)) # extract all the elements
 		del layersObj
 		
 		# force objects to be lists (only keep unique layer groups)

@@ -1,6 +1,6 @@
 from django.http import HttpResponse
 from django.db.models import get_model
-from authip import *
+from .authip import *
 from django.contrib.auth.models import User
 from functools import wraps
 from decimal import Decimal
@@ -19,7 +19,7 @@ def response(status,data,cookies):
 	
 	"""
 	outResponse = HttpResponse(ujson.dumps({'status':status,'data':data}),content_type='application/json')
-	for key,value in cookies.iteritems():
+	for key,value in cookies.items():
 		outResponse.set_cookie(key,value,max_age=3600)
 	return outResponse
 
@@ -270,7 +270,7 @@ def forceTuple(var):
 	
 	"""
 	if not isinstance(var,tuple):
-		if isinstance(var,str) or isinstance(var,unicode):
+		if isinstance(var,str) or isinstance(var,str):
 			return (var,)
 		try:
 			return tuple(var)

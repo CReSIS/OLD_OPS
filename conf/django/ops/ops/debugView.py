@@ -52,4 +52,4 @@ response = eval('ops.views.' + viewName + '(request)')
 
 #SET A BREAKPOINT AFTER THIS LINE TO INSPECT THE RESPONSE:
 # (use response.content to examine json return)
-print 'SERVER RESPONSE STATUS: ' + str(response.status_code)
+print('SERVER RESPONSE STATUS: ' + str(response.status_code))
