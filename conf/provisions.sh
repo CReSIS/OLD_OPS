@@ -131,9 +131,9 @@ echo $geoServerStr >> ~/.bashrc
 yum update -y
 
 # INSTALL THE PGDG REPO
-cd ~ && cp -f /vagrant/conf/software/pgdg-centos93-9.3-1.noarch.rpm ./
-rpm -Uvh pgdg-centos93-9.3-1.noarch.rpm
-rm -f pgdg-centos93-9.3-1.noarch.rpm
+cd ~ && cp -f /vagrant/conf/software/pgdg-redhat-repo-latest.noarch.rpm ./
+rpm -Uvh pgdg-redhat-repo-latest.noarch.rpm
+rm -f pgdg-redhat-repo-latest.noarch.rpm
 
 # --------------------------------------------------------------------
 
