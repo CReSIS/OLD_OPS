@@ -136,23 +136,19 @@ rpm -Uvh pgdg-centos93-9.3-1.noarch.rpm
 rm -f pgdg-centos93-9.3-1.noarch.rpm
 
 # --------------------------------------------------------------------
-# INSTALL PYTHON 2.7 WITH DEPENDENCIES IN A VIRTUALENV
 
-# INSTALL DEPENDENCIES
-yum install -y python-pip zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel
-pip install --upgrade nose
+# INSTALL PYTHON3 and DEPENDENCIES
+yum install centos-release-scl
+yum-config-manager --enable centos-sclo-rh-testing
+yum-config-manager --enable rhel-server-rhscl-7-rpms
+yum-config-manager --enable rhel-server-rhscl-beta-7-rpms
+yum install rh-python36
+scl enable rh-python36 bash
+echo -e "#!/bin/bash\nsource scl_source enable rh-python36" >> /etc/profile.d/python36.sh
 
-# INSTALL PYTHON 2.7.6
-cd ~ && cp -f /vagrant/conf/software/Python-2.7.6.tar.xz ./
-tar xf Python-2.7.6.tar.xz
-cd Python-2.7.6
-./configure --prefix=/usr --enable-shared LDFLAGS="-Wl,-rpath /usr/lib"
-make && make altinstall
-cd ~ && rm -rf Python-2.7.6 && rm -f Python-2.7.6.tar.xz
-
-# INSTALL AND ACTIVATE VIRTUALENV
-pip install virtualenv
-virtualenv -p /usr/bin/python2.7 /usr/bin/venv
+python -m pip install --upgrade pip --no-cache-dir
+python -m pip install pip --no-cache-dir # Try twice as it seems to fail sometimes
+python -m venv /usr/bin/venv
 source /usr/bin/venv/bin/activate
 
 # --------------------------------------------------------------------
@@ -161,13 +157,13 @@ source /usr/bin/venv/bin/activate
 # INSTALL APACHE HTTPD
 yum install -y httpd httpd-devel
 
-# INSTALL MOD_WSGI (COMPILE WITH Python27)
-cd ~ && cp -f /vagrant/conf/software/mod_wsgi-3.4.tar.gz ./
-tar xvfz mod_wsgi-3.4.tar.gz
-cd mod_wsgi-3.4/
-./configure --with-python=/usr/bin/python2.7
+# INSTALL MOD_WSGI (COMPILE WITH Python36)
+cd ~ && cp -f /vagrant/conf/software/mod_wsgi-4.7.1.tar.gz ./
+tar xvfz mod_wsgi-4.7.1.tar.gz
+cd mod_wsgi-4.7.1/
+./configure --with-python=/usr/bin/python3.6
 LD_RUN_PATH=/usr/lib make && make install
-cd ~ && rm -f mod_wsgi-3.4.tar.gz && rm -rf mod_wsgi-3.4
+cd ~ && rm -f mod_wsgi-4.7.1.tar.gz && rm -rf mod_wsgi-4.7.1
 
 # --------------------------------------------------------------------
 # WRITE CONFIG FILES FOR HTTPD
@@ -182,7 +178,7 @@ wsgiStr="
 LoadModule wsgi_module modules/mod_wsgi.so
 
 WSGISocketPrefix run/wsgi
-WSGIDaemonProcess $appName user=apache python-path=/var/django/$appName:/usr/bin/venv/lib/python2.7/site-packages
+WSGIDaemonProcess $appName user=apache python-path=/var/django/$appName:/usr/bin/venv/lib/python3.6/site-packages
 WSGIProcessGroup $appName
 WSGIScriptAlias /$appName /var/django/$appName/$appName/wsgi.py process-group=$appName application-group=%{GLOBAL}
 <Directory /var/django/$appName/$appName>
@@ -257,75 +253,83 @@ touch /var/www/sites/$serverName/logs/access_log
 # WRITE THE CGI PROXY
 cgiStr="
 #!/usr/bin/env python
-
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import cgi
 import sys, os
 
-allowedHosts = ['"$serverName"',
-				'www.openlayers.org', 'openlayers.org', 
-				'labs.metacarta.com', 'world.freemap.in', 
-				'prototype.openmnnd.org', 'geo.openplans.org',
-				'sigma.openplans.org', 'demo.opengeo.org',
-				'www.openstreetmap.org', 'sample.azavea.com',
-				'v2.suite.opengeo.org', 'v-swe.uni-muenster.de:8080', 
-				'vmap0.tiles.osgeo.org', 'www.openrouteservice.org']
+allowedHosts = [
+    '"$serverName",
+    'www.openlayers.org',
+    'openlayers.org',
+    'labs.metacarta.com',
+    'world.freemap.in',
+    'prototype.openmnnd.org',
+    'geo.openplans.org',
+    'sigma.openplans.org',
+    'demo.opengeo.org',
+    'www.openstreetmap.org',
+    'sample.azavea.com',
+    'v2.suite.opengeo.org',
+    'v-swe.uni-muenster.de:8080',
+    'vmap0.tiles.osgeo.org',
+    'www.openrouteservice.org',
+]
 
 method = os.environ['REQUEST_METHOD']
 
 if method == 'POST':
-	qs = os.environ['QUERY_STRING']
-	d = cgi.parse_qs(qs)
-	if d.has_key('url'):
-		url = d['url'][0]
-	else:
-		url = 'http://www.openlayers.org'
+    qs = os.environ['QUERY_STRING']
+    d = cgi.parse_qs(qs)
+    if 'url' in d:
+        url = d['url'][0]
+    else:
+        url = 'http://www.openlayers.org'
 else:
-	fs = cgi.FieldStorage()
-	url = fs.getvalue('url', 'http://www.openlayers.org')
+    fs = cgi.FieldStorage()
+    url = fs.getvalue('url', 'http://www.openlayers.org')
 
 try:
-	host = url.split('/')[2]
-	if allowedHosts and not host in allowedHosts:
-		print 'Status: 502 Bad Gateway'
-		print 'Content-Type: text/plain'
-		print
-		print 'This proxy does not allow you to access that location (%s).' % (host,)
-		print
-		print os.environ
-  
-	elif url.startswith('http://') or url.startswith('https://'):
-	
-		if method == 'POST':
-			length = int(os.environ['CONTENT_LENGTH'])
-			headers = {'Content-Type': os.environ['CONTENT_TYPE']}
-			body = sys.stdin.read(length)
-			r = urllib2.Request(url, body, headers)
-			y = urllib2.urlopen(r)
-		else:
-			y = urllib2.urlopen(url)
-		
-		# print content type header
-		i = y.info()
-		if i.has_key('Content-Type'):
-			print 'Content-Type: %s' % (i['Content-Type'])
-		else:
-			print 'Content-Type: text/plain'
-		print
-		
-		print y.read()
-		
-		y.close()
-	else:
-		print 'Content-Type: text/plain'
-		print
-		print 'Illegal request.'
+    host = url.split('/')[2]
+    if allowedHosts and not host in allowedHosts:
+        print('Status: 502 Bad Gateway')
+        print('Content-Type: text/plain')
+        print()
+        print('This proxy does not allow you to access that location (%s).' % (host,))
+        print()
+        print(os.environ)
 
-except Exception, E:
-	print 'Status: 500 Unexpected Error'
-	print 'Content-Type: text/plain'
-	print 
-	print 'Some unexpected error occurred. Error text was:', E"
+    elif url.startswith('http://') or url.startswith('https://'):
+
+        if method == 'POST':
+            length = int(os.environ['CONTENT_LENGTH'])
+            headers = {'Content-Type': os.environ['CONTENT_TYPE']}
+            body = sys.stdin.read(length)
+            r = urllib.request.Request(url, body, headers)
+            y = urllib.request.urlopen(r)
+        else:
+            y = urllib.request.urlopen(url)
+
+        # print content type header
+        i = y.info()
+        if 'Content-Type' in i:
+            print('Content-Type: %s' % (i['Content-Type']))
+        else:
+            print('Content-Type: text/plain')
+        print()
+
+        print(y.read())
+
+        y.close()
+    else:
+        print('Content-Type: text/plain')
+        print()
+        print('Illegal request.')
+
+except Exception as E:
+    print('Status: 500 Unexpected Error')
+    print('Content-Type: text/plain')
+    print()
+    print('Some unexpected error occurred. Error text was:', E)"
 
 echo -e "$cgiStr" > /var/www/sites/$serverName/cgi-bin/proxy.cgi
 chmod +x /var/www/sites/$serverName/cgi-bin/proxy.cgi
@@ -492,7 +496,7 @@ yum -y install geos-devel
 # INSTALL AND CONFIGURE DJANGO
 
 # INSTALL DJANGO
-pip install Django==1.6.5
+pip install Django
 
 # CREATE DIRECTORY AND COPY PROJECT
 mkdir -p /var/django/
