@@ -499,7 +499,6 @@ yum -y install geos-devel
 pip install Django
 
 # CREATE DIRECTORY AND COPY PROJECT
-read -p "Press enter to continue (Copy repo to /var/django)" yn
 mkdir -p /var/django/
 cp -rf /vagrant/conf/django/* /var/django/
 
