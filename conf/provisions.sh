@@ -97,9 +97,9 @@ echo -e $dbPswd > /etc/db_pswd.txt;
 
 if [ $preProv -eq 1 ]; then
 
-	cd ~ && cp /vagrant/conf/software/epel-release-6-8.noarch.rpm ./
-	rpm -Uvh epel-release-6*.rpm 
-	rm -f epel-release-6-8.noarch.rpm
+	cd ~ && cp /vagrant/conf/software/epel-release-latest-7.noarch.rpm ./
+	rpm -Uvh epel-release-latest-7*.rpm 
+	rm -f epel-release-latest-7.noarch.rpm
 	yum update -y
 	yum groupinstall -y "Development Tools"
 	yum install -y gzip gcc unzip rsync wget git
