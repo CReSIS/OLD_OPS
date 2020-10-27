@@ -143,7 +143,7 @@ yum-config-manager --enable centos-sclo-rh-testing
 yum-config-manager --enable rhel-server-rhscl-7-rpms
 yum-config-manager --enable rhel-server-rhscl-beta-7-rpms
 yum install rh-python36
-scl enable rh-python36 bash
+source scl_source enable rh-python36
 echo -e "#!/bin/bash\nsource scl_source enable rh-python36" >> /etc/profile.d/python36.sh
 
 python -m pip install --upgrade pip --no-cache-dir
@@ -499,6 +499,7 @@ yum -y install geos-devel
 pip install Django
 
 # CREATE DIRECTORY AND COPY PROJECT
+read -p "Press enter to continue (Copy repo to /var/django)" yn
 mkdir -p /var/django/
 cp -rf /vagrant/conf/django/* /var/django/
 
