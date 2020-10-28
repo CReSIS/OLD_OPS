@@ -161,7 +161,7 @@ yum install -y httpd httpd-devel
 cd ~ && cp -f /vagrant/conf/software/mod_wsgi-4.7.1.tar.gz ./
 tar xvfz mod_wsgi-4.7.1.tar.gz
 cd mod_wsgi-4.7.1/
-./configure --with-python=/usr/bin/python3.6
+./configure --with-python=/opt/rh/rh-python36/root/usr/bin/python
 LD_RUN_PATH=/usr/lib make && make install
 cd ~ && rm -f mod_wsgi-4.7.1.tar.gz && rm -rf mod_wsgi-4.7.1
 
