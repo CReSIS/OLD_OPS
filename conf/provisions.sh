@@ -158,12 +158,7 @@ source /usr/bin/venv/bin/activate
 yum install -y httpd httpd-devel
 
 # INSTALL MOD_WSGI (COMPILE WITH Python36)
-cd ~ && cp -f /vagrant/conf/software/mod_wsgi-4.7.1.tar.gz ./
-tar xvfz mod_wsgi-4.7.1.tar.gz
-cd mod_wsgi-4.7.1/
-./configure --with-python=/opt/rh/rh-python36/root/usr/bin/python
-LD_RUN_PATH=/usr/lib make && make install
-cd ~ && rm -f mod_wsgi-4.7.1.tar.gz && rm -rf mod_wsgi-4.7.1
+pip install --upgrade mod_wsgi --no-cache-dir
 
 # --------------------------------------------------------------------
 # WRITE CONFIG FILES FOR HTTPD
@@ -175,7 +170,7 @@ mkdir -m 777 -p $webDataDir
 
 # WRITE THE DJANGO WSGI CONFIGURATION
 wsgiStr="
-LoadModule wsgi_module modules/mod_wsgi.so
+${mod_wsgi-express module-config}
 
 WSGISocketPrefix run/wsgi
 WSGIDaemonProcess $appName user=apache python-path=/var/django/$appName:/usr/bin/venv/lib/python3.6/site-packages
@@ -219,6 +214,8 @@ siteConf="
 
 	ErrorLog /var/www/sites/"$serverName"/logs/error_log
 	CustomLog /var/www/sites/"$serverName"/logs/access_log combined
+
+    LoadModule speling_module modules/mod_speling.so
 	CheckSpelling on
 	
 	ScriptAlias /cgi-bin/ /var/www/"$serverName"/cgi-bin/

@@ -34,13 +34,6 @@ sys.path.append("/var/django/ops/ops/")
 # os.environ["DJANGO_SETTINGS_MODULE"] = "ops.settings"
 os.environ["DJANGO_SETTINGS_MODULE"] = "ops.settings"
 
-# Activate VIRTUALENV (OPS)
-activate_env = os.path.expanduser("/usr/bin/venv/bin/activate_this.py")
-exec(
-    compile(open(activate_env, "rb").read(), activate_env, "exec"),
-    dict(__file__=activate_env),
-)
-
 # This application object is used by any WSGI server configured to use this
 # file. This includes Django's development server, if the WSGI_APPLICATION
 # setting points here.
