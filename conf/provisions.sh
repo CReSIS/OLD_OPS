@@ -170,7 +170,7 @@ mkdir -m 777 -p $webDataDir
 
 # WRITE THE DJANGO WSGI CONFIGURATION
 wsgiStr="
-${mod_wsgi-express module-config}
+"$(mod_wsgi-express module-config)"
 
 WSGISocketPrefix run/wsgi
 WSGIDaemonProcess $appName user=apache python-path=/var/django/$appName:/usr/bin/venv/lib/python3.6/site-packages
