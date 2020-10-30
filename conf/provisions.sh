@@ -402,19 +402,19 @@ rm -f ~/jai_imageio-1_1-lib-linux-amd64-jre.bin && cd ~
 # --------------------------------------------------------------------
 # INSTALL AND CONFIGURE POSTGRESQL + POSTGIS
 
-pgDir=$opsDataPath'pgsql/9.3/'
+pgDir=$opsDataPath'pgsql/13/'
 pgPth=$opsDataPath'pgsql/'
 
 # EXCLUDE POSTGRESQL FROM THE BASE CentOS RPM
 sed -i -e '/^\[base\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
 sed -i -e '/^\[updates\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
 
-# INSTALL POSTGRESQL
-yum install -y postgresql93* postgis2_93* 
+# INSTALL POSTGRESQL and POSTGIS
+yum install -y postgresql13 postgresql13-server postgis30_13.x86_64
 
 # INSTALL PYTHON PSYCOPG2 MODULE FOR POSTGRES
-export PATH=/usr/pgsql-9.3/bin:"$PATH"
-pip install psycopg2
+export PATH=/usr/pgsql-13/bin:"$PATH"
+pip install psycopg2-binary
 
 if [ $newDb -eq 1 ]; then
 	
@@ -427,12 +427,12 @@ if [ $newDb -eq 1 ]; then
 	fi
 	
 	# INITIALIZE THE DATABASE CLUSTER
-	cmdStr='/usr/pgsql-9.3/bin/initdb -D '$pgDir
+	cmdStr='/usr/pgsql-13/bin/initdb -D '$pgDir
 	su - postgres -c "$cmdStr"
 	
 	# WRITE PGDATA and PGLOG TO SERVICE CONFIG FILE 
-	sed -i "s,PGDATA=/var/lib/pgsql/9.3/data,PGDATA=$pgDir,g" /etc/rc.d/init.d/postgresql-9.3
-	sed -i "s,PGLOG=/var/lib/pgsql/9.3/pgstartup.log,PGLOG=$pgDir/pgstartup.log,g" /etc/rc.d/init.d/postgresql-9.3
+	sed -i "s,PGDATA=/var/lib/pgsql/13/data,PGDATA=$pgDir,g" /etc/rc.d/init.d/postgresql-13
+	sed -i "s,PGLOG=/var/lib/pgsql/13/pgstartup.log,PGLOG=$pgDir/pgstartup.log,g" /etc/rc.d/init.d/postgresql-13
 	
 	# CREATE STARTUP LOG
 	touch $pgDir"pgstartup.log"
@@ -456,7 +456,7 @@ if [ $newDb -eq 1 ]; then
 	sed -i "s,lc_messages = 'en_US.UTF-8',lc_messages = 'C',g" $pgConfDir
 	
 	# START UP THE POSTGRESQL SERVER
-	service postgresql-9.3 start
+	service postgresql-13 start
 
 	# CREATE THE ADMIN ROLE
 	cmdstring="CREATE ROLE "$dbUser" WITH SUPERUSER LOGIN PASSWORD '"$dbPswd"';"
@@ -577,7 +577,7 @@ rpm -ivh ./pg_bulkload-3.1.5-1.pg93.rhel6.x86_64.rpm;
 rm -f compat-libtermcap-2.0.8-49.el6.x86_64.rpm && rm -f pg_bulkload-3.1.5-1.pg93.rhel6.x86_64.rpm
 
 # ADD pg_bulkload FUNCTION TO THE DATABASE
-su postgres -c "psql -f /usr/pgsql-9.3/share/contrib/pg_bulkload.sql "$appName"";
+su postgres -c "psql -f /usr/pgsql-13/share/contrib/pg_bulkload.sql "$appName"";
 
 if [ $installPgData -eq 1 ]; then
 	fCount=$(ls -A /vagrant/data/postgresql/ | wc -l);
@@ -669,8 +669,8 @@ service httpd start
 chkconfig httpd on
 
 # POSTGRESQL
-service postgresql-9.3 start
-chkconfig postgresql-9.3 on
+service postgresql-13 start
+chkconfig postgresql-13 on
 
 # APACHE TOMCAT
 service tomcat6 start
