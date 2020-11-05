@@ -1,1 +1,363 @@
-[{"pk":1,"model":"auth.user","fields":{"first_name":"fixtureAdmin","last_name":"fixtureAdmin","username":"fixtureAdmin","password":"pass"}},{"pk": 1, "model": "rds.locations", "fields": {"name": "arctic"}}, {"pk": 2, "model": "rds.locations", "fields": {"name": "antarctic"}}, {"pk": 1, "model": "rds.seasons", "fields": {"location": 1, "name": "fixtureTest", "season_group": 2}}, {"pk": 1, "model": "rds.season_groups", "fields": {"public": true, "name": "cresis_public", "description": "public cresis seasons"}}, {"pk": 2, "model": "rds.season_groups", "fields": {"public": false, "name": "cresis_private", "description": "private cresis seasons"}}, {"pk": 1, "model": "rds.radars", "fields": {"name": "fixturetest"}}, {"pk": 1, "model": "rds.segments", "fields": {"season": 1, "geom": "LINESTRING (1.0000000000000000 1.0000000000000000, 3.0000000000000000 3.0000000000000000, 2.0000000000000000 3.0000000000000000, 2.0000000000000000 1.0000000000000000)", "name": "11111111_01", "radar": 1}}, {"pk": 2, "model": "rds.segments", "fields": {"season": 1, "geom": "LINESTRING (1.0000000000000000 2.0000000000000000, 2.5000000000000000 1.5000000000000000, 2.5000000000000000 4.0000000000000000)", "name": "22222222_02", "radar": 1}}, {"pk": 1, "model": "rds.frames", "fields": {"segment": 1, "name": "11111111_01_001"}}, {"pk": 2, "model": "rds.frames", "fields": {"segment": 1, "name": "11111111_01_002"}}, {"pk": 3, "model": "rds.frames", "fields": {"segment": 2, "name": "22222222_02_001"}}, {"pk": 4, "model": "rds.frames", "fields": {"segment": 2, "name": "22222222_02_002"}}, {"pk": 1, "model": "rds.point_paths", "fields": {"gps_time": "1301569765.964949", "season": 1, "frame": 1, "heading": "2.14703", "geom": "POINT Z (1.0000000000000000 1.0000000000000000 1257.8392610983960367)", "location": 1, "pitch": "0.08895", "segment": 1, "roll": "-0.24947"}}, {"pk": 2, "model": "rds.point_paths", "fields": {"gps_time": "1301569766.964949", "season": 1, "frame": 1, "heading": "2.14703", "geom": "POINT Z (3.0000000000000000 3.0000000000000000 1258.8392610983960367)", "location": 1, "pitch": "0.08895", "segment": 1, "roll": "-0.24947"}}, {"pk": 3, "model": "rds.point_paths", "fields": {"gps_time": "1301569767.964949", "season": 1, "frame": 2, "heading": "2.14703", "geom": "POINT Z (2.0000000000000000 3.0000000000000000 1259.8392610983960367)", "location": 1, "pitch": "0.08895", "segment": 1, "roll": "-0.24947"}}, {"pk": 4, "model": "rds.point_paths", "fields": {"gps_time": "1301569768.964949", "season": 1, "frame": 2, "heading": "2.14703", "geom": "POINT Z (2.0000000000000000 1.0000000000000000 1260.8392610983960367)", "location": 1, "pitch": "0.08895", "segment": 1, "roll": "-0.24947"}}, {"pk": 5, "model": "rds.point_paths", "fields": {"gps_time": "1301569865.964949", "season": 1, "frame": 3, "heading": "2.14703", "geom": "POINT Z (1.0000000000000000 2.0000000000000000 1257.8392610983960367)", "location": 1, "pitch": "0.08895", "segment": 2, "roll": "-0.24947"}}, {"pk": 6, "model": "rds.point_paths", "fields": {"gps_time": "1301569866.964949", "season": 1, "frame": 3, "heading": "2.14703", "geom": "POINT Z (2.5000000000000000 1.5000000000000000 1258.8392610983960367)", "location": 1, "pitch": "0.08895", "segment": 2, "roll": "-0.24947"}}, {"pk": 7, "model": "rds.point_paths", "fields": {"gps_time": "1301569867.964949", "season": 1, "frame": 4, "heading": "2.14703", "geom": "POINT Z (2.5000000000000000 4.0000000000000000 1259.8392610983960367)", "location": 1, "pitch": "0.08895", "segment": 2, "roll": "-0.24947"}}, {"pk": 1, "model": "rds.crossovers", "fields": {"angle": "45.179", "geom": "POINT (2.0000000000000089 2.0177632802080483)", "point_path_1": 2, "point_path_2": 3}}, {"pk": 2, "model": "rds.crossovers", "fields": {"angle": "63.398", "geom": "POINT (1.7416607125258288 1.7582774344265049)", "point_path_1": 5, "point_path_2": 1}}, {"pk": 3, "model": "rds.crossovers", "fields": {"angle": "71.423", "geom": "POINT (1.9999999999999964 1.6715589396216395)", "point_path_1": 6, "point_path_2": 4}}, {"pk": 4, "model": "rds.crossovers", "fields": {"angle": "45.679", "geom": "POINT (2.4999999999999907 2.5132621655805361)", "point_path_1": 6, "point_path_2": 2}}, {"pk": 5, "model": "rds.crossovers", "fields": {"angle": "90.000", "geom": "POINT (2.4999999999999973 3.0021933402150021)", "point_path_1": 7, "point_path_2": 3}}, {"pk": 1, "model": "rds.layer_groups", "fields": {"public": true, "name": "uncatagorized", "description": "default catagory for layers with no group"}}, {"pk": 2, "model": "rds.layer_groups", "fields": {"public": true, "name": "standard", "description": "surface and bottom layers"}}, {"pk": 3, "model": "rds.layer_groups", "fields": {"public": false, "name": "fixtureTest", "description": ""}}, {"pk": 1, "model": "rds.layers", "fields": {"layer_group": 2, "deleted": false, "name": "surface", "description": ""}}, {"pk": 2, "model": "rds.layers", "fields": {"layer_group": 2, "deleted": false, "name": "bottom", "description": ""}}, {"pk": 3, "model": "rds.layers", "fields": {"layer_group": 3, "deleted": false, "name": "fixtureTest", "description": "this is a fixture test layer"}}, {"pk": 1, "model": "rds.layer_points", "fields": {"layer": 3, "last_updated": "2014-07-14T18:39:30.628Z", "type": 1, "point_path": 1, "twtt": "0.00000241706", "user": 1, "quality": 1}}, {"pk": 2, "model": "rds.layer_points", "fields": {"layer": 3, "last_updated": "2014-07-14T18:39:30.628Z", "type": 2, "point_path": 2, "twtt": "0.00000251706", "user": 1, "quality": 2}}, {"pk": 3, "model": "rds.layer_points", "fields": {"layer": 3, "last_updated": "2014-07-14T18:39:30.629Z", "type": 1, "point_path": 3, "twtt": "0.00000231706", "user": 1, "quality": 3}}]
+[
+    {
+        "pk": 1,
+        "model": "auth.user",
+        "fields": {
+            "first_name": "fixtureAdmin",
+            "last_name": "fixtureAdmin",
+            "username": "fixtureAdmin",
+            "password": "pass"
+        }
+    },
+    {
+        "pk": 1,
+        "model": "rds.locations",
+        "fields": {
+            "name": "arctic"
+        }
+    },
+    {
+        "pk": 2,
+        "model": "rds.locations",
+        "fields": {
+            "name": "antarctic"
+        }
+    },
+    {
+        "pk": 1,
+        "model": "rds.seasons",
+        "fields": {
+            "location": 1,
+            "name": "fixtureTest",
+            "season_group": 2
+        }
+    },
+    {
+        "pk": 1,
+        "model": "rds.season_groups",
+        "fields": {
+            "public": true,
+            "name": "cresis_public",
+            "description": "public cresis seasons"
+        }
+    },
+    {
+        "pk": 2,
+        "model": "rds.season_groups",
+        "fields": {
+            "public": false,
+            "name": "cresis_private",
+            "description": "private cresis seasons"
+        }
+    },
+    {
+        "pk": 1,
+        "model": "rds.radars",
+        "fields": {
+            "name": "fixturetest"
+        }
+    },
+    {
+        "pk": 1,
+        "model": "rds.segments",
+        "fields": {
+            "season": 1,
+            "geom": "LINESTRING (1.0000000000000000 1.0000000000000000, 3.0000000000000000 3.0000000000000000, 2.0000000000000000 3.0000000000000000, 2.0000000000000000 1.0000000000000000)",
+            "name": "11111111_01",
+            "radar": 1
+        }
+    },
+    {
+        "pk": 2,
+        "model": "rds.segments",
+        "fields": {
+            "season": 1,
+            "geom": "LINESTRING (1.0000000000000000 2.0000000000000000, 2.5000000000000000 1.5000000000000000, 2.5000000000000000 4.0000000000000000)",
+            "name": "22222222_02",
+            "radar": 1
+        }
+    },
+    {
+        "pk": 1,
+        "model": "rds.frames",
+        "fields": {
+            "segment": 1,
+            "name": "11111111_01_001"
+        }
+    },
+    {
+        "pk": 2,
+        "model": "rds.frames",
+        "fields": {
+            "segment": 1,
+            "name": "11111111_01_002"
+        }
+    },
+    {
+        "pk": 3,
+        "model": "rds.frames",
+        "fields": {
+            "segment": 2,
+            "name": "22222222_02_001"
+        }
+    },
+    {
+        "pk": 4,
+        "model": "rds.frames",
+        "fields": {
+            "segment": 2,
+            "name": "22222222_02_002"
+        }
+    },
+    {
+        "pk": 1,
+        "model": "rds.point_paths",
+        "fields": {
+            "gps_time": "1301569765.964949",
+            "season": 1,
+            "frame": 1,
+            "heading": "2.14703",
+            "geom": "POINT Z (1.0000000000000000 1.0000000000000000 1257.8392610983960367)",
+            "location": 1,
+            "pitch": "0.08895",
+            "segment": 1,
+            "roll": "-0.24947"
+        }
+    },
+    {
+        "pk": 2,
+        "model": "rds.point_paths",
+        "fields": {
+            "gps_time": "1301569766.964949",
+            "season": 1,
+            "frame": 1,
+            "heading": "2.14703",
+            "geom": "POINT Z (3.0000000000000000 3.0000000000000000 1258.8392610983960367)",
+            "location": 1,
+            "pitch": "0.08895",
+            "segment": 1,
+            "roll": "-0.24947"
+        }
+    },
+    {
+        "pk": 3,
+        "model": "rds.point_paths",
+        "fields": {
+            "gps_time": "1301569767.964949",
+            "season": 1,
+            "frame": 2,
+            "heading": "2.14703",
+            "geom": "POINT Z (2.0000000000000000 3.0000000000000000 1259.8392610983960367)",
+            "location": 1,
+            "pitch": "0.08895",
+            "segment": 1,
+            "roll": "-0.24947"
+        }
+    },
+    {
+        "pk": 4,
+        "model": "rds.point_paths",
+        "fields": {
+            "gps_time": "1301569768.964949",
+            "season": 1,
+            "frame": 2,
+            "heading": "2.14703",
+            "geom": "POINT Z (2.0000000000000000 1.0000000000000000 1260.8392610983960367)",
+            "location": 1,
+            "pitch": "0.08895",
+            "segment": 1,
+            "roll": "-0.24947"
+        }
+    },
+    {
+        "pk": 5,
+        "model": "rds.point_paths",
+        "fields": {
+            "gps_time": "1301569865.964949",
+            "season": 1,
+            "frame": 3,
+            "heading": "2.14703",
+            "geom": "POINT Z (1.0000000000000000 2.0000000000000000 1257.8392610983960367)",
+            "location": 1,
+            "pitch": "0.08895",
+            "segment": 2,
+            "roll": "-0.24947"
+        }
+    },
+    {
+        "pk": 6,
+        "model": "rds.point_paths",
+        "fields": {
+            "gps_time": "1301569866.964949",
+            "season": 1,
+            "frame": 3,
+            "heading": "2.14703",
+            "geom": "POINT Z (2.5000000000000000 1.5000000000000000 1258.8392610983960367)",
+            "location": 1,
+            "pitch": "0.08895",
+            "segment": 2,
+            "roll": "-0.24947"
+        }
+    },
+    {
+        "pk": 7,
+        "model": "rds.point_paths",
+        "fields": {
+            "gps_time": "1301569867.964949",
+            "season": 1,
+            "frame": 4,
+            "heading": "2.14703",
+            "geom": "POINT Z (2.5000000000000000 4.0000000000000000 1259.8392610983960367)",
+            "location": 1,
+            "pitch": "0.08895",
+            "segment": 2,
+            "roll": "-0.24947"
+        }
+    },
+    {
+        "pk": 1,
+        "model": "rds.crossovers",
+        "fields": {
+            "angle": "45.179",
+            "geom": "POINT (2.0000000000000089 2.0177632802080483)",
+            "point_path_1": 2,
+            "point_path_2": 3
+        }
+    },
+    {
+        "pk": 2,
+        "model": "rds.crossovers",
+        "fields": {
+            "angle": "63.398",
+            "geom": "POINT (1.7416607125258288 1.7582774344265049)",
+            "point_path_1": 5,
+            "point_path_2": 1
+        }
+    },
+    {
+        "pk": 3,
+        "model": "rds.crossovers",
+        "fields": {
+            "angle": "71.423",
+            "geom": "POINT (1.9999999999999964 1.6715589396216395)",
+            "point_path_1": 6,
+            "point_path_2": 4
+        }
+    },
+    {
+        "pk": 4,
+        "model": "rds.crossovers",
+        "fields": {
+            "angle": "45.679",
+            "geom": "POINT (2.4999999999999907 2.5132621655805361)",
+            "point_path_1": 6,
+            "point_path_2": 2
+        }
+    },
+    {
+        "pk": 5,
+        "model": "rds.crossovers",
+        "fields": {
+            "angle": "90.000",
+            "geom": "POINT (2.4999999999999973 3.0021933402150021)",
+            "point_path_1": 7,
+            "point_path_2": 3
+        }
+    },
+    {
+        "pk": 1,
+        "model": "rds.layer_groups",
+        "fields": {
+            "public": true,
+            "name": "uncatagorized",
+            "description": "default catagory for layers with no group"
+        }
+    },
+    {
+        "pk": 2,
+        "model": "rds.layer_groups",
+        "fields": {
+            "public": true,
+            "name": "standard",
+            "description": "surface and bottom layers"
+        }
+    },
+    {
+        "pk": 3,
+        "model": "rds.layer_groups",
+        "fields": {
+            "public": false,
+            "name": "fixtureTest",
+            "description": ""
+        }
+    },
+    {
+        "pk": 1,
+        "model": "rds.layers",
+        "fields": {
+            "layer_group": 2,
+            "deleted": false,
+            "name": "surface",
+            "description": ""
+        }
+    },
+    {
+        "pk": 2,
+        "model": "rds.layers",
+        "fields": {
+            "layer_group": 2,
+            "deleted": false,
+            "name": "bottom",
+            "description": ""
+        }
+    },
+    {
+        "pk": 3,
+        "model": "rds.layers",
+        "fields": {
+            "layer_group": 3,
+            "deleted": false,
+            "name": "fixtureTest",
+            "description": "this is a fixture test layer"
+        }
+    },
+    {
+        "pk": 1,
+        "model": "rds.layer_points",
+        "fields": {
+            "layer": 3,
+            "last_updated": "2014-07-14T18:39:30.628Z",
+            "type": 1,
+            "point_path": 1,
+            "twtt": "0.00000241706",
+            "user": 1,
+            "quality": 1
+        }
+    },
+    {
+        "pk": 2,
+        "model": "rds.layer_points",
+        "fields": {
+            "layer": 3,
+            "last_updated": "2014-07-14T18:39:30.628Z",
+            "type": 2,
+            "point_path": 2,
+            "twtt": "0.00000251706",
+            "user": 1,
+            "quality": 2
+        }
+    },
+    {
+        "pk": 3,
+        "model": "rds.layer_points",
+        "fields": {
+            "layer": 3,
+            "last_updated": "2014-07-14T18:39:30.629Z",
+            "type": 1,
+            "point_path": 3,
+            "twtt": "0.00000231706",
+            "user": 1,
+            "quality": 3
+        }
+    }
+]

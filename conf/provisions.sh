@@ -493,7 +493,7 @@ yum -y install geos-devel
 # INSTALL AND CONFIGURE DJANGO
 
 # INSTALL DJANGO
-pip install Django
+pip install Django==3.1.2
 
 # CREATE DIRECTORY AND COPY PROJECT
 mkdir -p /var/django/
@@ -665,6 +665,7 @@ mkdir -m 777 -p /var/profile_logs/txt/
 # MAKE SURE ALL SERVICES ARE STARTED AND ON
 
 # APACHE HTTPD
+setsebool -P httpd_unified 1  # Allow httpd to write to error_log
 service httpd start
 chkconfig httpd on
 
