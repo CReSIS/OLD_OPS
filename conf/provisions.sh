@@ -645,8 +645,18 @@ mv $geoServerDataPath"data/geoserver/data/arctic" $geoServerDataPath"data/"
 mv $geoServerDataPath"data/geoserver/data/antarctic" $geoServerDataPath"data/"
 rm -rf $geoServerDataPath"data/geoserver/"
 
-# COPY THE GEOSERVER WAR TO TOMCAT
-cp /vagrant/conf/geoserver/geoserver.war /var/lib/tomcat/webapps
+# Download and move THE GEOSERVER WAR TO TOMCAT
+cd ~
+wget https://sourceforge.net/projects/geoserver/files/GeoServer/2.18.0/geoserver-2.18.0-war.zip/download -O geoserver-2.18.0-war.zip
+if md5sum --status -c <(echo ae0ba0207e7bdf067893412a458f0115  geoserver-2.18.0-war.zip); then
+    unzip geoserver-2.18.0-war.zip -d geoserver-2.18.0-war
+    mv geoserver-2.18.0-war/geoserver.war /var/lib/tomcat/webapps/geoserver.war
+    rm -rf geoserver-2.18.0-war
+else
+    echo "GEOSERVER HASH COULD NOT BE VERIFIED, SKIPPING DOWNLOAD"
+fi
+rm geoserver-2.18.0-war.zip
+
 
 # SET OWNERSHIP/PERMISSIONS OF GEOSERVER DATA DIRECTORY
 chmod -R u=rwX,g=rwX,o=rX $geoServerDataPath
