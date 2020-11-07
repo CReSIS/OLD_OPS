@@ -154,6 +154,26 @@ source /usr/bin/venv/bin/activate
 # --------------------------------------------------------------------
 # INSTALL APACHE WEB SERVER AND MOD_WSGI
 
+# Set SELinux policy to permissive
+setenforce 0
+
+selinuxStr="# cat /etc/selinux/config
+
+# This file controls the state of SELinux on the system.
+# SELINUX= can take one of these three values:
+#     enforcing - SELinux security policy is enforced.
+#     permissive - SELinux prints warnings instead of enforcing.
+#     disabled - No SELinux policy is loaded.
+SELINUX=permissive
+# SELINUXTYPE= can take one of three two values:
+#     targeted - Targeted processes are protected,
+#     minimum - Modification of targeted policy. Only selected processes are protected.
+#     mls - Multi Level Security protection.
+SELINUXTYPE=targeted
+"
+
+echo -e "$selinuxStr" > /etc/selinux/config
+
 # INSTALL APACHE HTTPD
 yum install -y httpd httpd-devel
 
@@ -591,7 +611,7 @@ yum install -y pgbadger
 # INSALL APACHE TOMCAT
 yum install -y tomcat
 
-# CONFIGURE tomcat7
+# CONFIGURE tomcat
 echo 'JAVA_HOME="/usr/java/jre11.0.9/"' >> /etc/tomcat/tomcat.conf
 echo 'JAVA_OPTS="-server -Xms512m -Xmx512m -XX:+UseParallelGC -XX:+UseParallelOldGC"' >> /etc/tomcat/tomcat.conf
 echo 'CATALINA_OPTS="-DGEOSERVER_DATA_DIR='$opsDataPath'geoserver"' >> /etc/tomcat/tomcat.conf
@@ -626,14 +646,14 @@ mv $geoServerDataPath"data/geoserver/data/antarctic" $geoServerDataPath"data/"
 rm -rf $geoServerDataPath"data/geoserver/"
 
 # COPY THE GEOSERVER WAR TO TOMCAT
-cp /vagrant/conf/geoserver/geoserver.war /var/lib/tomcat7/webapps
+cp /vagrant/conf/geoserver/geoserver.war /var/lib/tomcat/webapps
 
 # SET OWNERSHIP/PERMISSIONS OF GEOSERVER DATA DIRECTORY
 chmod -R u=rwX,g=rwX,o=rX $geoServerDataPath
 chown -R tomcat:tomcat $geoServerDataPath
 
 # START APACHE TOMCAT
-service tomcat7 start
+service tomcat start
 
 # --------------------------------------------------------------------
 # INSTALL AND CONFIGURE WEB APPLICATION
@@ -667,8 +687,8 @@ service postgresql-12 start
 chkconfig postgresql-12 on
 
 # APACHE TOMCAT
-service tomcat7 start
-chkconfig tomcat7 on
+service tomcat start
+chkconfig tomcat on
 
 # --------------------------------------------------------------------
 # DO A FINAL SYSTEM UPDATE
