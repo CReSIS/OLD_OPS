@@ -372,37 +372,34 @@ chkconfig crond on
 
 # COPY INSTALLATION FILES
 cd ~
-cp /vagrant/conf/software/jre-8-linux-x64.rpm ./
-cp /vagrant/conf/software/jai-1_1_3-lib-linux-amd64-jre.bin ./
-cp /vagrant/conf/software/jai_imageio-1_1-lib-linux-amd64-jre.bin ./
+cp /vagrant/conf/software/jai-1_1_1_01-lib-linux-i586-jre.bin ./
+cp /vagrant/conf/software/jai_imageio-1_0_01-lib-linux-i586-jre.bin ./
 
 # INSTALL JAVA JRE
-rpm -Uvh jre*
-alternatives --install /usr/bin/java java /usr/java/latest/bin/java 200000
-rm -f jre-8-linux-x64.rpm
+yum install java-11-openjdk-devel
 
 # NOT INSTALLING JAI/JAIIO UNTIL WE FIGURE OUT HOW TO MAKE THEM USER FRIENDLY INSTALLS.
 
 ##notify-send "Installing JAVA. Please manually accept the two license agreements in the terminal."
 
 # INSTALL JAI
-cd /usr/java/jre1.8.0/
-chmod u+x ~/jai-1_1_3-lib-linux-amd64-jre.bin
-~/jai-1_1_3-lib-linux-amd64-jre.bin
-rm -f ~/jai-1_1_3-lib-linux-amd64-jre.bin
+cd /usr/java/jre11.0.9/
+chmod u+x ~/jai-1_1_1_01-lib-linux-i586-jre.bin
+~/jai-1_1_1_01-lib-linux-i586-jre.bin
+rm -f ~/jai-1_1_1_01-lib-linux-i586-jre.bin
 
 # INSTALL JAI-IO
 export _POSIX2_VERSION=199209 
-chmod u+x ~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
-~/jai_imageio-1_1-lib-linux-amd64-jre.bin 
-rm -f ~/jai_imageio-1_1-lib-linux-amd64-jre.bin && cd ~
+chmod u+x ~/jai_imageio-1_0_01-lib-linux-i586-jre.bin 
+~/jai_imageio-1_0_01-lib-linux-i586-jre.bin 
+rm -f ~/jai_imageio-1_0_01-lib-linux-i586-jre.bin && cd ~
 
 ##notify-send "Thank you for your input. The installation will now automatically continue."
 
 # --------------------------------------------------------------------
 # INSTALL AND CONFIGURE POSTGRESQL + POSTGIS
 
-pgDir=$opsDataPath'pgsql/13/'
+pgDir=$opsDataPath'pgsql/12/'
 pgPth=$opsDataPath'pgsql/'
 
 # EXCLUDE POSTGRESQL FROM THE BASE CentOS RPM
@@ -410,10 +407,10 @@ sed -i -e '/^\[base\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo
 sed -i -e '/^\[updates\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
 
 # INSTALL POSTGRESQL and POSTGIS
-yum install -y postgresql13 postgresql13-server postgis30_13.x86_64
+yum install -y postgresql12 postgresql12-server postgis30_12.x86_64
 
 # INSTALL PYTHON PSYCOPG2 MODULE FOR POSTGRES
-export PATH=/usr/pgsql-13/bin:"$PATH"
+export PATH=/usr/pgsql-12/bin:"$PATH"
 pip install psycopg2-binary
 
 if [ $newDb -eq 1 ]; then
@@ -427,12 +424,12 @@ if [ $newDb -eq 1 ]; then
 	fi
 	
 	# INITIALIZE THE DATABASE CLUSTER
-	cmdStr='/usr/pgsql-13/bin/initdb -D '$pgDir
+	cmdStr='/usr/pgsql-12/bin/initdb -D '$pgDir
 	su - postgres -c "$cmdStr"
 	
 	# WRITE PGDATA and PGLOG TO SERVICE CONFIG FILE 
-	sed -i "s,PGDATA=/var/lib/pgsql/13/data,PGDATA=$pgDir,g" /etc/rc.d/init.d/postgresql-13
-	sed -i "s,PGLOG=/var/lib/pgsql/13/pgstartup.log,PGLOG=$pgDir/pgstartup.log,g" /etc/rc.d/init.d/postgresql-13
+	sed -i "s,PGDATA=/var/lib/pgsql/12/data,PGDATA=$pgDir,g" /etc/rc.d/init.d/postgresql-12
+	sed -i "s,PGLOG=/var/lib/pgsql/12/pgstartup.log,PGLOG=$pgDir/pgstartup.log,g" /etc/rc.d/init.d/postgresql-12
 	
 	# CREATE STARTUP LOG
 	touch $pgDir"pgstartup.log"
@@ -456,7 +453,7 @@ if [ $newDb -eq 1 ]; then
 	sed -i "s,lc_messages = 'en_US.UTF-8',lc_messages = 'C',g" $pgConfDir
 	
 	# START UP THE POSTGRESQL SERVER
-	service postgresql-13 start
+	service postgresql-12 start
 
 	# CREATE THE ADMIN ROLE
 	cmdstring="CREATE ROLE "$dbUser" WITH SUPERUSER LOGIN PASSWORD '"$dbPswd"';"
@@ -569,15 +566,11 @@ fi
 # BULKLOAD DATA TO POSTGRESQL 
 		
 # INSTALL pg_bulkload AND DEPENDENCIES
-cd ~ && cp -f /vagrant/conf/software/pg_bulkload-3.1.5-1.pg93.rhel6.x86_64.rpm ./
-cd ~ && cp -f /vagrant/conf/software/compat-libtermcap-2.0.8-49.el6.x86_64.rpm ./
 yum install -y openssl098e;
-rpm -Uvh ./compat-libtermcap-2.0.8-49.el6.x86_64.rpm;
-rpm -ivh ./pg_bulkload-3.1.5-1.pg93.rhel6.x86_64.rpm;
-rm -f compat-libtermcap-2.0.8-49.el6.x86_64.rpm && rm -f pg_bulkload-3.1.5-1.pg93.rhel6.x86_64.rpm
+yum install -y pg_bulkload12;
 
 # ADD pg_bulkload FUNCTION TO THE DATABASE
-su postgres -c "psql -f /usr/pgsql-13/share/contrib/pg_bulkload.sql "$appName"";
+su postgres -c "psql -f /usr/pgsql-12/share/contrib/pg_bulkload.sql "$appName"";
 
 if [ $installPgData -eq 1 ]; then
 	fCount=$(ls -A /vagrant/data/postgresql/ | wc -l);
@@ -596,12 +589,12 @@ yum install -y pgbadger
 # INSTALL AND CONFIGURE APACHE TOMCAT AND GEOSERVER(WAR)
 
 # INSALL APACHE TOMCAT
-yum install -y tomcat6
+yum install -y tomcat
 
-# CONFIGURE TOMCAT6
-echo 'JAVA_HOME="/usr/java/jre1.8.0/"' >> /etc/tomcat6/tomcat6.conf
-echo 'JAVA_OPTS="-server -Xms512m -Xmx512m -XX:+UseParallelGC -XX:+UseParallelOldGC"' >> /etc/tomcat6/tomcat6.conf
-echo 'CATALINA_OPTS="-DGEOSERVER_DATA_DIR='$opsDataPath'geoserver"' >> /etc/tomcat6/tomcat6.conf
+# CONFIGURE tomcat7
+echo 'JAVA_HOME="/usr/java/jre11.0.9/"' >> /etc/tomcat/tomcat.conf
+echo 'JAVA_OPTS="-server -Xms512m -Xmx512m -XX:+UseParallelGC -XX:+UseParallelOldGC"' >> /etc/tomcat/tomcat.conf
+echo 'CATALINA_OPTS="-DGEOSERVER_DATA_DIR='$opsDataPath'geoserver"' >> /etc/tomcat/tomcat.conf
 
 # MAKE THE EXTERNAL GEOSERVER DATA DIRECTORY (IF IT DOESNT EXIST)
 geoServerDataPath=$opsDataPath"geoserver/"
@@ -633,14 +626,14 @@ mv $geoServerDataPath"data/geoserver/data/antarctic" $geoServerDataPath"data/"
 rm -rf $geoServerDataPath"data/geoserver/"
 
 # COPY THE GEOSERVER WAR TO TOMCAT
-cp /vagrant/conf/geoserver/geoserver.war /var/lib/tomcat6/webapps
+cp /vagrant/conf/geoserver/geoserver.war /var/lib/tomcat7/webapps
 
 # SET OWNERSHIP/PERMISSIONS OF GEOSERVER DATA DIRECTORY
 chmod -R u=rwX,g=rwX,o=rX $geoServerDataPath
 chown -R tomcat:tomcat $geoServerDataPath
 
 # START APACHE TOMCAT
-service tomcat6 start
+service tomcat7 start
 
 # --------------------------------------------------------------------
 # INSTALL AND CONFIGURE WEB APPLICATION
@@ -670,12 +663,12 @@ service httpd start
 chkconfig httpd on
 
 # POSTGRESQL
-service postgresql-13 start
-chkconfig postgresql-13 on
+service postgresql-12 start
+chkconfig postgresql-12 on
 
 # APACHE TOMCAT
-service tomcat6 start
-chkconfig tomcat6 on
+service tomcat7 start
+chkconfig tomcat7 on
 
 # --------------------------------------------------------------------
 # DO A FINAL SYSTEM UPDATE
