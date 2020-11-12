@@ -648,7 +648,7 @@ rm -rf $geoServerDataPath"data/geoserver/"
 # Download and move THE GEOSERVER WAR TO TOMCAT
 cd ~
 wget https://sourceforge.net/projects/geoserver/files/GeoServer/2.18.0/geoserver-2.18.0-war.zip/download -O geoserver-2.18.0-war.zip
-if md5sum --status -c <(echo ae0ba0207e7bdf067893412a458f0115  geoserver-2.18.0-war.zip); then
+if echo ae0ba0207e7bdf067893412a458f0115 geoserver-2.18.0-war.zip | md5sum --check; then
     unzip geoserver-2.18.0-war.zip -d geoserver-2.18.0-war
     mv geoserver-2.18.0-war/geoserver.war /var/lib/tomcat/webapps/geoserver.war
     rm -rf geoserver-2.18.0-war
