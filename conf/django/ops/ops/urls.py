@@ -1,11 +1,10 @@
-from django.conf.urls import url
+from django.urls import path
 import ops.views
 
 # from django.contrib import admin
 # admin.autodiscover()
 
 urlpatterns = [
-    "",
     # Examples:
     # url(r'^$', 'ops.views.home', name='home'),
     # url(r'^blog/', include('blog.urls')),
@@ -13,40 +12,40 @@ urlpatterns = [
     # OPS NAMING CONVENTIONS
     # [ACTION]/[TABLE]/[*] -> ops.views.actionTable*
     # UTILITY VIEWS
-    url(r"^login/user$", ops.views.loginUser),
-    url(r"^logout/user$", ops.views.logoutUser),
-    url(r"^create/user$", ops.views.createUser),
-    url(r"^query$", ops.views.query),
-    url(r"^updateMaterializedView$", ops.views.updateMaterializedView),
-    url(r"^profile$", ops.views.profile),
-    url(r"^analyze$", ops.views.analyze),
-    url(r"^alter/user/permissions$", ops.views.alterUserPermissions),
+    path("login/user", ops.views.loginUser),
+    path("logout/user", ops.views.logoutUser),
+    path("create/user", ops.views.createUser),
+    path("query", ops.views.query),
+    path("updateMaterializedView", ops.views.updateMaterializedView),
+    path("profile", ops.views.profile),
+    path("analyze", ops.views.analyze),
+    path("alter/user/permissions", ops.views.alterUserPermissions),
     # INPUT VIEWS
-    url(r"^create/path$", ops.views.createPath),
-    url(r"^alter/path/resolution$", ops.views.alterPathResolution),
-    url(r"^create/layer$", ops.views.createLayer),
-    url(r"^delete/layer$", ops.views.deleteLayer),
-    url(r"^create/layer/points$", ops.views.createLayerPoints),
-    url(r"^delete/layer/points$", ops.views.deleteLayerPoints),
-    url(r"^delete/bulk$", ops.views.deleteBulk),
-    url(r"^delete/bulk$", ops.views.deleteBulk),
-    url(r"^release/layer/group$", ops.views.releaseLayerGroup),
+    path("create/path", ops.views.createPath),
+    path("alter/path/resolution", ops.views.alterPathResolution),
+    path("create/layer", ops.views.createLayer),
+    path("delete/layer", ops.views.deleteLayer),
+    path("create/layer/points", ops.views.createLayerPoints),
+    path("delete/layer/points", ops.views.deleteLayerPoints),
+    path("delete/bulk", ops.views.deleteBulk),
+    path("delete/bulk", ops.views.deleteBulk),
+    path("release/layer/group", ops.views.releaseLayerGroup),
     # OUPUT VIEWS
-    url(r"^get/path$", ops.views.getPath),
-    url(r"^get/frame/closest$", ops.views.getFrameClosest),
-    url(r"^get/layers$", ops.views.getLayers),
-    url(r"^get/layer/points$", ops.views.getLayerPoints),
-    url(r"^get/layer/points/csv$", ops.views.getLayerPointsCsv),
-    url(r"^get/layer/points/kml$", ops.views.getLayerPointsKml),
-    url(r"^get/layer/points/mat$", ops.views.getLayerPointsMat),
-    url(r"^get/layer/points/netcdf$", ops.views.getLayerPointsNetcdf),
-    url(r"^get/system/info$", ops.views.getSystemInfo),
-    url(r"^get/segment/info$", ops.views.getSegmentInfo),
-    url(r"^get/crossovers$", ops.views.getCrossovers),
-    url(r"^get/crossovers/report$", ops.views.getCrossoversReport),
-    url(r"^get/frame/search$", ops.views.getFrameSearch),
-    url(r"^get/initial/data$", ops.views.getInitialData),
-    url(r"^get/user/profile/data$", ops.views.getUserProfileData),
-    url(r"^get/frame/polygon$", ops.views.getFramesWithinPolygon),
-    url(r"^get/point/polygon$", ops.views.getPointsWithinPolygon),
+    path("get/path", ops.views.getPath),
+    path("get/frame/closest", ops.views.getFrameClosest),
+    path("get/layers", ops.views.getLayers),
+    path("get/layer/points", ops.views.getLayerPoints),
+    path("get/layer/points/csv", ops.views.getLayerPointsCsv),
+    path("get/layer/points/kml", ops.views.getLayerPointsKml),
+    path("get/layer/points/mat", ops.views.getLayerPointsMat),
+    path("get/layer/points/netcdf", ops.views.getLayerPointsNetcdf),
+    path("get/system/info", ops.views.getSystemInfo),
+    path("get/segment/info", ops.views.getSegmentInfo),
+    path("get/crossovers", ops.views.getCrossovers),
+    path("get/crossovers/report", ops.views.getCrossoversReport),
+    path("get/frame/search", ops.views.getFrameSearch),
+    path("get/initial/data", ops.views.getInitialData),
+    path("get/user/profile/data", ops.views.getUserProfileData),
+    path("get/frame/polygon", ops.views.getFramesWithinPolygon),
+    path("get/point/polygon", ops.views.getPointsWithinPolygon),
 ]
