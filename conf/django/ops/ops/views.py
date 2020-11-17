@@ -7,11 +7,10 @@ from django.contrib.auth.models import User
 from django.http import HttpResponse
 from .utility import ipAuth
 from decimal import Decimal
-import utility
+import ops.utility
 import sys
 import os
 import datetime
-import line_profiler
 import simplekml
 import ujson
 import csv
@@ -3380,6 +3379,8 @@ def profile(request):
             data: string status message
 
     """
+    import line_profiler
+    
     try:
 
         view = request.POST.get('view')  # get the function call

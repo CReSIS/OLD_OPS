@@ -1,5 +1,5 @@
 from django.http import HttpResponse
-from django.db.models import get_model
+from django.apps import apps
 from .authip import *
 from django.contrib.auth.models import User
 from functools import wraps
@@ -263,19 +263,19 @@ def getAppModels(app):
         ],
     )
 
-    locations = get_model(app, "locations")
-    seasons = get_model(app, "seasons")
-    season_groups = get_model(app, "season_groups")
-    radars = get_model(app, "radars")
-    segments = get_model(app, "segments")
-    frames = get_model(app, "frames")
-    point_paths = get_model(app, "point_paths")
-    crossovers = get_model(app, "crossovers")
-    layer_groups = get_model(app, "layer_groups")
-    layers = get_model(app, "layers")
-    layer_links = get_model(app, "layer_links")
-    layer_points = get_model(app, "layer_points")
-    landmarks = get_model(app, "landmarks")
+    locations = apps.get_model(app, "locations")
+    seasons = apps.get_model(app, "seasons")
+    season_groups = apps.get_model(app, "season_groups")
+    radars = apps.get_model(app, "radars")
+    segments = apps.get_model(app, "segments")
+    frames = apps.get_model(app, "frames")
+    point_paths = apps.get_model(app, "point_paths")
+    crossovers = apps.get_model(app, "crossovers")
+    layer_groups = apps.get_model(app, "layer_groups")
+    layers = apps.get_model(app, "layers")
+    layer_links = apps.get_model(app, "layer_links")
+    layer_points = apps.get_model(app, "layer_points")
+    landmarks = apps.get_model(app, "landmarks")
 
     return models(
         locations,

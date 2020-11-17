@@ -4,7 +4,7 @@ from django.db.models.signals import post_save
 
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, related_name="profile", unique=True)
+    user = models.OneToOneField(User, related_name="profile", unique=True, on_delete=models.CASCADE)
     rds_season_groups = models.ManyToManyField("rds.season_groups", null=True)
     rds_layer_groups = models.ManyToManyField("rds.layer_groups", null=True)
     accum_season_groups = models.ManyToManyField("accum.season_groups", null=True)
