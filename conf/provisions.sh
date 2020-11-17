@@ -655,7 +655,7 @@ if echo ae0ba0207e7bdf067893412a458f0115 geoserver-2.18.0-war.zip | md5sum --che
 else
     echo "GEOSERVER HASH COULD NOT BE VERIFIED, SKIPPING DOWNLOAD"
 fi
-rm geoserver-2.18.0-war.zip
+rm -f geoserver-2.18.0-war.zip
 
 
 # SET OWNERSHIP/PERMISSIONS OF GEOSERVER DATA DIRECTORY
