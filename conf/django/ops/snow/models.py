@@ -43,7 +43,7 @@ class segments(models.Model):
     radar = models.ForeignKey("radars", on_delete=models.CASCADE)
     name = models.CharField(max_length=20)
     geom = models.LineStringField()
-    objects = models.GeoManager()
+    objects = models.Manager()
 
     def __unicode__(self):
         return "%s" % (self.name)
@@ -69,7 +69,7 @@ class point_paths(models.Model):
     pitch = models.DecimalField(max_digits=6, decimal_places=5)
     heading = models.DecimalField(max_digits=6, decimal_places=5)
     geom = models.PointField(dim=3)
-    objects = models.GeoManager()
+    objects = models.Manager()
 
     def __unicode__(self):
         return "%d" % (self.id)
@@ -85,7 +85,7 @@ class crossovers(models.Model):
     )
     angle = models.DecimalField(max_digits=6, decimal_places=3)
     geom = models.PointField()
-    objects = models.GeoManager()
+    objects = models.Manager()
 
     def __unicode__(self):
         return "%d" % (self.id)
