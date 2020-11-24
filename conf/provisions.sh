@@ -138,11 +138,11 @@ rm -f pgdg-redhat-repo-latest.noarch.rpm
 # --------------------------------------------------------------------
 
 # INSTALL PYTHON3 and DEPENDENCIES
-yum install centos-release-scl
+yum install -y centos-release-scl
 yum-config-manager --enable centos-sclo-rh-testing
 yum-config-manager --enable rhel-server-rhscl-7-rpms
 yum-config-manager --enable rhel-server-rhscl-beta-7-rpms
-yum install rh-python36
+yum install -y rh-python36
 source scl_source enable rh-python36
 echo -e "#!/bin/bash\nsource scl_source enable rh-python36" >> /etc/profile.d/python36.sh
 
@@ -154,7 +154,8 @@ source /usr/bin/venv/bin/activate
 # --------------------------------------------------------------------
 # INSTALL APACHE WEB SERVER AND MOD_WSGI
 
-# Set SELinux policy to permissive
+# Set SELinux policy to disabled
+# TODO[reece]: This is presumably not ideal -- Determine best practice solution
 setenforce 0
 
 selinuxStr="# cat /etc/selinux/config
@@ -164,7 +165,7 @@ selinuxStr="# cat /etc/selinux/config
 #     enforcing - SELinux security policy is enforced.
 #     permissive - SELinux prints warnings instead of enforcing.
 #     disabled - No SELinux policy is loaded.
-SELINUX=permissive
+SELINUX=disabled
 # SELINUXTYPE= can take one of three two values:
 #     targeted - Targeted processes are protected,
 #     minimum - Modification of targeted policy. Only selected processes are protected.
@@ -396,7 +397,7 @@ cp /vagrant/conf/software/jai-1_1_1_01-lib-linux-i586-jre.bin ./
 cp /vagrant/conf/software/jai_imageio-1_0_01-lib-linux-i586-jre.bin ./
 
 # INSTALL JAVA JRE
-yum install java-11-openjdk-devel
+yum install -y java-11-openjdk-devel
 
 # NOT INSTALLING JAI/JAIIO UNTIL WE FIGURE OUT HOW TO MAKE THEM USER FRIENDLY INSTALLS.
 
@@ -448,6 +449,7 @@ if [ $newDb -eq 1 ]; then
 	su - postgres -c "$cmdStr"
 	
 	# WRITE PGDATA and PGLOG TO SERVICE CONFIG FILE 
+    # TODO[reece]: This doesn't appear to be visible in printenv ?
 	sed -i "s,PGDATA=/var/lib/pgsql/12/data,PGDATA=$pgDir,g" /etc/rc.d/init.d/postgresql-12
 	sed -i "s,PGLOG=/var/lib/pgsql/12/pgstartup.log,PGLOG=$pgDir/pgstartup.log,g" /etc/rc.d/init.d/postgresql-12
 	
