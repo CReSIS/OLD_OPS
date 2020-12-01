@@ -475,6 +475,8 @@ if [ $newDb -eq 1 ]; then
 	sed -i "s,lc_messages = 'en_US.UTF-8',lc_messages = 'C',g" $pgConfDir
 	
 	# START UP THE POSTGRESQL SERVER
+    /usr/pgsql-12/bin/postgresql-12-setup initdb  # Initialize db
+
 	service postgresql-12 start
 
 	# CREATE THE ADMIN ROLE
@@ -744,3 +746,5 @@ echo "Started at:" $startTime
 echo "Finished at:" $stopTime
 
 #notify-send "OpenPolarServer build complete. See terminal for details."
+
+# TODO: Either reboot now or correctly set SELinux policies instead of disabling
