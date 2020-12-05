@@ -575,7 +575,8 @@ done
 if [ $newDb -eq 1 ]; then
 
 	# SYNC THE DJANGO DEFINED DATABASE
-	python /var/django/$appName/manage.py syncdb --noinput
+	python /var/django/$appName/manage.py makemigrations
+	python /var/django/$appName/manage.py migrate
 	
 	# CREATE INDEXES ON POINT PATH GEOMETRIES
 	indexStr='psql -U postgres -d '$dbName' -c "CREATE INDEX app_antarctic_geom_idx ON app_point_paths USING gist (ST_Transform(geom,3031)) WHERE location_id = 2; CREATE INDEX app_arctic_geom_idx ON app_point_paths USING gist (ST_Transform(geom,3413)) WHERE location_id = 1;"'
@@ -730,6 +731,8 @@ printf "#  - Trey Stafford\n"
 printf "#  - John Paden\n"
 printf "#  - Sam Buchanan\n"
 printf "#  - Haiji Wang\n"	
+printf "# Updated by:\n"
+printf "#  - Reece Mathews\n"
 printf "#\n"
 printf "# The system is now ready for use!\n"
 printf "#\n"
