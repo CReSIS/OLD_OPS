@@ -445,7 +445,7 @@ if [ $newDb -eq 1 ]; then
 	fi
 	
 	# INITIALIZE THE DATABASE CLUSTER
-	cmdStr='/usr/pgsql-12/bin/initdb -D '$pgDir
+	cmdStr='/usr/pgsql-12/bin/postgresql-12-setup initdb'
 	su - postgres -c "$cmdStr"
 	
 	# WRITE PGDATA and PGLOG TO SERVICE CONFIG FILE 
@@ -475,7 +475,6 @@ if [ $newDb -eq 1 ]; then
 	sed -i "s,lc_messages = 'en_US.UTF-8',lc_messages = 'C',g" $pgConfDir
 	
 	# START UP THE POSTGRESQL SERVER
-    /usr/pgsql-12/bin/postgresql-12-setup initdb  # Initialize db
 
 	service postgresql-12 start
 
