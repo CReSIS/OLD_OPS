@@ -445,11 +445,10 @@ if [ $newDb -eq 1 ]; then
 	fi
 	
 	# INITIALIZE THE DATABASE CLUSTER
-	cmdStr='/usr/pgsql-12/bin/postgresql-12-setup initdb'
+	cmdStr='/usr/pgsql-12/bin/postgresql-12-setup initdb -D '$pgDir
 	su - postgres -c "$cmdStr"
 	
 	# WRITE PGDATA and PGLOG TO SERVICE CONFIG FILE 
-    # TODO[reece]: This doesn't appear to be visible in printenv ?
 	sed -i "s,PGDATA=/var/lib/pgsql/12/data,PGDATA=$pgDir,g" /etc/rc.d/init.d/postgresql-12
 	sed -i "s,PGLOG=/var/lib/pgsql/12/pgstartup.log,PGLOG=$pgDir/pgstartup.log,g" /etc/rc.d/init.d/postgresql-12
 	
