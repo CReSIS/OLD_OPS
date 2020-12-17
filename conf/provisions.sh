@@ -176,6 +176,8 @@ before_reboot() {
 
     echo -e "$selinuxStr" > /etc/selinux/config
     touch /var/run/rebooting-for-disable-selinux
+    echo "Press enter to reboot. Rerun script after reboot to continue.";
+    read;
     reboot
 }
 
