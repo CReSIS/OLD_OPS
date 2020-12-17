@@ -160,29 +160,27 @@ before_reboot() {
     setenforce 0
 
     selinuxStr="# cat /etc/selinux/config
-
-    # This file controls the state of SELinux on the system.
-    # SELINUX= can take one of these three values:
-    #     enforcing - SELinux security policy is enforced.
-    #     permissive - SELinux prints warnings instead of enforcing.
-    #     disabled - No SELinux policy is loaded.
-    SELINUX=disabled
-    # SELINUXTYPE= can take one of three two values:
-    #     targeted - Targeted processes are protected,
-    #     minimum - Modification of targeted policy. Only selected processes are protected.
-    #     mls - Multi Level Security protection.
-    SELINUXTYPE=targeted
-    "
+# This file controls the state of SELinux on the system.
+# SELINUX= can take one of these three values:
+#     enforcing - SELinux security policy is enforced.
+#     permissive - SELinux prints warnings instead of enforcing.
+#     disabled - No SELinux policy is loaded.
+SELINUX=disabled
+# SELINUXTYPE= can take one of three two values:
+#     targeted - Targeted processes are protected,
+#     minimum - Modification of targeted policy. Only selected processes are protected.
+#     mls - Multi Level Security protection.
+SELINUXTYPE=targeted"
 
     echo -e "$selinuxStr" > /etc/selinux/config
-    touch /var/run/rebooting-for-disable-selinux
+    touch /etc/selinux/rebooting-for-disable-selinux
     echo "Press enter to reboot. Rerun script after reboot to continue.";
     read;
     reboot
 }
 
 after_reboot() {
-    rm /var/run/rebooting-for-disable-selinux
+    rm /etc/selinux/rebooting-for-disable-selinux
 
     # INSTALL APACHE HTTPD
     yum install -y httpd httpd-devel
@@ -764,7 +762,7 @@ after_reboot() {
     #notify-send "OpenPolarServer build complete. See terminal for details."
 }
 
-if [ -f /var/run/rebooting-for-disable-selinux ]; then
+if [ -f /etc/selinux/rebooting-for-disable-selinux ]; then
     after_reboot
 else
     before_reboot
