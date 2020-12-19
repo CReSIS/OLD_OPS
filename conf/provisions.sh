@@ -15,7 +15,7 @@
 #notify-send "Now building OpenPolarServer"
 #notify-send "Please watch for more prompts (there will be a few you need to act on). Thank you."
 
-GRAY='\033[1;30m';
+STATUS_COLOR='\033[1;34m';
 NC='\033[0m' # No Color
 
 before_reboot() {
@@ -62,7 +62,7 @@ before_reboot() {
             [Yy]* ) 
                 installPgData=1;
                 # DOWNLOAD A PREMADE DATA PACK FROM CReSIS (MINIMAL LAYERS)
-                printf "${GRAY}Downloading and unzipping premade datapack${NC}";
+                printf "${STATUS_COLOR}Downloading and unzipping premade datapack${NC}\n";
                 wget https://data.cresis.ku.edu/data/ops/SampleData.zip -P /vagrant/data/postgresql/   
                 unzip /vagrant/data/postgresql/SampleData.zip -d /vagrant/data/postgresql/
                 rm /vagrant/data/postgresql/SampleData.zip
@@ -95,7 +95,7 @@ before_reboot() {
     if [[ -z "${dbPswd// }" ]]; then
     dbPswd="pubAdmin"
     fi
-    printf "${GRAY}Storing db password${NC}";
+    printf "${STATUS_COLOR}Storing db password${NC}\n";
     echo -e $dbPswd > /etc/db_pswd.txt;
 
     # --------------------------------------------------------------------
@@ -103,16 +103,16 @@ before_reboot() {
 
     if [ $preProv -eq 1 ]; then
 
-        printf "${GRAY}RPM epel-release${NC}";
+        printf "${STATUS_COLOR}RPM epel-release${NC}\n";
         cd ~ && cp /vagrant/conf/software/epel-release-latest-7.noarch.rpm ./
         rpm -Uvh epel-release-latest-7*.rpm 
         rm -f epel-release-latest-7.noarch.rpm
-        printf "${GRAY}Updating yum${NC}";
+        printf "${STATUS_COLOR}Updating yum${NC}\n";
         yum update -y
-        printf "${GRAY}Yum installing tools${NC}";
+        printf "${STATUS_COLOR}Yum installing tools${NC}\n";
         yum groupinstall -y "Development Tools"
         yum install -y gzip gcc unzip rsync wget git
-        printf "${GRAY}Setting and restarting iptables${NC}";
+        printf "${STATUS_COLOR}Setting and restarting iptables${NC}\n";
         iptables -F 
         iptables -A INPUT -p tcp --dport 22 -j ACCEPT #SSH ON TCP 22
         iptables -A INPUT -p tcp --dport 80 -j ACCEPT #HTTP ON TCP 80
@@ -131,7 +131,7 @@ before_reboot() {
     # WRITE GEOSERVER_DATA_DIR TO ~/.bashrc
 
     geoServerStr="GEOSERVER_DATA_DIR="$opsDataPath"geoserver"
-    printf "${GRAY}Adding GEOSERVER_DATA_DIR TO ~/.bashrc${NC}";
+    printf "${STATUS_COLOR}Adding GEOSERVER_DATA_DIR TO ~/.bashrc${NC}\n";
     echo $geoServerStr >> ~/.bashrc
     . ~/.bashrc
 
@@ -139,11 +139,11 @@ before_reboot() {
     # UPDATE THE SYSTEM AND INSTALL PGDG REPO
 
     # UPDATE SYSTEM
-    printf "${GRAY}Updating yum (outside conditional)${NC}";
+    printf "${STATUS_COLOR}Updating yum (outside conditional)${NC}\n";
     yum update -y
 
     # INSTALL THE PGDG REPO
-    printf "${GRAY}Installing pgdg repo${NC}";
+    printf "${STATUS_COLOR}Installing pgdg repo${NC}\n";
     cd ~ && cp -f /vagrant/conf/software/pgdg-redhat-repo-latest.noarch.rpm ./
     rpm -Uvh pgdg-redhat-repo-latest.noarch.rpm
     rm -f pgdg-redhat-repo-latest.noarch.rpm
@@ -151,7 +151,7 @@ before_reboot() {
     # --------------------------------------------------------------------
 
     # INSTALL PYTHON3 and DEPENDENCIES
-    printf "${GRAY}Installing python3 and dependencies${NC}";
+    printf "${STATUS_COLOR}Installing python3 and dependencies${NC}\n";
     yum install -y centos-release-scl
     yum-config-manager --enable centos-sclo-rh-testing
     yum-config-manager --enable rhel-server-rhscl-7-rpms
@@ -160,10 +160,10 @@ before_reboot() {
     source scl_source enable rh-python36
     echo -e "#!/bin/bash\nsource scl_source enable rh-python36" >> /etc/profile.d/python36.sh
 
-    printf "${GRAY}Updating pip${NC}";
+    printf "${STATUS_COLOR}Updating pip${NC}\n";
     python -m pip install --upgrade pip --no-cache-dir
     python -m pip install pip --no-cache-dir # Try twice as it seems to fail sometimes
-    printf "${GRAY}Creating and activating python virtual env${NC}";
+    printf "${STATUS_COLOR}Creating and activating python virtual env${NC}\n";
     python -m venv /usr/bin/venv
     source /usr/bin/venv/bin/activate
 
@@ -172,7 +172,7 @@ before_reboot() {
 
     # Set SELinux policy to disabled
     # TODO[reece]: This is presumably not ideal -- Determine best practice solution
-    printf "${GRAY}Disabling SELinux${NC}";
+    printf "${STATUS_COLOR}Disabling SELinux${NC}\n";
     setenforce 0
 
     selinuxStr="# cat /etc/selinux/config
@@ -188,36 +188,36 @@ SELINUX=disabled
 #     mls - Multi Level Security protection.
 SELINUXTYPE=targeted"
 
-    printf "${GRAY}Updating SELinux config${NC}";
+    printf "${STATUS_COLOR}Updating SELinux config${NC}\n";
     echo -e "$selinuxStr" > /etc/selinux/config
     touch /etc/selinux/rebooting-for-disable-selinux
     echo "Press enter to reboot. Rerun script after reboot to continue.";
     read;
-    printf "${GRAY}Rebooting${NC}";
+    printf "${STATUS_COLOR}Rebooting${NC}\n";
     reboot
 }
 
 after_reboot() {
-    printf "${GRAY}Performing after-reboot steps${NC}";
+    printf "${STATUS_COLOR}Performing after-reboot steps${NC}\n";
 
     rm /etc/selinux/rebooting-for-disable-selinux
 
     # INSTALL APACHE HTTPD
-    printf "${GRAY}Yum installing httpd${NC}";
+    printf "${STATUS_COLOR}Yum installing httpd${NC}\n";
     yum install -y httpd httpd-devel
 
     # INSTALL MOD_WSGI (COMPILE WITH Python36)
-    printf "${GRAY}Pip installing mod_wsgi${NC}";
+    printf "${STATUS_COLOR}Pip installing mod_wsgi${NC}\n";
     pip install --upgrade mod_wsgi --no-cache-dir
 
     # --------------------------------------------------------------------
     # WRITE CONFIG FILES FOR HTTPD
 
     # INCLUDE THE SITE CONFIGURATION FOR HTTPD
-    printf "${GRAY}Updating httpd site config globally${NC}";
+    printf "${STATUS_COLOR}Updating httpd site config globally${NC}\n";
     echo "Include /var/www/sites/"$serverName"/conf/"$appName".conf" >> /etc/httpd/conf/httpd.conf
 
-    printf "${GRAY}Creating webdata dir${NC}";
+    printf "${STATUS_COLOR}Creating webdata dir${NC}\n";
     mkdir -m 777 -p $webDataDir
 
     # WRITE THE DJANGO WSGI CONFIGURATION
@@ -235,7 +235,7 @@ after_reboot() {
         </Files>
     </Directory>";
 
-    printf "${GRAY}Creating django wsgi config${NC}";
+    printf "${STATUS_COLOR}Creating django wsgi config${NC}\n";
     echo -e "$wsgiStr" > /etc/httpd/conf.d/djangoWsgi.conf
 
     # WRITE THE GEOSERVER PROXY CONFIGURATION
@@ -251,11 +251,11 @@ after_reboot() {
     ProxyPass /geoserver http://localhost:8080/geoserver
     ProxyPassReverse /geoserver http://localhost:8080/geoserver"
 
-    printf "${GRAY}Creating geoserver proxy config${NC}";
+    printf "${STATUS_COLOR}Creating geoserver proxy config${NC}\n";
     echo -e "$geoservStr" > /etc/httpd/conf.d/geoserverProxy.conf
 
     # WRITE THE HTTPD SITE CONFIGURATION
-    printf "${GRAY}Creating httpd sites dirs${NC}";
+    printf "${STATUS_COLOR}Creating httpd sites dirs${NC}\n";
     mkdir -p /var/www/sites/$serverName/conf
     mkdir -p /var/www/sites/$serverName/logs
     mkdir -p /var/www/sites/$serverName/cgi-bin
@@ -298,9 +298,9 @@ after_reboot() {
 
     </VirtualHost>"
 
-    printf "${GRAY}Creating httpd site config for site${NC}";
+    printf "${STATUS_COLOR}Creating httpd site config for site${NC}\n";
     echo -e "$siteConf" > /var/www/sites/$serverName/conf/$appName.conf
-    printf "${GRAY}Creating httpd error and access logs${NC}";
+    printf "${STATUS_COLOR}Creating httpd error and access logs${NC}\n";
     touch /var/www/sites/$serverName/logs/error_log
     touch /var/www/sites/$serverName/logs/access_log
 
@@ -385,7 +385,7 @@ after_reboot() {
         print()
         print('Some unexpected error occurred. Error text was:', E)"
 
-    printf "${GRAY}Creating and chmodding site proxy cgi${NC}";
+    printf "${STATUS_COLOR}Creating and chmodding site proxy cgi${NC}\n";
     echo -e "$cgiStr" > /var/www/sites/$serverName/cgi-bin/proxy.cgi
     chmod +x /var/www/sites/$serverName/cgi-bin/proxy.cgi
             
@@ -419,11 +419,11 @@ after_reboot() {
 
     "
 
-    printf "${GRAY}Creating crontab${NC}";
+    printf "${STATUS_COLOR}Creating crontab${NC}\n";
     echo -n > /etc/crontab
     echo "$cronStr" > /etc/crontab
 
-    printf "${GRAY}Restarting crond${NC}";
+    printf "${STATUS_COLOR}Restarting crond${NC}\n";
     service crond start
     chkconfig crond on
 
@@ -431,13 +431,13 @@ after_reboot() {
     # INSTALL JAVA JRE, JAI, JAI I/O
 
     # COPY INSTALLATION FILES
-    printf "${GRAY}Copying JAI bins${NC}";
+    printf "${STATUS_COLOR}Copying JAI bins${NC}\n";
     cd ~
     cp /vagrant/conf/software/jai-1_1_1_01-lib-linux-i586-jre.bin ./
     cp /vagrant/conf/software/jai_imageio-1_0_01-lib-linux-i586-jre.bin ./
 
     # INSTALL JAVA JRE
-    printf "${GRAY}Yum installing java jdk${NC}";
+    printf "${STATUS_COLOR}Yum installing java jdk${NC}\n";
     yum install -y java-11-openjdk-devel
 
     # NOT INSTALLING JAI/JAIIO UNTIL WE FIGURE OUT HOW TO MAKE THEM USER FRIENDLY INSTALLS.
@@ -445,7 +445,7 @@ after_reboot() {
     ##notify-send "Installing JAVA. Please manually accept the two license agreements in the terminal."
 
     # INSTALL JAI
-    printf "${GRAY}Installing JAI and JAI I/O${NC}";
+    printf "${STATUS_COLOR}Installing JAI and JAI I/O${NC}\n";
     cd /usr/java/jre11.0.9/
     chmod u+x ~/jai-1_1_1_01-lib-linux-i586-jre.bin
     ~/jai-1_1_1_01-lib-linux-i586-jre.bin
@@ -466,19 +466,19 @@ after_reboot() {
     pgPth=$opsDataPath'pgsql/'
 
     # EXCLUDE POSTGRESQL FROM THE BASE CentOS RPM
-    printf "${GRAY}Excluding postgresql from base centos rpm${NC}";
+    printf "${STATUS_COLOR}Excluding postgresql from base centos rpm${NC}\n";
     # TODO[reece]: Perhaps this causing problems now:
     sed -i -e '/^\[base\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
     sed -i -e '/^\[updates\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
 
     # INSTALL POSTGRESQL and POSTGIS
-    printf "${GRAY}Yum installing postgres and dependencies${NC}";
+    printf "${STATUS_COLOR}Yum installing postgres and dependencies${NC}\n";
     yum install -y yum-utils
     yum install -y postgresql12 postgresql12-server postgis30_12.x86_64
     yum-config-manager --enable pgdg12
 
     # INSTALL PYTHON PSYCOPG2 MODULE FOR POSTGRES
-    printf "${GRAY}Pip installing psycopg2${NC}";
+    printf "${STATUS_COLOR}Pip installing psycopg2${NC}\n";
     export PATH=/usr/pgsql-12/bin:"$PATH"
     pip install psycopg2-binary
 
@@ -487,7 +487,7 @@ after_reboot() {
         # MAKE THE SNFS1 MOCK DIRECTORY IF IT DOESNT EXIST
         if [ ! -d $pgPth ]
             then
-                printf "${GRAY}Creating SNFS1 mock dir${NC}";
+                printf "${STATUS_COLOR}Creating SNFS1 mock dir${NC}\n";
                 mkdir -p $pgPth
                 chown postgres:postgres $pgPth
                 chmod 700 $pgPth
@@ -495,36 +495,36 @@ after_reboot() {
         
         # INITIALIZE THE DATABASE CLUSTER
 
-        printf "${GRAY}Initializing db cluster${NC}";
+        printf "${STATUS_COLOR}Initializing db cluster${NC}\n";
         cmdStr='/usr/pgsql-12/bin/postgresql-12-setup initdb -D '$pgDir
         su - postgres -c "$cmdStr"
-        printf "${GRAY}Enabling postgres service${NC}";
+        printf "${STATUS_COLOR}Enabling postgres service${NC}\n";
         systemctl enable --now postgresql-12
-        printf "${GRAY}Adding postgres to firewall${NC}";
+        printf "${STATUS_COLOR}Adding postgres to firewall${NC}\n";
         firewall-cmd --add-service=postgresql --permanent
-        printf "${GRAY}Reloading firewall${NC}";
+        printf "${STATUS_COLOR}Reloading firewall${NC}\n";
         firewall-cmd --reload
         
         # WRITE PGDATA and PGLOG TO SERVICE CONFIG FILE 
-        printf "${GRAY}Writing PGDATA and PGLOG to service config file${NC}";
+        printf "${STATUS_COLOR}Writing PGDATA and PGLOG to service config file${NC}\n";
         sed -i "s,PGDATA=/var/lib/pgsql/12/data,PGDATA=$pgDir,g" /etc/rc.d/init.d/postgresql-12
         sed -i "s,PGLOG=/var/lib/pgsql/12/pgstartup.log,PGLOG=$pgDir/pgstartup.log,g" /etc/rc.d/init.d/postgresql-12
         
         # CREATE STARTUP LOG
-        printf "${GRAY}Creating pg startup log${NC}";
+        printf "${STATUS_COLOR}Creating pg startup log${NC}\n";
         touch $pgDir"pgstartup.log"
         chown postgres:postgres $pgDir"pgstartup.log"
         chmod 700 $pgDir"pgstartup.log"
 
         # SET UP THE POSTGRESQL CONFIG FILES
-        printf "${GRAY}Updating postgresql config files${NC}";
+        printf "${STATUS_COLOR}Updating postgresql config files${NC}\n";
         pgConfDir=$pgDir"postgresql.conf"
         sed -i "s,#port = 5432,port = 5432,g" $pgConfDir
         sed -i "s,#track_counts = on,track_counts = on,g" $pgConfDir
         sed -i "s,#autovacuum = on,autovacuum = on,g" $pgConfDir
         sed -i "s,local   all             all                                     peer,local   all             all                                     trust,g" $pgConfDir
         # THE FOLLOWING SET UP POSTGRESQL LOGGING:
-        printf "${GRAY}Updating postgresql logging${NC}";
+        printf "${STATUS_COLOR}Updating postgresql logging${NC}\n";
         sed -i "s,#log_min_duration_statement = -1, log_min_duration_statement = 1500,g" $pgConfDir
         sed -i "s@log_line_prefix = '< %m >'@log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d '@g" $pgConfDir
         sed -i "s,#log_checkpoints = off,log_checkpoints = on,g" $pgConfDir
@@ -536,16 +536,16 @@ after_reboot() {
         
         # START UP THE POSTGRESQL SERVER
 
-        printf "${GRAY}Restarting postgresql service${NC}";
+        printf "${STATUS_COLOR}Restarting postgresql service${NC}\n";
         systemctl restart postgresql-12
 
         # CREATE THE ADMIN ROLE
-        printf "${GRAY}PSQL creating admin role${NC}";
+        printf "${STATUS_COLOR}PSQL creating admin role${NC}\n";
         cmdstring="CREATE ROLE "$dbUser" WITH SUPERUSER LOGIN PASSWORD '"$dbPswd"';"
         psql -U postgres -d postgres -c "$cmdstring"
 
         # CREATE THE POSTGIS TEMPLATE
-        printf "${GRAY}PSQL creating postgis template${NC}";
+        printf "${STATUS_COLOR}PSQL creating postgis template${NC}\n";
         cmdstring="createdb postgis_template -O "$dbUser 
         su - postgres -c "$cmdstring"
         psql -U postgres -d postgis_template -c "CREATE EXTENSION postgis; CREATE EXTENSION postgis_topology;"
@@ -553,7 +553,7 @@ after_reboot() {
     fi
 
     # CREATE THE APP DATABASE
-    printf "${GRAY}Creating app db${NC}";
+    printf "${STATUS_COLOR}Creating app db${NC}\n";
     cmdstring="createdb "$dbName" -O "$dbUser" -T postgis_template"
     su - postgres -c "$cmdstring"
 
@@ -561,46 +561,46 @@ after_reboot() {
     # INSTALL PYTHON PACKAGES
 
     # INSTALL PACKAGES WITH PIP
-    printf "${GRAY}Pip installing website dependencies${NC}";
+    printf "${STATUS_COLOR}Pip installing website dependencies${NC}\n";
     pip install Cython 
     pip install geojson ujson django-extensions simplekml pylint
     pip install --pre line_profiler
 
     # INSTALL NUMPY/SCIPY 
-    printf "${GRAY}Yum installing atlas and blas${NC}";
+    printf "${STATUS_COLOR}Yum installing atlas and blas${NC}\n";
     yum -y install atlas-devel blas-devel
-    printf "${GRAY}Pip installing numpy and scipy${NC}";
+    printf "${STATUS_COLOR}Pip installing numpy and scipy${NC}\n";
     pip install numpy
     pip install scipy
 
     # INSTALL GEOS
-    printf "${GRAY}Yum installing geos${NC}";
+    printf "${STATUS_COLOR}Yum installing geos${NC}\n";
     yum -y install geos-devel
 
     # --------------------------------------------------------------------
     # INSTALL AND CONFIGURE DJANGO
 
     # INSTALL DJANGO
-    printf "${GRAY}Pip installing django${NC}";
+    printf "${STATUS_COLOR}Pip installing django${NC}\n";
     pip install Django==3.1.2
 
     # CREATE DIRECTORY AND COPY PROJECT
-    printf "${GRAY}Creating django dir${NC}";
+    printf "${STATUS_COLOR}Creating django dir${NC}\n";
     mkdir -p /var/django/
-    printf "${GRAY}Copying site from vagrant to django${NC}";
+    printf "${STATUS_COLOR}Copying site from vagrant to django${NC}\n";
     cp -rf /vagrant/conf/django/* /var/django/
 
     # GENERATE A NEW SECRET_KEY
-    printf "${GRAY}Generating secret key${NC}";
+    printf "${STATUS_COLOR}Generating secret key${NC}\n";
     NEW_SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9*^+()@' | fold -w 40 | head -n 1);
     echo $NEW_SECRET_KEY >> /etc/secret_key.txt
 
     # SET THE OPS_DATA_PATH
-    printf "${GRAY}Setting OPS_DATA_PATH in settings.py${NC}";
+    printf "${STATUS_COLOR}Setting OPS_DATA_PATH in settings.py${NC}\n";
     sed -i "s|OPS_DATA_PATH = ''|OPS_DATA_PATH = '$opsDataPath'|g" /var/django/ops/ops/settings.py;
 
     # MODIFY THE DATABASE NAME
-    printf "${GRAY}Setting db name and user in settings.py${NC}";
+    printf "${STATUS_COLOR}Setting db name and user in settings.py${NC}\n";
     sed -i "s|		'NAME': 'ops'|		'NAME': '$dbName'|g" /var/django/ops/ops/settings.py
     sed -i "s|		'USER': 'admin'|		'USER': '$dbUser'|g" /var/django/ops/ops/settings.py
 
@@ -626,7 +626,7 @@ after_reboot() {
             * ) echo "Please answer yes or no.";;
         esac
     done
-    printf "${GRAY}Setting django admins in settings.py${NC}";
+    printf "${STATUS_COLOR}Setting django admins in settings.py${NC}\n";
     sed -i "s,ADMINS = (),ADMINS = ($adminStr),g" /var/django/ops/ops/settings.py
 
     #OPTIONALLY SET DJANGO TO BE IN DEBUG MODE. 			
@@ -638,7 +638,7 @@ after_reboot() {
                 read -p "ARE YOU SURE YOU WANT DJANGO TO BE IN DEBUG MODE? THIS IS FOR DEVELOPMENT ENVIRONMENTS ONLY. [y/n]" yn
                 case $yn in 
                     [Yy]* ) 
-                        printf "${GRAY}Setting debug mode in settings.py${NC}";
+                        printf "${STATUS_COLOR}Setting debug mode in settings.py${NC}\n";
                         sed -i "s,DEBUG = False,DEBUG = True,g" /var/django/ops/ops/settings.py;
                         break;;
                     * ) echo "Please answer yes or no.";;
@@ -650,13 +650,13 @@ after_reboot() {
     if [ $newDb -eq 1 ]; then
 
         # SYNC THE DJANGO DEFINED DATABASE
-        printf "${GRAY}Making django migrations${NC}";
+        printf "${STATUS_COLOR}Making django migrations${NC}\n";
         python /var/django/$appName/manage.py makemigrations
-        printf "${GRAY}Migrating${NC}";
+        printf "${STATUS_COLOR}Migrating${NC}\n";
         python /var/django/$appName/manage.py migrate
         
         # CREATE INDEXES ON POINT PATH GEOMETRIES
-        printf "${GRAY}Creating indices on point path geometries${NC}";
+        printf "${STATUS_COLOR}Creating indices on point path geometries${NC}\n";
         indexStr='psql -U postgres -d '$dbName' -c "CREATE INDEX app_antarctic_geom_idx ON app_point_paths USING gist (ST_Transform(geom,3031)) WHERE location_id = 2; CREATE INDEX app_arctic_geom_idx ON app_point_paths USING gist (ST_Transform(geom,3413)) WHERE location_id = 1;"'
         eval ${indexStr//app/rds}
         eval ${indexStr//app/snow}
@@ -669,19 +669,19 @@ after_reboot() {
     # BULKLOAD DATA TO POSTGRESQL 
             
     # INSTALL pg_bulkload AND DEPENDENCIES
-    printf "${GRAY}Yum installing openssl and pg_bulkload${NC}";
+    printf "${STATUS_COLOR}Yum installing openssl and pg_bulkload${NC}\n";
     yum install -y openssl098e;
     yum install -y pg_bulkload12;
 
     # ADD pg_bulkload FUNCTION TO THE DATABASE
-    printf "${GRAY}PSQL adding pg_bulkload function to db${NC}";
+    printf "${STATUS_COLOR}PSQL adding pg_bulkload function to db${NC}\n";
     su postgres -c "psql -f /usr/pgsql-12/share/contrib/pg_bulkload.sql "$appName"";
 
     if [ $installPgData -eq 1 ]; then
         fCount=$(ls -A /vagrant/data/postgresql/ | wc -l);
         if [ $fCount -gt 1 ]; then
             # LOAD INITIAL DATA INTO THE DATABASE
-            printf "${GRAY}Running initdataload.sh${NC}";
+            printf "${STATUS_COLOR}Running initdataload.sh${NC}\n";
             sh /vagrant/conf/bulkload/initdataload.sh
         fi
     fi
@@ -689,7 +689,7 @@ after_reboot() {
     # --------------------------------------------------------------------
     # INSTALL PGBADGER FOR LOG REPORT GENERATION
 
-    printf "${GRAY}Yum installing pgbadger and tomcat${NC}";
+    printf "${STATUS_COLOR}Yum installing pgbadger and tomcat${NC}\n";
     yum install -y pgbadger
 
     # --------------------------------------------------------------------
@@ -699,7 +699,7 @@ after_reboot() {
     yum install -y tomcat
 
     # CONFIGURE tomcat
-    printf "${GRAY}Setting env vars in tomcat.conf${NC}";
+    printf "${STATUS_COLOR}Setting env vars in tomcat.conf${NC}\n";
     echo 'JAVA_HOME="/usr/java/jre11.0.9/"' >> /etc/tomcat/tomcat.conf
     echo 'JAVA_OPTS="-server -Xms512m -Xmx512m -XX:+UseParallelGC -XX:+UseParallelOldGC"' >> /etc/tomcat/tomcat.conf
     echo 'CATALINA_OPTS="-DGEOSERVER_DATA_DIR='$opsDataPath'geoserver"' >> /etc/tomcat/tomcat.conf
@@ -707,47 +707,47 @@ after_reboot() {
     # MAKE THE EXTERNAL GEOSERVER DATA DIRECTORY (IF IT DOESNT EXIST)
     geoServerDataPath=$opsDataPath"geoserver/"
     if [ ! -d $geoServerDataPath ]; then
-        printf "${GRAY}Creating external geoserver data dir${NC}";
+        printf "${STATUS_COLOR}Creating external geoserver data dir${NC}\n";
         mkdir -p $geoServerDataPath
     fi
 
     # EXTRACT THE OPS GEOSERVER DATA DIR TO THE DIRECTORY
-    printf "${GRAY}Copying geoserver data dir from vagrant to geoServerDataPath${NC}";
+    printf "${STATUS_COLOR}Copying geoserver data dir from vagrant to geoServerDataPath${NC}\n";
     cp -rf /vagrant/conf/geoserver/geoserver/* $geoServerDataPath
 
     # GET THE GEOSERVER REFERENCE DATA
     if [ -f /vagrant/data/geoserver/geoserver.zip ]; then
 
-        printf "${GRAY}Unzipping geoserver.zip${NC}";
+        printf "${STATUS_COLOR}Unzipping geoserver.zip${NC}\n";
         unzip /vagrant/data/geoserver/geoserver.zip -d $geoServerDataPath"data/"
 
     else
 
         # DOWNLOAD THE DATA PACK FROM CReSIS (MINIMAL LAYERS)
-        printf "${GRAY}Downloading minimal data pack from cresis${NC}";
+        printf "${STATUS_COLOR}Downloading minimal data pack from cresis${NC}\n";
         cd /vagrant/data/geoserver/ && wget https://data.cresis.ku.edu/data/ops/geoserver.zip
         
         # UNZIP THE DOWNLOADED DATA PACK
-        printf "${GRAY}Unzipping geoserver.zip${NC}";
+        printf "${STATUS_COLOR}Unzipping geoserver.zip${NC}\n";
         unzip /vagrant/data/geoserver/geoserver.zip -d $geoServerDataPath"data/"
 
     fi
 
     # TEMPORARY HACK UNTIL THE GEOSERVER.ZIP STRUCTURE CHANGES
-    printf "${GRAY}Moving geoserver data subdirs into geoserver data dir${NC}";
+    printf "${STATUS_COLOR}Moving geoserver data subdirs into geoserver data dir${NC}\n";
     mv $geoServerDataPath"data/geoserver/data/arctic" $geoServerDataPath"data/"
     mv $geoServerDataPath"data/geoserver/data/antarctic" $geoServerDataPath"data/"
     rm -rf $geoServerDataPath"data/geoserver/"
 
     # Download and move THE GEOSERVER WAR TO TOMCAT
-    printf "${GRAY}Dowloading geoserver war${NC}";
+    printf "${STATUS_COLOR}Dowloading geoserver war${NC}\n";
     cd ~
     wget https://sourceforge.net/projects/geoserver/files/GeoServer/2.18.0/geoserver-2.18.0-war.zip/download -O geoserver-2.18.0-war.zip
-    printf "${GRAY}Checking geoserver war hash${NC}";
+    printf "${STATUS_COLOR}Checking geoserver war hash${NC}\n";
     if echo ae0ba0207e7bdf067893412a458f0115 geoserver-2.18.0-war.zip | md5sum --check; then
-        printf "${GRAY}Unzipping geoserver war${NC}";
+        printf "${STATUS_COLOR}Unzipping geoserver war${NC}\n";
         unzip geoserver-2.18.0-war.zip -d geoserver-2.18.0-war
-        printf "${GRAY}Moving geoserver war${NC}";
+        printf "${STATUS_COLOR}Moving geoserver war${NC}\n";
         mv geoserver-2.18.0-war/geoserver.war /var/lib/tomcat/webapps/geoserver.war
         rm -rf geoserver-2.18.0-war
     else
@@ -757,25 +757,25 @@ after_reboot() {
 
 
     # SET OWNERSHIP/PERMISSIONS OF GEOSERVER DATA DIRECTORY
-    printf "${GRAY}Setting permissions on geoserver data dir${NC}";
+    printf "${STATUS_COLOR}Setting permissions on geoserver data dir${NC}\n";
     chmod -R u=rwX,g=rwX,o=rX $geoServerDataPath
     chown -R tomcat:tomcat $geoServerDataPath
 
     # START APACHE TOMCAT
-    printf "${GRAY}Starting tomcat service${NC}";
+    printf "${STATUS_COLOR}Starting tomcat service${NC}\n";
     service tomcat start
 
     # --------------------------------------------------------------------
     # INSTALL AND CONFIGURE WEB APPLICATION
 
-    printf "${GRAY}Copying geoportal from vagrant to www${NC}";
+    printf "${STATUS_COLOR}Copying geoportal from vagrant to www${NC}\n";
     cp -rf /vagrant/conf/geoportal/* /var/www/html/ # COPY THE APPLICATION
 
     # WRITE THE BASE URL TO app.js
     # sed -i "s,	 baseUrl: ""http://192.168.111.222"",	 baseUrl: ""$serverName"",g" /var/www/html/app.js
 
     # CREATE AND CONFIGURE ALL THE OUTPUT DIRECTORIES
-    printf "${GRAY}Creating all output dirs${NC}";
+    printf "${STATUS_COLOR}Creating all output dirs${NC}\n";
     mkdir -m 777 -p $opsDataPath"data/csv/"
     mkdir -m 777 -p $opsDataPath"data/kml/"
     mkdir -m 777 -p $opsDataPath"data/mat/"
@@ -790,28 +790,28 @@ after_reboot() {
     # MAKE SURE ALL SERVICES ARE STARTED AND ON
 
     # APACHE HTTPD
-    printf "${GRAY}Allowing httpd to write to error_log${NC}";
+    printf "${STATUS_COLOR}Allowing httpd to write to error_log${NC}\n";
     setsebool -P httpd_unified 1  # Allow httpd to write to error_log
-    printf "${GRAY}Starting httpd service${NC}";
+    printf "${STATUS_COLOR}Starting httpd service${NC}\n";
     service httpd start
-    printf "${GRAY}chkconfig httpd on${NC}";
+    printf "${STATUS_COLOR}chkconfig httpd on${NC}\n";
     chkconfig httpd on
 
     # POSTGRESQL
-    printf "${GRAY}Restarting postgresql service${NC}";
+    printf "${STATUS_COLOR}Restarting postgresql service${NC}\n";
     systemctl restart postgresql-12
-    printf "${GRAY}chkconfig postgresql-12 on${NC}";
+    printf "${STATUS_COLOR}chkconfig postgresql-12 on${NC}\n";
     chkconfig postgresql-12 on
 
     # APACHE TOMCAT
-    printf "${GRAY}Starting tomcat service${NC}";
+    printf "${STATUS_COLOR}Starting tomcat service${NC}\n";
     service tomcat start
-    printf "${GRAY}chkconfig tomcat on${NC}";
+    printf "${STATUS_COLOR}chkconfig tomcat on${NC}\n";
     chkconfig tomcat on
 
     # --------------------------------------------------------------------
     # DO A FINAL SYSTEM UPDATE
-    printf "${GRAY}Final yum update${NC}";
+    printf "${STATUS_COLOR}Final yum update${NC}\n";
     yum update -y
 
     # --------------------------------------------------------------------
