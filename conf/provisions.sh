@@ -98,6 +98,8 @@ before_reboot() {
 
     read -s -p "Database User (default=admin): " dbUser && printf "\n";
     read -s -p "Database Password (default=pubAdmin): " dbPswd && printf "\n";
+    update_config "dbUser" dbUser
+    update_config "dbPswd" dbPswd
     if [[ -z "${dbUser// }" ]]; then
     update_config "dbUser" "\"admin\""
     fi
@@ -533,10 +535,11 @@ Environment=\"PGDATA=/db/pgsql/12/\"
         # SET UP THE POSTGRESQL CONFIG FILES
         printf "${STATUS_COLOR}Updating postgresql config files${NC}\n";
         pgConfDir=$pgDir"postgresql.conf"
+        pghbaConfDir=$pgDir"pg_hba.conf"
         sed -i "s,#port = 5432,port = 5432,g" $pgConfDir
         sed -i "s,#track_counts = on,track_counts = on,g" $pgConfDir
         sed -i "s,#autovacuum = on,autovacuum = on,g" $pgConfDir
-        sed -i "s,local   all             all                                     peer,local   all             all                                     trust,g" $pgConfDir
+        sed -i "s,local   all             all                                     peer,local   all             all                                     trust,g" $pghbaConfDir
         # THE FOLLOWING SET UP POSTGRESQL LOGGING:
         printf "${STATUS_COLOR}Updating postgresql logging${NC}\n";
         sed -i "s,#log_min_duration_statement = -1, log_min_duration_statement = 1500,g" $pgConfDir
