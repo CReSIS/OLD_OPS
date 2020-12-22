@@ -510,10 +510,10 @@ postgresServiceStr="
 Environment=\"PGDATA=/db/pgsql/12/\"
 "
         printf "${STATUS_COLOR}Updating postgresql-12 service systemd override${NC}\n";
-        echo $postgresServiceStr >> "/etc/systemd/system/postgresql-12.service.d/.#override.conf"
+        mkdir -p "/etc/systemd/system/postgresql-12.service.d/"
+        echo $postgresServiceStr >> "/etc/systemd/system/postgresql-12.service.d/override.conf"
         printf "${STATUS_COLOR}Initializing db cluster${NC}\n";
-        cmdStr='/usr/pgsql-12/bin/postgresql-12-setup initdb'
-        su - postgres -c "$cmdStr"
+        /usr/pgsql-12/bin/postgresql-12-setup initdb
         printf "${STATUS_COLOR}Enabling postgres service${NC}\n";
         systemctl enable --now postgresql-12
         printf "${STATUS_COLOR}Adding postgres to firewall${NC}\n";
