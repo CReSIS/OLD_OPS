@@ -18,6 +18,15 @@
 STATUS_COLOR='\033[1;34m';
 NC='\033[0m' # No Color
 
+configPath = "/vagrant/conf/provisions.config"
+
+# Update $1 in the config with value $2
+update_config() {
+    sed -i "/^$1=/D" $configPath
+    echo "$1=$2" >> $configPath
+    . $configPath
+}
+
 before_reboot() {
     printf "\n\n"
     printf "#########################################################################\n"
@@ -34,16 +43,16 @@ before_reboot() {
     printf "#########################################################################\n"
     printf "\n"
 
-    startTime=$(date -u);
+    update_config "startTime" $(date -u)
+    update_config "installPgData" 0
 
     # --------------------------------------------------------------------
     #PROMPT TO OPTIONALLY LOAD IN DATA (DATA BULKLOAD)
-    installPgData=0;
     while true; do
         read -p "Would you like to bulk load the OpenPolarServer with data? [y/n]" yn
         case $yn in 
             [Yy]* ) 
-                installPgData=1;
+                update_config "installPgData" 1;
                 printf "		*****NOTE*****\n"
                 printf "You must place the desired datapacks in \n/vagrant/data/postgresql/ before continuing.\n"
                 printf "		*****NOTE*****\n"
@@ -60,7 +69,7 @@ before_reboot() {
         read -p "[y/n]" yn
         case $yn in 
             [Yy]* ) 
-                installPgData=1;
+                update_config "installPgData" 1;
                 # DOWNLOAD A PREMADE DATA PACK FROM CReSIS (MINIMAL LAYERS)
                 printf "${STATUS_COLOR}Downloading and unzipping premade datapack${NC}\n";
                 wget https://data.cresis.ku.edu/data/ops/SampleData.zip -P /vagrant/data/postgresql/   
@@ -74,15 +83,15 @@ before_reboot() {
 
     # --------------------------------------------------------------------
     # SET SOME STATIC INPUTS
-    preProv=1;
-    newDb=1;
-    serverName="192.168.111.222";
-    serverAdmin="root"; 
-    appName="ops";
-    dbName="ops";
+    update_config "preProv" 1;
+    update_config "newDb" 1;
+    update_config "serverName" "192.168.111.222";
+    update_config "serverAdmin" "root"; 
+    update_config "appName" "ops";
+    update_config "dbName" "ops";
 
-    opsDataPath="/db/";
-    webDataDir=$opsDataPath"data";
+    update_config "opsDataPath" "/db/";
+    update_config "webDataDir" $opsDataPath"data";
 
     # --------------------------------------------------------------------
     # GET SOME INPUTS FROM THE USER
@@ -90,10 +99,10 @@ before_reboot() {
     read -s -p "Database User (default=admin): " dbUser && printf "\n";
     read -s -p "Database Password (default=pubAdmin): " dbPswd && printf "\n";
     if [[ -z "${dbUser// }" ]]; then
-    dbUser="admin"
+    update_config "dbUser" "admin"
     fi
     if [[ -z "${dbPswd// }" ]]; then
-    dbPswd="pubAdmin"
+    update_config "dbPswd" "pubAdmin"
     fi
     printf "${STATUS_COLOR}Storing db password${NC}\n";
     echo -e $dbPswd > /etc/db_pswd.txt;
@@ -130,7 +139,7 @@ before_reboot() {
     # --------------------------------------------------------------------
     # WRITE GEOSERVER_DATA_DIR TO ~/.bashrc
 
-    geoServerStr="GEOSERVER_DATA_DIR="$opsDataPath"geoserver"
+    geoServerStr="GEOSERVER_DATA_DIR=${opsDataPath}geoserver"
     printf "${STATUS_COLOR}Adding GEOSERVER_DATA_DIR TO ~/.bashrc${NC}\n";
     echo $geoServerStr >> ~/.bashrc
     . ~/.bashrc
@@ -190,7 +199,9 @@ SELINUXTYPE=targeted"
 
     printf "${STATUS_COLOR}Updating SELinux config${NC}\n";
     echo -e "$selinuxStr" > /etc/selinux/config
-    touch /etc/selinux/rebooting-for-disable-selinux
+
+    update_config "afterReboot" 1
+
     echo "Press enter to reboot. Rerun script after reboot to continue.";
     read;
     printf "${STATUS_COLOR}Rebooting${NC}\n";
@@ -199,8 +210,6 @@ SELINUXTYPE=targeted"
 
 after_reboot() {
     printf "${STATUS_COLOR}Performing after-reboot steps${NC}\n";
-
-    rm /etc/selinux/rebooting-for-disable-selinux
 
     # INSTALL APACHE HTTPD
     printf "${STATUS_COLOR}Yum installing httpd${NC}\n";
@@ -856,8 +865,14 @@ after_reboot() {
     #notify-send "OpenPolarServer build complete. See terminal for details."
 }
 
-if [ -f /etc/selinux/rebooting-for-disable-selinux ]; then
-    after_reboot
+# Load config if exists and check reboot status or perform before_reboot
+if [ -f $configPath ]; then
+    . $configPath
+    if [ $afterReboot -eq 1 ]; then
+        after_reboot
+    else
+        before_reboot
+    fi
 else
     before_reboot
 fi
