@@ -43,7 +43,7 @@ before_reboot() {
     printf "#########################################################################\n"
     printf "\n"
 
-    update_config "startTime" $(date -u)
+    update_config "startTime" "\"$(date -u)\""
     update_config "installPgData" 0
 
     # --------------------------------------------------------------------
@@ -85,13 +85,13 @@ before_reboot() {
     # SET SOME STATIC INPUTS
     update_config "preProv" 1;
     update_config "newDb" 1;
-    update_config "serverName" "192.168.111.222";
-    update_config "serverAdmin" "root"; 
-    update_config "appName" "ops";
-    update_config "dbName" "ops";
+    update_config "serverName" "\"192.168.111.222\""
+    update_config "serverAdmin" "\"root\""; 
+    update_config "appName" "\"ops\"";
+    update_config "dbName" "\"ops\"";
 
-    update_config "opsDataPath" "/db/";
-    update_config "webDataDir" $opsDataPath"data";
+    update_config "opsDataPath" "\"/db/\"";
+    update_config "webDataDir" "\"${opsDataPath}data\"";
 
     # --------------------------------------------------------------------
     # GET SOME INPUTS FROM THE USER
@@ -99,10 +99,10 @@ before_reboot() {
     read -s -p "Database User (default=admin): " dbUser && printf "\n";
     read -s -p "Database Password (default=pubAdmin): " dbPswd && printf "\n";
     if [[ -z "${dbUser// }" ]]; then
-    update_config "dbUser" "admin"
+    update_config "dbUser" "\"admin\""
     fi
     if [[ -z "${dbPswd// }" ]]; then
-    update_config "dbPswd" "pubAdmin"
+    update_config "dbPswd" "\"pubAdmin\""
     fi
     printf "${STATUS_COLOR}Storing db password${NC}\n";
     echo -e $dbPswd > /etc/db_pswd.txt;
