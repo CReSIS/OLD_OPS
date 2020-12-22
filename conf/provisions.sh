@@ -866,13 +866,14 @@ after_reboot() {
 }
 
 # Load config if exists and check reboot status or perform before_reboot
-if [ -f $configPath ]; then
-    . $configPath
-    if [ $afterReboot -eq 1 ]; then
-        after_reboot
-    else
-        before_reboot
-    fi
+if [ ! -f $configPath ]; then
+    touch $configPath
+    update_config "afterReboot" 0
+fi
+
+. $configPath
+if [ $afterReboot -eq 1 ]; then
+    after_reboot
 else
     before_reboot
 fi
