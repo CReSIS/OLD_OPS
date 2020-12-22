@@ -110,7 +110,7 @@ before_reboot() {
     # --------------------------------------------------------------------
     # PRE-PROVISION THE OPS (NEED FOR CRESIS VM TEMPLATE)
 
-    if [ $preProv -eq 1 ]; then
+    if [ "$preProv" -eq 1 ]; then
 
         printf "${STATUS_COLOR}RPM epel-release${NC}\n";
         cd ~ && cp /vagrant/conf/software/epel-release-latest-7.noarch.rpm ./
@@ -491,7 +491,7 @@ after_reboot() {
     export PATH=/usr/pgsql-12/bin:"$PATH"
     pip install psycopg2-binary
 
-    if [ $newDb -eq 1 ]; then
+    if [ "$newDb" -eq 1 ]; then
         
         # MAKE THE SNFS1 MOCK DIRECTORY IF IT DOESNT EXIST
         if [ ! -d "$pgPth" ]
@@ -656,7 +656,7 @@ after_reboot() {
             * ) echo "Please answer yes or no.";;
         esac
     done
-    if [ $newDb -eq 1 ]; then
+    if [ "$newDb" -eq 1 ]; then
 
         # SYNC THE DJANGO DEFINED DATABASE
         printf "${STATUS_COLOR}Making django migrations${NC}\n";
@@ -686,9 +686,9 @@ after_reboot() {
     printf "${STATUS_COLOR}PSQL adding pg_bulkload function to db${NC}\n";
     su postgres -c "psql -f /usr/pgsql-12/share/contrib/pg_bulkload.sql "$appName"";
 
-    if [ $installPgData -eq 1 ]; then
+    if [ "$installPgData" -eq 1 ]; then
         fCount=$(ls -A /vagrant/data/postgresql/ | wc -l);
-        if [ $fCount -gt 1 ]; then
+        if [ "$fCount" -gt 1 ]; then
             # LOAD INITIAL DATA INTO THE DATABASE
             printf "${STATUS_COLOR}Running initdataload.sh${NC}\n";
             sh /vagrant/conf/bulkload/initdataload.sh
@@ -872,7 +872,7 @@ if [ ! -f "$configPath" ]; then
 fi
 
 . $configPath
-if [ $afterReboot -eq 1 ]; then
+if [ "$afterReboot" -eq 1 ]; then
     after_reboot
 else
     before_reboot
