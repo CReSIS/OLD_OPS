@@ -494,7 +494,7 @@ after_reboot() {
     if [ $newDb -eq 1 ]; then
         
         # MAKE THE SNFS1 MOCK DIRECTORY IF IT DOESNT EXIST
-        if [ ! -d $pgPth ]
+        if [ ! -d "$pgPth" ]
             then
                 printf "${STATUS_COLOR}Creating SNFS1 mock dir${NC}\n";
                 mkdir -p $pgPth
@@ -715,7 +715,7 @@ after_reboot() {
 
     # MAKE THE EXTERNAL GEOSERVER DATA DIRECTORY (IF IT DOESNT EXIST)
     geoServerDataPath=$opsDataPath"geoserver/"
-    if [ ! -d $geoServerDataPath ]; then
+    if [ ! -d "$geoServerDataPath" ]; then
         printf "${STATUS_COLOR}Creating external geoserver data dir${NC}\n";
         mkdir -p $geoServerDataPath
     fi
@@ -866,7 +866,7 @@ after_reboot() {
 }
 
 # Load config if exists and check reboot status or perform before_reboot
-if [ ! -f $configPath ]; then
+if [ ! -f "$configPath" ]; then
     touch $configPath
     update_config "afterReboot" 0
 fi
