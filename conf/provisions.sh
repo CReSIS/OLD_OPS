@@ -872,7 +872,7 @@ if [ ! -f "$configPath" ]; then
 fi
 
 . $configPath
-if [ "$afterReboot" -eq 1 ]; then
+if [[ "$afterReboot" -eq 1 ]]; then
     after_reboot
 else
     before_reboot
