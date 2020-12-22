@@ -98,8 +98,8 @@ before_reboot() {
 
     read -s -p "Database User (default=admin): " dbUser && printf "\n";
     read -s -p "Database Password (default=pubAdmin): " dbPswd && printf "\n";
-    update_config "dbUser" dbUser
-    update_config "dbPswd" dbPswd
+    update_config "dbUser" $dbUser
+    update_config "dbPswd" $dbPswd
     if [[ -z "${dbUser// }" ]]; then
     update_config "dbUser" "\"admin\""
     fi
@@ -511,7 +511,8 @@ Environment=\"PGDATA=/db/pgsql/12/\"
 "
         printf "${STATUS_COLOR}Updating postgresql-12 service systemd override${NC}\n";
         mkdir -p "/etc/systemd/system/postgresql-12.service.d/"
-        echo $postgresServiceStr >> "/etc/systemd/system/postgresql-12.service.d/override.conf"
+        mkdir -p "/db/pgsql/12/"
+        echo -e $postgresServiceStr >> "/etc/systemd/system/postgresql-12.service.d/override.conf"
         printf "${STATUS_COLOR}Initializing db cluster${NC}\n";
         /usr/pgsql-12/bin/postgresql-12-setup initdb
         printf "${STATUS_COLOR}Enabling postgres service${NC}\n";
