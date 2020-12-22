@@ -18,7 +18,7 @@
 STATUS_COLOR='\033[1;34m';
 NC='\033[0m' # No Color
 
-configPath = "/vagrant/conf/provisions.config"
+configPath="/vagrant/conf/provisions.config"
 
 # Update $1 in the config with value $2
 update_config() {
