@@ -507,7 +507,8 @@ after_reboot() {
         # INITIALIZE THE DATABASE CLUSTER
 postgresServiceStr="
 [Service]
-Environment=\"PGDATA=/db/pgsql/12/\"
+Environment=\"PGDATA=$pgDir\"
+Environment=\"PGLOG=${pgDir}pgstartup.log\"
 "
         printf "${STATUS_COLOR}Updating postgresql-12 service systemd override${NC}\n";
         mkdir -p "/etc/systemd/system/postgresql-12.service.d/"
@@ -520,11 +521,6 @@ Environment=\"PGDATA=/db/pgsql/12/\"
         firewall-cmd --add-service=postgresql --permanent
         printf "${STATUS_COLOR}Reloading firewall${NC}\n";
         firewall-cmd --reload
-        
-        # WRITE PGDATA and PGLOG TO SERVICE CONFIG FILE 
-        printf "${STATUS_COLOR}Writing PGDATA and PGLOG to service config file${NC}\n";
-        sed -i "s,PGDATA=/var/lib/pgsql/12/data,PGDATA=$pgDir,g" /etc/rc.d/init.d/postgresql-12
-        sed -i "s,PGLOG=/var/lib/pgsql/12/pgstartup.log,PGLOG=$pgDir/pgstartup.log,g" /etc/rc.d/init.d/postgresql-12
         
         # CREATE STARTUP LOG
         printf "${STATUS_COLOR}Creating pg startup log${NC}\n";
@@ -692,7 +688,7 @@ Environment=\"PGDATA=/db/pgsql/12/\"
 
     # ADD pg_bulkload FUNCTION TO THE DATABASE
     printf "${STATUS_COLOR}PSQL adding pg_bulkload function to db${NC}\n";
-    su postgres -c "psql -f /usr/pgsql-12/share/contrib/pg_bulkload.sql "$appName"";
+    su - postgres -c "psql -f /usr/pgsql-12/share/extension/pg_bulkload.sql "$appName"";
 
     if [ "$installPgData" -eq 1 ]; then
         fCount=$(ls -A /vagrant/data/postgresql/ | wc -l);
