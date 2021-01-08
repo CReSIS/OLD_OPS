@@ -536,6 +536,7 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
         sed -i "s,#track_counts = on,track_counts = on,g" $pgConfDir
         sed -i "s,#autovacuum = on,autovacuum = on,g" $pgConfDir
         sed -i "s,local   all             all                                     peer,local   all             all                                     trust,g" $pghbaConfDir
+        sed -i "s,host    all             all             127.0.0.1/32            ident,host    all             all             127.0.0.1/32            trust,g" $pghbaConfDir
         # THE FOLLOWING SET UP POSTGRESQL LOGGING:
         printf "${STATUS_COLOR}Updating postgresql logging${NC}\n";
         sed -i "s,#log_min_duration_statement = -1, log_min_duration_statement = 1500,g" $pgConfDir
@@ -811,6 +812,8 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
     chkconfig httpd on
 
     # POSTGRESQL
+    printf "${STATUS_COLOR}Killing current postgres processes${NC}\n";
+    killall postgres;
     printf "${STATUS_COLOR}Restarting postgresql service${NC}\n";
     systemctl restart postgresql-12
     printf "${STATUS_COLOR}chkconfig postgresql-12 on${NC}\n";
