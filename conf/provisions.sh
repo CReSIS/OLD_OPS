@@ -215,6 +215,10 @@ SELINUXTYPE=targeted"
 after_reboot() {
     printf "${STATUS_COLOR}Performing after-reboot steps${NC}\n";
 
+    printf "${STATUS_COLOR}Re-enable venv${NC}\n";
+    source /usr/bin/venv/bin/activate
+
+
     # INSTALL APACHE HTTPD
     printf "${STATUS_COLOR}Yum installing httpd${NC}\n";
     yum install -y httpd httpd-devel
