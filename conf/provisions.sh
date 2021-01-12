@@ -22,9 +22,10 @@ configPath="/vagrant/conf/provisions.config"
 
 # Update $1 in the config with value $2
 update_config() {
-    sed -i "/^$1=/D" $configPath
-    echo "$1=$2" >> $configPath
-    . $configPath
+    sed -i "/^$1=/D" $configPath # Remove any old value
+    assignment_str="$1=$2";
+    echo $assignment_str >> $configPath # Add new value to config
+    eval $assignment_str; # Update value locally
 }
 
 before_reboot() {
@@ -83,6 +84,7 @@ before_reboot() {
 
     # --------------------------------------------------------------------
     # SET SOME STATIC INPUTS
+    # Config used because values must persist after reboot
     update_config "preProv" 1;
     update_config "newDb" 1;
     update_config "serverName" "\"192.168.111.222\""
@@ -232,35 +234,35 @@ after_reboot() {
     mkdir -m 777 -p $webDataDir
 
     # WRITE THE DJANGO WSGI CONFIGURATION
-    wsgiStr="
-    "$(mod_wsgi-express module-config)"
+wsgiStr="
+"$(mod_wsgi-express module-config)"
 
-    WSGISocketPrefix run/wsgi
-    WSGIDaemonProcess $appName user=apache python-path=/var/django/$appName:/usr/bin/venv/lib/python3.6/site-packages
-    WSGIProcessGroup $appName
-    WSGIScriptAlias /$appName /var/django/$appName/$appName/wsgi.py process-group=$appName application-group=%{GLOBAL}
-    <Directory /var/django/$appName/$appName>
-        <Files wsgi.py>
-            Order deny,allow
-            Allow from all
-        </Files>
-    </Directory>";
+WSGISocketPrefix run/wsgi
+WSGIDaemonProcess $appName user=apache python-path=/var/django/$appName:/usr/bin/venv/lib/python3.6/site-packages
+WSGIProcessGroup $appName
+WSGIScriptAlias /$appName /var/django/$appName/$appName/wsgi.py process-group=$appName application-group=%{GLOBAL}
+<Directory /var/django/$appName/$appName>
+    <Files wsgi.py>
+        Order deny,allow
+        Allow from all
+    </Files>
+</Directory>";
 
     printf "${STATUS_COLOR}Creating django wsgi config${NC}\n";
     echo -e "$wsgiStr" > /etc/httpd/conf.d/djangoWsgi.conf
 
     # WRITE THE GEOSERVER PROXY CONFIGURATION
-    geoservStr="
-    ProxyRequests Off
-    ProxyPreserveHost On
+geoservStr="
+ProxyRequests Off
+ProxyPreserveHost On
 
-    <Proxy *>
-        Order deny,allow
-        Allow from all
-    </Proxy>
+<Proxy *>
+    Order deny,allow
+    Allow from all
+</Proxy>
 
-    ProxyPass /geoserver http://localhost:8080/geoserver
-    ProxyPassReverse /geoserver http://localhost:8080/geoserver"
+ProxyPass /geoserver http://localhost:8080/geoserver
+ProxyPassReverse /geoserver http://localhost:8080/geoserver"
 
     printf "${STATUS_COLOR}Creating geoserver proxy config${NC}\n";
     echo -e "$geoservStr" > /etc/httpd/conf.d/geoserverProxy.conf
@@ -271,43 +273,43 @@ after_reboot() {
     mkdir -p /var/www/sites/$serverName/logs
     mkdir -p /var/www/sites/$serverName/cgi-bin
 
-    siteConf="
-    <VirtualHost *:80>
-        
-        ServerAdmin "$serverAdmin"
-        DocumentRoot /var/www/html
-        ServerName "$serverName"
+siteConf="
+<VirtualHost *:80>
+    
+    ServerAdmin "$serverAdmin"
+    DocumentRoot /var/www/html
+    ServerName "$serverName"
 
-        ErrorLog /var/www/sites/"$serverName"/logs/error_log
-        CustomLog /var/www/sites/"$serverName"/logs/access_log combined
+    ErrorLog /var/www/sites/"$serverName"/logs/error_log
+    CustomLog /var/www/sites/"$serverName"/logs/access_log combined
 
-        LoadModule speling_module modules/mod_speling.so
-        CheckSpelling on
-        
-        ScriptAlias /cgi-bin/ /var/www/"$serverName"/cgi-bin/
-        <Location /cgi-bin>
-            Options +ExecCGI
-        </Location>
+    LoadModule speling_module modules/mod_speling.so
+    CheckSpelling on
+    
+    ScriptAlias /cgi-bin/ /var/www/"$serverName"/cgi-bin/
+    <Location /cgi-bin>
+        Options +ExecCGI
+    </Location>
 
-        Alias /data "$webDataDir"
-        <Directory "$webDataDir">
-            Options Indexes FollowSymLinks
-            AllowOverride None
-            Order allow,deny
-            Allow from all
-            ForceType application/octet-stream
-            Header set Content-Disposition attachment
-        </Directory>
-        
-        Alias /profile-logs /var/profile_logs/txt
-        <Directory ""/var/profile_logs/txt"">
-            Options Indexes FollowSymLinks
-            AllowOverride None
-            Order allow,deny
-            Allow from all
-        </Directory>
+    Alias /data "$webDataDir"
+    <Directory "$webDataDir">
+        Options Indexes FollowSymLinks
+        AllowOverride None
+        Order allow,deny
+        Allow from all
+        ForceType application/octet-stream
+        Header set Content-Disposition attachment
+    </Directory>
+    
+    Alias /profile-logs /var/profile_logs/txt
+    <Directory ""/var/profile_logs/txt"">
+        Options Indexes FollowSymLinks
+        AllowOverride None
+        Order allow,deny
+        Allow from all
+    </Directory>
 
-    </VirtualHost>"
+</VirtualHost>"
 
     printf "${STATUS_COLOR}Creating httpd site config for site${NC}\n";
     echo -e "$siteConf" > /var/www/sites/$serverName/conf/$appName.conf
@@ -316,85 +318,85 @@ after_reboot() {
     touch /var/www/sites/$serverName/logs/access_log
 
     # WRITE THE CGI PROXY
-    cgiStr="
-    #!/usr/bin/env python
-    import urllib.request, urllib.error, urllib.parse
-    import cgi
-    import sys, os
+cgiStr="
+#!/usr/bin/env python
+import urllib.request, urllib.error, urllib.parse
+import cgi
+import sys, os
 
-    allowedHosts = [
-        '"$serverName",
-        'www.openlayers.org',
-        'openlayers.org',
-        'labs.metacarta.com',
-        'world.freemap.in',
-        'prototype.openmnnd.org',
-        'geo.openplans.org',
-        'sigma.openplans.org',
-        'demo.opengeo.org',
-        'www.openstreetmap.org',
-        'sample.azavea.com',
-        'v2.suite.opengeo.org',
-        'v-swe.uni-muenster.de:8080',
-        'vmap0.tiles.osgeo.org',
-        'www.openrouteservice.org',
-    ]
+allowedHosts = [
+    '"$serverName",
+    'www.openlayers.org',
+    'openlayers.org',
+    'labs.metacarta.com',
+    'world.freemap.in',
+    'prototype.openmnnd.org',
+    'geo.openplans.org',
+    'sigma.openplans.org',
+    'demo.opengeo.org',
+    'www.openstreetmap.org',
+    'sample.azavea.com',
+    'v2.suite.opengeo.org',
+    'v-swe.uni-muenster.de:8080',
+    'vmap0.tiles.osgeo.org',
+    'www.openrouteservice.org',
+]
 
-    method = os.environ['REQUEST_METHOD']
+method = os.environ['REQUEST_METHOD']
 
-    if method == 'POST':
-        qs = os.environ['QUERY_STRING']
-        d = cgi.parse_qs(qs)
-        if 'url' in d:
-            url = d['url'][0]
-        else:
-            url = 'http://www.openlayers.org'
+if method == 'POST':
+    qs = os.environ['QUERY_STRING']
+    d = cgi.parse_qs(qs)
+    if 'url' in d:
+        url = d['url'][0]
     else:
-        fs = cgi.FieldStorage()
-        url = fs.getvalue('url', 'http://www.openlayers.org')
+        url = 'http://www.openlayers.org'
+else:
+    fs = cgi.FieldStorage()
+    url = fs.getvalue('url', 'http://www.openlayers.org')
 
-    try:
-        host = url.split('/')[2]
-        if allowedHosts and not host in allowedHosts:
-            print('Status: 502 Bad Gateway')
-            print('Content-Type: text/plain')
-            print()
-            print('This proxy does not allow you to access that location (%s).' % (host,))
-            print()
-            print(os.environ)
-
-        elif url.startswith('http://') or url.startswith('https://'):
-
-            if method == 'POST':
-                length = int(os.environ['CONTENT_LENGTH'])
-                headers = {'Content-Type': os.environ['CONTENT_TYPE']}
-                body = sys.stdin.read(length)
-                r = urllib.request.Request(url, body, headers)
-                y = urllib.request.urlopen(r)
-            else:
-                y = urllib.request.urlopen(url)
-
-            # print content type header
-            i = y.info()
-            if 'Content-Type' in i:
-                print('Content-Type: %s' % (i['Content-Type']))
-            else:
-                print('Content-Type: text/plain')
-            print()
-
-            print(y.read())
-
-            y.close()
-        else:
-            print('Content-Type: text/plain')
-            print()
-            print('Illegal request.')
-
-    except Exception as E:
-        print('Status: 500 Unexpected Error')
+try:
+    host = url.split('/')[2]
+    if allowedHosts and not host in allowedHosts:
+        print('Status: 502 Bad Gateway')
         print('Content-Type: text/plain')
         print()
-        print('Some unexpected error occurred. Error text was:', E)"
+        print('This proxy does not allow you to access that location (%s).' % (host,))
+        print()
+        print(os.environ)
+
+    elif url.startswith('http://') or url.startswith('https://'):
+
+        if method == 'POST':
+            length = int(os.environ['CONTENT_LENGTH'])
+            headers = {'Content-Type': os.environ['CONTENT_TYPE']}
+            body = sys.stdin.read(length)
+            r = urllib.request.Request(url, body, headers)
+            y = urllib.request.urlopen(r)
+        else:
+            y = urllib.request.urlopen(url)
+
+        # print content type header
+        i = y.info()
+        if 'Content-Type' in i:
+            print('Content-Type: %s' % (i['Content-Type']))
+        else:
+            print('Content-Type: text/plain')
+        print()
+
+        print(y.read())
+
+        y.close()
+    else:
+        print('Content-Type: text/plain')
+        print()
+        print('Illegal request.')
+
+except Exception as E:
+    print('Status: 500 Unexpected Error')
+    print('Content-Type: text/plain')
+    print()
+    print('Some unexpected error occurred. Error text was:', E)"
 
     printf "${STATUS_COLOR}Creating and chmodding site proxy cgi${NC}\n";
     echo -e "$cgiStr" > /var/www/sites/$serverName/cgi-bin/proxy.cgi
@@ -403,32 +405,32 @@ after_reboot() {
     # --------------------------------------------------------------------
     # WRITE CRONTAB CONFIGURATION
 
-    cronStr="
-    SHELL=/bin/bash
-    PATH=/sbin:/bin:/usr/sbin:/usr/bin
-    MAILTO=''
-    HOME=/
+cronStr="
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=''
+HOME=/
 
-    # REMOVE CSV FILES OLDER THAN 7 DAYS AT 2 AM DAILY
-    0 2 * * * root rm -f $(find "$webDataDir"/csv/*.csv -mtime +7);
-    0 2 * * * root rm -f $(find "$webDataDir"/kml/*.kml -mtime +7); 
-    0 2 * * * root rm -f $(find "$webDataDir"/mat/*.mat -mtime +7);
-    0 2 * * * root rm -f $(find "$webDataDir"/reports/*.csv -mtime +7);
-    0 2 * * * root rm -f $(find "$webDataDir"/datapacks/*.tar.gz -mtime +7);
+# REMOVE CSV FILES OLDER THAN 7 DAYS AT 2 AM DAILY
+0 2 * * * root rm -f $(find "$webDataDir"/csv/*.csv -mtime +7);
+0 2 * * * root rm -f $(find "$webDataDir"/kml/*.kml -mtime +7); 
+0 2 * * * root rm -f $(find "$webDataDir"/mat/*.mat -mtime +7);
+0 2 * * * root rm -f $(find "$webDataDir"/reports/*.csv -mtime +7);
+0 2 * * * root rm -f $(find "$webDataDir"/datapacks/*.tar.gz -mtime +7);
 
-    # VACUUM ANALYZE-ONLY THE ENTIRE OPS DATABASE AT 2 AM DAILY
-    0 2 * * * root sh /vagrant/conf/tools/vacuumAnalyze.sh ops
+# VACUUM ANALYZE-ONLY THE ENTIRE OPS DATABASE AT 2 AM DAILY
+0 2 * * * root sh /vagrant/conf/tools/vacuumAnalyze.sh ops
 
-    # WEEKLY POSTGRESQL REPORT CREATION AT 2 AM SUNDAY
-    0 2 * * 7 root sh /vagrant/conf/tools/createPostgresqlReport.sh "$opsDataPath"postgresql_reports/
+# WEEKLY POSTGRESQL REPORT CREATION AT 2 AM SUNDAY
+0 2 * * 7 root sh /vagrant/conf/tools/createPostgresqlReport.sh "$opsDataPath"postgresql_reports/
 
-    # REMOVE POSTGRESQL REPORTS OLDER THAN 2 MONTHS EVERY SUNDAY AT 2 AM
-    0 2 * * 7 root rm -f $(find "$opsDataPath"postgresql_reports/*.html -mtime +60);
+# REMOVE POSTGRESQL REPORTS OLDER THAN 2 MONTHS EVERY SUNDAY AT 2 AM
+0 2 * * 7 root rm -f $(find "$opsDataPath"postgresql_reports/*.html -mtime +60);
 
-    # CLEAR THE CONTENTS OF THE DJANGO LOGS EVERY MONTH (FIRST OF MONTH, 2 AM)
-    0 2 1 * * root > "$opsDataPath"django_logs/createPath.log;
+# CLEAR THE CONTENTS OF THE DJANGO LOGS EVERY MONTH (FIRST OF MONTH, 2 AM)
+0 2 1 * * root > "$opsDataPath"django_logs/createPath.log;
 
-    "
+"
 
     printf "${STATUS_COLOR}Creating crontab${NC}\n";
     echo -n > /etc/crontab
@@ -478,7 +480,6 @@ after_reboot() {
 
     # EXCLUDE POSTGRESQL FROM THE BASE CentOS RPM
     printf "${STATUS_COLOR}Excluding postgresql from base centos rpm${NC}\n";
-    # TODO[reece]: Perhaps this causing problems now:
     sed -i -e '/^\[base\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
     sed -i -e '/^\[updates\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
 
