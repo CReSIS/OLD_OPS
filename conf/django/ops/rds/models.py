@@ -5,7 +5,7 @@ class locations(models.Model):
 
     name = models.CharField(max_length=20)
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s" % (self.name)
 
 
@@ -15,7 +15,7 @@ class seasons(models.Model):
     season_group = models.ForeignKey("season_groups", on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s" % (self.name)
 
 
@@ -25,7 +25,7 @@ class season_groups(models.Model):
     description = models.CharField(max_length=200, blank=True)
     public = models.BooleanField(default=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s" % (self.name)
 
 
@@ -33,7 +33,7 @@ class radars(models.Model):
 
     name = models.CharField(max_length=20)
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s" % (self.name)
 
 
@@ -45,7 +45,7 @@ class segments(models.Model):
     geom = models.LineStringField()
     objects = models.Manager()
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s" % (self.name)
 
 
@@ -54,7 +54,7 @@ class frames(models.Model):
     segment = models.ForeignKey("segments", on_delete=models.CASCADE)
     name = models.CharField(max_length=20)
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s" % (self.name)
 
 
@@ -71,7 +71,7 @@ class point_paths(models.Model):
     geom = models.PointField(dim=3)
     objects = models.Manager()
 
-    def __unicode__(self):
+    def __str__(self):
         return "%d" % (self.id)
 
 
@@ -87,7 +87,7 @@ class crossovers(models.Model):
     geom = models.PointField()
     objects = models.Manager()
 
-    def __unicode__(self):
+    def __str__(self):
         return "%d" % (self.id)
 
 
@@ -97,7 +97,7 @@ class layer_groups(models.Model):
     description = models.CharField(max_length=200, blank=True)
     public = models.BooleanField(default=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s" % (self.name)
 
 
@@ -109,7 +109,7 @@ class layers(models.Model):
     description = models.CharField(max_length=200, blank=True)
     deleted = models.BooleanField(default=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s" % (self.name)
 
 
@@ -118,7 +118,7 @@ class layer_links(models.Model):
     layer_1 = models.ForeignKey("layers", related_name="layer_link_fk_1", on_delete=models.CASCADE)
     layer_2 = models.ForeignKey("layers", related_name="layer_link_fk_2", on_delete=models.CASCADE)
 
-    def __unicode__(self):
+    def __str__(self):
         return "%d" % (self.id)
 
 
@@ -138,7 +138,7 @@ class layer_points(models.Model):
     class Meta:
         unique_together = ("layer", "point_path")
 
-    def __unicode__(self):
+    def __str__(self):
         return "%d" % (self.id)
 
 
@@ -156,5 +156,5 @@ class landmarks(models.Model):
     stop_twtt = models.DecimalField(max_digits=12, decimal_places=11, db_index=True)
     description = models.CharField(max_length=200, blank=True, null=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return "%d" % (self.id)
