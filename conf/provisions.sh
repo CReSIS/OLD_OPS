@@ -671,6 +671,12 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
         # SYNC THE DJANGO DEFINED DATABASE
         printf "${STATUS_COLOR}Making django migrations${NC}\n";
         python /var/django/$appName/manage.py makemigrations
+        apps = "django.contrib.auth django.contrib.contenttypes django.contrib.messages django.contrib.staticfiles django.contrib.gis django_extensions rds accum snow kuband opsuser"
+        for app in $apps
+        do
+            printf "${STATUS_COLOR}Making django migration for app ${app}${NC}\n";
+            python /var/django/$appName/manage.py makemigrations $app
+        done
         printf "${STATUS_COLOR}Migrating${NC}\n";
         python /var/django/$appName/manage.py migrate
         
