@@ -456,9 +456,11 @@ HOME=/
     # INSTALL JAVA JRE
     printf "${STATUS_COLOR}Yum installing java jdk${NC}\n";
     yum install -y java-11-openjdk-devel
-    java_path="$(find /usr/lib/jvm -name 'java-11-openjdk-*')/bin/java"
+    printf "${STATUS_COLOR}Finding and setting java path${NC}\n";
+    java_path="$(find /usr/lib/jvm -name 'java-11-openjdk-*')/bin"
     echo "JAVA_HOME=\"${java_path}\"" >> /etc/profile.d/java.sh
-    update-alternatives --set java $java_path
+    printf "${STATUS_COLOR}Activating java 11${NC}\n";
+    update-alternatives --set java "${java_path}/java"
     export JAVA_HOME=$java_path
 
     # NOT INSTALLING JAI/JAIIO UNTIL WE FIGURE OUT HOW TO MAKE THEM USER FRIENDLY INSTALLS.
