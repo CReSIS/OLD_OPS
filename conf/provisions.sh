@@ -456,7 +456,7 @@ HOME=/
     # INSTALL JAVA JRE
     printf "${STATUS_COLOR}Yum installing java jdk${NC}\n";
     yum install -y java-11-openjdk-devel
-    java_path="$(find /usr/lib/jvm -name 'java-11-openjdk-*')"
+    java_path="$(find /usr/lib/jvm -name 'java-11-openjdk-*')/bin/java"
     echo "JAVA_HOME=\"${java_path}\"" >> /etc/profile.d/java.sh
     update-alternatives --set java $java_path
     export JAVA_HOME=$java_path
