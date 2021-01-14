@@ -456,6 +456,10 @@ HOME=/
     # INSTALL JAVA JRE
     printf "${STATUS_COLOR}Yum installing java jdk${NC}\n";
     yum install -y java-11-openjdk-devel
+    java_path="$(find /usr/lib/jvm -name 'java-11-openjdk-*')"
+    echo "JAVA_HOME=\"${java_path}\"" >> /etc/profile.d/java.sh
+    update-alternatives --set java $java_path
+    export JAVA_HOME=$java_path
 
     # NOT INSTALLING JAI/JAIIO UNTIL WE FIGURE OUT HOW TO MAKE THEM USER FRIENDLY INSTALLS.
 
@@ -463,7 +467,7 @@ HOME=/
 
     # INSTALL JAI
     printf "${STATUS_COLOR}Installing JAI and JAI I/O${NC}\n";
-    cd /usr/java/jre11.0.9/
+    cd $java_path
     chmod u+x ~/jai-1_1_1_01-lib-linux-i586-jre.bin
     ~/jai-1_1_1_01-lib-linux-i586-jre.bin
     rm -f ~/jai-1_1_1_01-lib-linux-i586-jre.bin
@@ -725,7 +729,7 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
 
     # CONFIGURE tomcat
     printf "${STATUS_COLOR}Setting env vars in tomcat.conf${NC}\n";
-    echo 'JAVA_HOME="/usr/java/jre11.0.9/"' >> /etc/tomcat/tomcat.conf
+    echo "JAVA_HOME=\"${java_path}\"" >> /etc/tomcat/tomcat.conf
     echo 'JAVA_OPTS="-server -Xms512m -Xmx512m -XX:+UseParallelGC -XX:+UseParallelOldGC"' >> /etc/tomcat/tomcat.conf
     echo 'CATALINA_OPTS="-DGEOSERVER_DATA_DIR='$opsDataPath'geoserver"' >> /etc/tomcat/tomcat.conf
 
