@@ -1,6 +1,6 @@
 #!/bin/bash
 
-STATUS_COLOR='\033[31m';
+STATUS_COLOR='\033[1;35m';
 NC='\033[0m' # No Color
 
 #KEEP TIME
