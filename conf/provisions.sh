@@ -686,7 +686,9 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
             python /var/django/$appName/manage.py makemigrations $app
         done
 
-        # TODO[reece]: Reorder columns
+        printf "${STATUS_COLOR}Reordering Migrations${NC}\n";
+        python /vagrant/conf/tools/reorder_migrations.py
+        
         printf "${STATUS_COLOR}Migrating${NC}\n";
         python /var/django/$appName/manage.py migrate
         
