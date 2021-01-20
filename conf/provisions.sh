@@ -216,13 +216,15 @@ after_reboot() {
     rm -f Python-3.8.7.tgz
     cd Python-3.8.7
     printf "${STATUS_COLOR}Configuring python 3.8.7${NC}\n";
-    ./configure --enable-optimizations --enable-shared
+    ./configure --enable-shared --prefix=/opt/python LDFLAGS=-Wl,-rpath=/opt/python/lib --enable-optimizationsrm
     printf "${STATUS_COLOR}Making python 3.8.7${NC}\n";
     make altinstall
 
-    printf "${STATUS_COLOR}Adding /usr/local/bin to PATH${NC}\n";
-    echo -e "#!/bin/bash\nexport PATH=/usr/local/bin/:\$PATH" >> /etc/profile.d/python_path.sh
-    export PATH=/usr/local/bin/:$PATH
+    printf "${STATUS_COLOR}Adding /opt/python/bin to PATH${NC}\n";
+    echo -e "#!/bin/bash\nexport PATH=/opt/python/bin/:\$PATH\nalias 'python=python3.8'\nalias 'pip=pip3.8'" >> /etc/profile.d/python_path.sh
+    export PATH=/opt/python/bin/:$PATH
+    alias 'python=python3.8'
+    alias 'pip=pip3.8'
 
     printf "${STATUS_COLOR}Updating pip${NC}\n";
     python -m pip install --upgrade pip --no-cache-dir
