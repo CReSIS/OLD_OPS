@@ -125,8 +125,13 @@ before_reboot() {
         printf "${STATUS_COLOR}Yum installing tools${NC}\n";
         yum groupinstall -y "Development Tools"
         yum install -y gzip gcc unzip rsync wget git
+        
+        printf "${STATUS_COLOR}Stopping firewalld${NC}\n";
+        systemctl mask firewalld
+        systemctl stop firewalld
         printf "${STATUS_COLOR}Installing IPTables${NC}\n";
-        yum install iptables-services
+        yum install -y iptables-services
+        systemctl enable iptables
         printf "${STATUS_COLOR}Setting and restarting iptables${NC}\n";
         iptables -F 
         iptables -A INPUT -p tcp --dport 22 -j ACCEPT #SSH ON TCP 22
@@ -688,7 +693,7 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
 
         printf "${STATUS_COLOR}Reordering Migrations${NC}\n";
         python /vagrant/conf/tools/reorder_migrations.py
-        
+
         printf "${STATUS_COLOR}Migrating${NC}\n";
         python /var/django/$appName/manage.py migrate
         
