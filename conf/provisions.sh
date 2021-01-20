@@ -171,14 +171,25 @@ before_reboot() {
     # --------------------------------------------------------------------
 
     # INSTALL PYTHON3 and DEPENDENCIES
-    printf "${STATUS_COLOR}Installing python3 and dependencies${NC}\n";
-    yum install -y centos-release-scl
-    yum-config-manager --enable centos-sclo-rh-testing
-    yum-config-manager --enable rhel-server-rhscl-7-rpms
-    yum-config-manager --enable rhel-server-rhscl-beta-7-rpms
-    yum install -y rh-python36
-    source scl_source enable rh-python36
-    echo -e "#!/bin/bash\nsource scl_source enable rh-python36" >> /etc/profile.d/python36.sh
+    printf "${STATUS_COLOR}Yum installing python3.8 dependencies${NC}\n";
+    yum -y groupinstall "Development Tools"
+    yum -y install openssl-devel bzip2-devel libffi-devel
+    
+    printf "${STATUS_COLOR}Downloading python 3.8.7 tar${NC}\n";
+    cd ~
+    wget https://www.python.org/ftp/python/3.8.7/Python-3.8.7.tgz
+    printf "${STATUS_COLOR}Extracting python 3.8.7 tar${NC}\n";
+    tar xvf Python-3.8.7.tgz
+    rm -f Python-3.8.7.tgz
+    cd Python-3.8.7
+    printf "${STATUS_COLOR}Configuring python 3.8.7${NC}\n";
+    ./configure --enable-optimizations --enable-shared
+    printf "${STATUS_COLOR}Making python 3.8.7${NC}\n";
+    make altinstall
+
+    printf "${STATUS_COLOR}Adding /usr/local/bin to PATH${NC}\n";
+    echo -e "#!/bin/bash\nexport PATH=/usr/local/bin/:\$PATH" >> /etc/profile.d/python_path.sh
+    export PATH=/usr/local/bin/:$PATH
 
     printf "${STATUS_COLOR}Updating pip${NC}\n";
     python -m pip install --upgrade pip --no-cache-dir
@@ -186,6 +197,7 @@ before_reboot() {
     printf "${STATUS_COLOR}Creating and activating python virtual env${NC}\n";
     python -m venv /usr/bin/venv
     source /usr/bin/venv/bin/activate
+    echo -e "#!/bin/bash\nsource /usr/bin/venv/bin/activate" >> /etc/profile.d/python38.sh
 
     # --------------------------------------------------------------------
     # INSTALL APACHE WEB SERVER AND MOD_WSGI
@@ -230,7 +242,7 @@ after_reboot() {
     printf "${STATUS_COLOR}Yum installing httpd${NC}\n";
     yum install -y httpd httpd-devel
 
-    # INSTALL MOD_WSGI (COMPILE WITH Python36)
+    # INSTALL MOD_WSGI (COMPILE WITH Python38)
     printf "${STATUS_COLOR}Pip installing mod_wsgi${NC}\n";
     pip install --upgrade mod_wsgi --no-cache-dir
 
@@ -249,7 +261,7 @@ wsgiStr="
 "$(mod_wsgi-express module-config)"
 
 WSGISocketPrefix run/wsgi
-WSGIDaemonProcess $appName user=apache python-path=/var/django/$appName:/usr/bin/venv/lib/python3.6/site-packages
+WSGIDaemonProcess $appName user=apache python-path=/var/django/$appName:/usr/bin/venv/lib/python3.8/site-packages
 WSGIProcessGroup $appName
 WSGIScriptAlias /$appName /var/django/$appName/$appName/wsgi.py process-group=$appName application-group=%{GLOBAL}
 <Directory /var/django/$appName/$appName>
