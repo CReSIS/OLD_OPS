@@ -220,11 +220,12 @@ after_reboot() {
     printf "${STATUS_COLOR}Making python 3.8.7${NC}\n";
     make altinstall
 
+    printf "${STATUS_COLOR}Copying python3.8 to python${NC}\n";
+    cp /opt/python/bin/python3.8 /opt/python/bin/python
+    cp /opt/python/bin/pip3.8 /opt/python/bin/pip
     printf "${STATUS_COLOR}Adding /opt/python/bin to PATH${NC}\n";
-    echo -e "#!/bin/bash\nexport PATH=/opt/python/bin/:\$PATH\nalias 'python=python3.8'\nalias 'pip=pip3.8'" >> /etc/profile.d/python_path.sh
+    echo -e "#!/bin/bash\nexport PATH=/opt/python/bin/:\$PATH" >> /etc/profile.d/python_path.sh
     export PATH=/opt/python/bin/:$PATH
-    alias 'python=python3.8'
-    alias 'pip=pip3.8'
 
     printf "${STATUS_COLOR}Updating pip${NC}\n";
     python -m pip install --upgrade pip --no-cache-dir
