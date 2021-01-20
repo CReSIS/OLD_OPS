@@ -162,6 +162,39 @@ before_reboot() {
     printf "${STATUS_COLOR}Updating yum (outside conditional)${NC}\n";
     yum update -y
 
+    # Set SELinux policy to disabled
+    # TODO[reece]: This is presumably not ideal -- Determine best practice solution
+    printf "${STATUS_COLOR}Disabling SELinux${NC}\n";
+    setenforce 0
+
+    selinuxStr="# cat /etc/selinux/config
+# This file controls the state of SELinux on the system.
+# SELINUX= can take one of these three values:
+#     enforcing - SELinux security policy is enforced.
+#     permissive - SELinux prints warnings instead of enforcing.
+#     disabled - No SELinux policy is loaded.
+SELINUX=disabled
+# SELINUXTYPE= can take one of three two values:
+#     targeted - Targeted processes are protected,
+#     minimum - Modification of targeted policy. Only selected processes are protected.
+#     mls - Multi Level Security protection.
+SELINUXTYPE=targeted"
+
+    printf "${STATUS_COLOR}Updating SELinux config${NC}\n";
+    echo -e "$selinuxStr" > /etc/selinux/config
+
+    update_config "afterReboot" 1
+
+    echo "Press enter to reboot. Rerun script after reboot to continue.";
+    read;
+    printf "${STATUS_COLOR}Rebooting${NC}\n";
+    reboot
+}
+
+
+after_reboot() {
+    printf "${STATUS_COLOR}Performing after-reboot steps${NC}\n";
+
     # INSTALL THE PGDG REPO
     printf "${STATUS_COLOR}Installing pgdg repo${NC}\n";
     cd ~ && cp -f /vagrant/conf/software/pgdg-redhat-repo-latest.noarch.rpm ./
@@ -201,42 +234,6 @@ before_reboot() {
 
     # --------------------------------------------------------------------
     # INSTALL APACHE WEB SERVER AND MOD_WSGI
-
-    # Set SELinux policy to disabled
-    # TODO[reece]: This is presumably not ideal -- Determine best practice solution
-    printf "${STATUS_COLOR}Disabling SELinux${NC}\n";
-    setenforce 0
-
-    selinuxStr="# cat /etc/selinux/config
-# This file controls the state of SELinux on the system.
-# SELINUX= can take one of these three values:
-#     enforcing - SELinux security policy is enforced.
-#     permissive - SELinux prints warnings instead of enforcing.
-#     disabled - No SELinux policy is loaded.
-SELINUX=disabled
-# SELINUXTYPE= can take one of three two values:
-#     targeted - Targeted processes are protected,
-#     minimum - Modification of targeted policy. Only selected processes are protected.
-#     mls - Multi Level Security protection.
-SELINUXTYPE=targeted"
-
-    printf "${STATUS_COLOR}Updating SELinux config${NC}\n";
-    echo -e "$selinuxStr" > /etc/selinux/config
-
-    update_config "afterReboot" 1
-
-    echo "Press enter to reboot. Rerun script after reboot to continue.";
-    read;
-    printf "${STATUS_COLOR}Rebooting${NC}\n";
-    reboot
-}
-
-after_reboot() {
-    printf "${STATUS_COLOR}Performing after-reboot steps${NC}\n";
-
-    printf "${STATUS_COLOR}Re-enable venv${NC}\n";
-    source /usr/bin/venv/bin/activate
-
 
     # INSTALL APACHE HTTPD
     printf "${STATUS_COLOR}Yum installing httpd${NC}\n";
