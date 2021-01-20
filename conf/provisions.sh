@@ -125,6 +125,8 @@ before_reboot() {
         printf "${STATUS_COLOR}Yum installing tools${NC}\n";
         yum groupinstall -y "Development Tools"
         yum install -y gzip gcc unzip rsync wget git
+        printf "${STATUS_COLOR}Installing IPTables${NC}\n";
+        yum install iptables-services
         printf "${STATUS_COLOR}Setting and restarting iptables${NC}\n";
         iptables -F 
         iptables -A INPUT -p tcp --dport 22 -j ACCEPT #SSH ON TCP 22
@@ -683,6 +685,8 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
             printf "${STATUS_COLOR}Making django migration for app ${app}${NC}\n";
             python /var/django/$appName/manage.py makemigrations $app
         done
+
+        # TODO[reece]: Reorder columns
         printf "${STATUS_COLOR}Migrating${NC}\n";
         python /var/django/$appName/manage.py migrate
         
