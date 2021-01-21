@@ -10,21 +10,45 @@ import os.path
 import ast
 import re
 
-from typing import List, Dict, Tuple
+from typing import List, Dict, Optional, Tuple
 
-APPS_PATH = "/var/django/ops/"
+APPS_PATH = "conf/django/ops/"  # TODO[reece]: take from command line
 
 MIGRATION_MATCH = "[0-9]+_.*\\.py"  # Parse only migrations which match this regex
 ONLY_INITIAL_MIGRATIONS = True  # Only edit initial migrations
 
+# Order to place models in migrations (first in list goes at top of migration, etc)
+# Unlisted models are left alone
+# Used to prevent frames model from being created before segments, therefore requiring
+#    an AddField call which places the segment field in the wrong column -- causing
+#    parse errors in pg_bulkload
+MODEL_PRIORITIES = ["season_groups", "locations", "seasons", "radars", "segments"]
+# Models for which any AddField calls should be removed in favor of inserting the field
+#    into the corresponding expected position in CreateModel
+ADD_FIELD_CONSOLIDATIONS = ["frames"]
+
 # Type aliases
 ModelFieldsDict = Dict[str, List[str]]  # Map models to a list of their fields
-
 FieldLocationDict = Dict[str, int]  # Map field names to their line numbers
-ModelLocationDict = Dict[str, FieldLocationDict]  # Map model names to field locations
 
 
-def parse_models(models_path: str) -> ModelFieldsDict:
+class ModelLocation:
+    """Location of fields in a migration file for a model."""
+
+    def __init__(self, model_name: str):
+        self.model_name = model_name  # Name of model
+
+        # Line index of CreateModel operation start and end (inclusive)
+        self.operation_lines: Optional[Tuple[int, int]] = None
+        # Line index of fields list in CreateModel func
+        self.field_line_start: Optional[int] = None
+        # Field names present in the CreateModel func
+        self.fields = []
+        # Location of AddFields funcs
+        self.AddField_locations = {}
+
+
+def parse_models(models_path: str) -> List[ModelLocation]:
     """Parse the models file to get models and their fields.
 
     Uses the ast lib to inspect the abstract syntax trees of the models files
@@ -58,7 +82,7 @@ def parse_models(models_path: str) -> ModelFieldsDict:
     return model_fields
 
 
-def parse_migration(migration_path: str) -> Tuple[ModelLocationDict, bool]:
+def parse_migration(migration_path: str) -> Tuple[Dict[str, ModelLocation], bool]:
     """
     Find the line numbers for each field of each model.
 
@@ -70,8 +94,8 @@ def parse_migration(migration_path: str) -> Tuple[ModelLocationDict, bool]:
     """
 
     with open(migration_path) as f:
-        migrations_content = f.read()
-        tree = ast.parse(migrations_content)
+        migration_content = f.read()
+        tree = ast.parse(migration_content)
 
     # Parse tree down to assignments at level of operations declaration
     classes = [item for item in tree.body if isinstance(item, ast.ClassDef)]
@@ -98,42 +122,53 @@ def parse_migration(migration_path: str) -> Tuple[ModelLocationDict, bool]:
     if not initial_migration and ONLY_INITIAL_MIGRATIONS:
         return {}, False
 
-    model_locations: ModelLocationDict = {}
+    model_locations: Dict[str, ModelLocation] = {}
 
     # Parse operations assignment to find models
     for operation in operations.elts:
-        field_locations: FieldLocationDict = {}
 
         operation_type = operation.func.attr
-        if operation_type != "CreateModel":
-            continue
+        operation_lines = (operation.lineno - 1, operation.end_lineno - 1)
 
-        # Determine model name and fields
         for parameter in operation.keywords:
-            if parameter.arg == "name":
-                model_name: str = parameter.value.s
-            elif parameter.arg == "fields":
-                field_stmts = parameter.value.elts
+            # Handle CreateModel migrations
+            if operation_type == "CreateModel":
+                if parameter.arg == "name":
+                    model_name: str = parameter.value.s
+                elif parameter.arg == "fields":
+                    field_stmts = parameter.value.elts
+                    fields_line_index = parameter.lineno - 1
+
+            # Handle AddField migrations
+            elif operation_type == "AddFields":
+                if parameter.arg == "model_name":
+                    model_name: str = parameter.value.s
+                elif parameter.arg == "name":
+                    AddField_name = parameter.value.s
+                elif parameter.arg == "field":
+                    fields_line_index = parameter.lineno - 1
+
+        tmp_model_location = ModelLocation(model_name)
+        model_location = model_locations.setdefault(model_name, tmp_model_location)
+        if operation_type == "CreateModel":
+            model_location.field_line_start = fields_line_index
+            model_location.operation_lines = operation_lines
+        elif operation_type == "AddFields":
+            model_location.AddField_locations[AddField_name] = fields_line_index
 
         # Determine field line numbers
-        # TODO[reece]: Tracking individual line numbers is unnecessary if we assume each entry takes one line
         for field_stmt in field_stmts:
             field_name = field_stmt.elts[0].s
-            field_lineno = field_stmt.lineno - 1  # Convert line numbers to line indices
-
-            field_locations[field_name] = field_lineno
-
-        model_locations[model_name] = field_locations
+            model_location.fields.append(field_name)
 
     return model_locations, True
 
 
-def reorder(models: ModelFieldsDict, migration: ModelLocationDict, migration_path: str):
+def reorder(models: ModelFieldsDict, migration: Dict[str, ModelLocation], migration_path: str):
     """Reorder the given migration in-place.
 
     :param models: Maps model names to a list of fields in the expected order
-    :param migration: Maps model names to fields and their respective current line
-                      numbers
+    :param migration: Maps model names to fields and their respective current locations
     :param migration_path: The path to the migration file
     """
 
@@ -144,7 +179,7 @@ def reorder(models: ModelFieldsDict, migration: ModelLocationDict, migration_pat
     new_content = migrations_content.split("\n")
 
     for model in migration:
-        fields = migration[model]
+        model_location = migration[model]
         starting_line = min(fields.values())
 
         target_order = models[model]
