@@ -10,7 +10,10 @@ import os.path
 import ast
 import re
 
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Set, Tuple
+
+from django.utils.topological_sort import stable_topological_sort
+
 
 APPS_PATH = "conf/django/ops/"  # TODO[reece]: take from command line
 
@@ -32,7 +35,7 @@ ModelFieldsDict = Dict[str, List[str]]  # Map models to a list of their fields
 FieldLocationDict = Dict[str, int]  # Map field names to their line numbers
 
 
-class ModelLocation:
+class ModelInformation:
     """Location of fields in a migration file for a model."""
 
     def __init__(self, model_name: str):
@@ -44,11 +47,14 @@ class ModelLocation:
         self.field_line_start: Optional[int] = None
         # Field names present in the CreateModel func
         self.fields = []
-        # Location of AddFields funcs
+        # Location of AddField funcs
         self.AddField_locations = {}
+        # Content of AddField funcs - i.e. the field instantiation 
+        self.AddField_objs = {}
+        # Set of other models which this model references with foreign keys
+        self.dependencies = set()
 
-
-def parse_models(models_path: str) -> List[ModelLocation]:
+def parse_models(models_path: str) -> List[ModelInformation]:
     """Parse the models file to get models and their fields.
 
     Uses the ast lib to inspect the abstract syntax trees of the models files
@@ -71,23 +77,54 @@ def parse_models(models_path: str) -> List[ModelLocation]:
                 break
 
     # Map model names to the fields which are assigned within them
-    model_fields: ModelFieldsDict = {}
+    field_target_orders: ModelFieldsDict = {}
     for model in models:
-        model_fields[model.name] = ["id"]  # ID always implicitly made first param
+        field_target_orders[model.name] = ["id"]  # ID always implicitly made first param
         assignments = (item for item in model.body if type(item) is ast.Assign)
         for assignment in assignments:
             field_names = [target.id for target in assignment.targets]
-            model_fields[model.name].extend(field_names)
+            field_target_orders[model.name].extend(field_names)
 
-    return model_fields
+    return field_target_orders
 
 
-def parse_migration(migration_path: str) -> Tuple[Dict[str, ModelLocation], bool]:
+def get_dependencies(parameter, operation_type: str, migration_content: str) -> Set[str]:
+    """Get a list of dependencies from a operation stmt."""
+    dependencies = set()
+
+    def add_dep(value):
+        v = value.value
+        if type(v).__module__ == "_ast":
+            # Is an object rather than a str literal
+            dep = ast.get_source_segment(migration_content, value)
+        else:
+            dep = str(v)
+        dependencies.add(dep)
+
+    if operation_type == "CreateModel":
+        for field in parameter.value.elts:
+            field_op = field.elts[1]
+            if field_op.func.attr == "ForeignKey":
+                for param in field_op.keywords:
+                    if param.arg == "to":
+                        add_dep(param.value)
+
+    elif operation_type == "AddField":
+        field_op = parameter.value
+        if field_op.func.attr == "ForeignKey":
+            for param in field_op.keywords:
+                if param.arg == "to":
+                    add_dep(param.value)
+
+    return dependencies
+
+
+def parse_migration(migration_path: str) -> Tuple[Dict[str, ModelInformation], bool]:
     """
     Find the line numbers for each field of each model.
 
     :return:
-        - model_locations: Location of field lines for each model in migration file
+        - model_informations: ModelInformation objects for each model in the migration
         - continue_migration: Flag denoting migration parse should halt when False
             Set False when migration is determined not to be initial and
             ONLY_INITIAL_MIGRATIONS is True
@@ -122,7 +159,7 @@ def parse_migration(migration_path: str) -> Tuple[Dict[str, ModelLocation], bool
     if not initial_migration and ONLY_INITIAL_MIGRATIONS:
         return {}, False
 
-    model_locations: Dict[str, ModelLocation] = {}
+    model_informations: Dict[str, ModelInformation] = {}
 
     # Parse operations assignment to find models
     for operation in operations.elts:
@@ -130,6 +167,7 @@ def parse_migration(migration_path: str) -> Tuple[Dict[str, ModelLocation], bool
         operation_type = operation.func.attr
         operation_lines = (operation.lineno - 1, operation.end_lineno - 1)
 
+        dependencies = set()
         for parameter in operation.keywords:
             # Handle CreateModel migrations
             if operation_type == "CreateModel":
@@ -137,38 +175,46 @@ def parse_migration(migration_path: str) -> Tuple[Dict[str, ModelLocation], bool
                     model_name: str = parameter.value.s
                 elif parameter.arg == "fields":
                     field_stmts = parameter.value.elts
-                    fields_line_index = parameter.lineno - 1
+                    fields_line_index = parameter.value.lineno - 1
+                    deps = get_dependencies(parameter, operation_type, migration_content)
+                    dependencies.update(deps)
 
             # Handle AddField migrations
-            elif operation_type == "AddFields":
+            elif operation_type == "AddField":
                 if parameter.arg == "model_name":
                     model_name: str = parameter.value.s
                 elif parameter.arg == "name":
-                    AddField_name = parameter.value.s
+                    AddField_field_name = parameter.value.s
                 elif parameter.arg == "field":
-                    fields_line_index = parameter.lineno - 1
+                    AddField_field_obj = ast.get_source_segment(migration_content, parameter.value)
+                    deps = get_dependencies(parameter, operation_type, migration_content)
+                    dependencies.update(deps)
 
-        tmp_model_location = ModelLocation(model_name)
-        model_location = model_locations.setdefault(model_name, tmp_model_location)
+        tmp_model_location = ModelInformation(model_name)
+        model_information = model_informations.setdefault(model_name, tmp_model_location)
+        model_information.dependencies = dependencies
         if operation_type == "CreateModel":
-            model_location.field_line_start = fields_line_index
-            model_location.operation_lines = operation_lines
+            model_information.field_line_start = fields_line_index
+            model_information.operation_lines = operation_lines
         elif operation_type == "AddFields":
-            model_location.AddField_locations[AddField_name] = fields_line_index
+            model_information.AddField_locations[AddField_field_name] = operation_lines
+            model_information.AddField_objs[AddField_field_name] = AddField_field_obj
 
         # Determine field line numbers
         for field_stmt in field_stmts:
             field_name = field_stmt.elts[0].s
-            model_location.fields.append(field_name)
+            model_information.fields.append(field_name)
 
-    return model_locations, True
+    return model_informations, True
 
 
-def reorder(models: ModelFieldsDict, migration: Dict[str, ModelLocation], migration_path: str):
-    """Reorder the given migration in-place.
+def reorder_CreateModels(model_target_orders: ModelFieldsDict, migration_models: Dict[str, ModelInformation], migration_path: str):
+    """Reorder only the CreateModel calls for the given migration in-place. This is 
+    done if it is deemed impossible to merge AddField calls into CreateModel calls due
+    to complex dependencies.
 
-    :param models: Maps model names to a list of fields in the expected order
-    :param migration: Maps model names to fields and their respective current locations
+    :param model_target_orders: Maps model names to a list of fields in the expected order
+    :param migration_models: Information objects describing models in migration
     :param migration_path: The path to the migration file
     """
 
@@ -178,28 +224,72 @@ def reorder(models: ModelFieldsDict, migration: Dict[str, ModelLocation], migrat
 
     new_content = migrations_content.split("\n")
 
-    for model in migration:
-        model_location = migration[model]
-        starting_line = min(fields.values())
-
-        target_order = models[model]
+    for model_name in migration_models:
+        model_information = migration_models[model_name]
+        target_order = model_target_orders[model_name]
 
         # Remove field lines from content to be sorted
         field_lines: List[Tuple[str, str]] = []
-        for field in fields:
-            field_line = new_content.pop(starting_line)
+        for field in model_information.fields:
+            field_line = new_content.pop(model_information.field_line_start)
             field_lines.append((field, field_line))
 
         # Sort field lines by position of field name in target_order
         field_lines.sort(key=lambda entry: target_order.index(entry[0]))
         # Re-insert field lines into new_content in new order
         for field_ind, field_line in enumerate(field_lines):
-            new_content.insert(starting_line + field_ind, field_line[1])
+            new_content.insert(model_information.field_line_start + field_ind, field_line[1])
 
     # Write updated migration to file
     new_content = "\n".join(new_content)
     with open(migration_path, "w") as f:
         f.write(new_content)
+
+
+def get_order(migration_models: Dict[str, ModelInformation], app_name: str) -> List[str]:
+    """Determine the order the models should be placed in such that dependencies 
+    are all resolved linearly. Performs a topological sort (from Django) on the 
+    dependency_graph."""
+
+    def remove_prefix(s: str, prefix: str) -> str:
+        """Remove the prefix from the given string. This method is added in Python 3.9.
+        Implementing here as this script is intended for Python 3.8."""
+        s = str(s)
+        if s.startswith(prefix):
+            return s[len(prefix):]
+        return s
+
+    dependency_graph = {}
+    nodes = set(migration_models.keys())
+    for model_name in migration_models:
+        model_info = migration_models[model_name]
+        dependencies = {remove_prefix(dep, app_name + ".") for dep in model_info.dependencies}
+        dependency_graph[model_name] = dependencies
+        nodes.update(dependencies)
+
+    for node in nodes:
+        dependency_graph.setdefault(node, set())
+
+    return stable_topological_sort(nodes, dependency_graph)
+
+
+def reorder_migration(field_target_orders: ModelFieldsDict, migration_models: Dict[str, ModelInformation], migration_path: str, app_name: str):
+    """Attempt to reorder the entire migration so that table columns match order
+    in the corresponding models.py file. Uses a topological sort to determine order of
+    CreateModel calls such that no AddField calls are necessary later -- allowing all
+    fields to be instantiated within the CreateModel calls in the expected order.
+
+    :param model_target_orders: Maps model names to a list of fields in the expected order
+    :param migration_models: Information objects describing models in migration
+    :param migration_path: The path to the migration file
+    :param app_name: The name of the app this migration is for
+    """
+
+    # Get contents of migration file and split into lines
+    with open(migration_path) as f:
+        migrations_content = f.read()
+
+    model_order = get_order(migration_models, app_name)
 
 
 def reorder_all():
@@ -225,17 +315,17 @@ def reorder_all():
             continue
 
         models_path = app_path + "models.py"
-        models = parse_models(models_path)  # Get the expected order of fields
+        field_target_orders = parse_models(models_path)  # Get the expected order of fields
 
         for migration_name in migrations:
             current_migration_path = migrations_path + migration_name
             # Get the current order of fields
-            migration, continue_parse = parse_migration(current_migration_path)
+            model_informations, continue_parse = parse_migration(current_migration_path)
 
             if not continue_parse:
                 continue
 
-            reorder(models, migration, current_migration_path)
+            reorder_migration(field_target_orders, model_informations, current_migration_path, app)
 
 
 if __name__ == "__main__":
