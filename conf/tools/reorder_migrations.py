@@ -9,13 +9,15 @@ import os
 import os.path
 import ast
 import re
+import warnings
 
 from typing import List, Dict, Optional, Set, Tuple
+from collections import namedtuple
 
-from django.utils.topological_sort import stable_topological_sort
+from django.utils.topological_sort import CyclicDependencyError, stable_topological_sort
 
 
-APPS_PATH = "conf/django/ops/"  # TODO[reece]: take from command line
+APPS_PATH = "/var/django/ops/"  # TODO[reece]: take from command line
 
 MIGRATION_MATCH = "[0-9]+_.*\\.py"  # Parse only migrations which match this regex
 ONLY_INITIAL_MIGRATIONS = True  # Only edit initial migrations
@@ -54,7 +56,8 @@ class ModelInformation:
         # Set of other models which this model references with foreign keys
         self.dependencies = set()
 
-def parse_models(models_path: str) -> List[ModelInformation]:
+
+def parse_models(models_path: str) -> ModelFieldsDict:
     """Parse the models file to get models and their fields.
 
     Uses the ast lib to inspect the abstract syntax trees of the models files
@@ -192,26 +195,26 @@ def parse_migration(migration_path: str) -> Tuple[Dict[str, ModelInformation], b
 
         tmp_model_location = ModelInformation(model_name)
         model_information = model_informations.setdefault(model_name, tmp_model_location)
-        model_information.dependencies = dependencies
+        model_information.dependencies.update(dependencies)
         if operation_type == "CreateModel":
-            model_information.field_line_start = fields_line_index
+            model_information.field_line_start = fields_line_index + 1
             model_information.operation_lines = operation_lines
-        elif operation_type == "AddFields":
+            # Determine field line numbers
+            for field_stmt in field_stmts:
+                field_name = field_stmt.elts[0].s
+                model_information.fields.append(field_name)
+        elif operation_type == "AddField":
             model_information.AddField_locations[AddField_field_name] = operation_lines
             model_information.AddField_objs[AddField_field_name] = AddField_field_obj
 
-        # Determine field line numbers
-        for field_stmt in field_stmts:
-            field_name = field_stmt.elts[0].s
-            model_information.fields.append(field_name)
+
 
     return model_informations, True
 
 
-def reorder_CreateModels(model_target_orders: ModelFieldsDict, migration_models: Dict[str, ModelInformation], migration_path: str):
-    """Reorder only the CreateModel calls for the given migration in-place. This is 
-    done if it is deemed impossible to merge AddField calls into CreateModel calls due
-    to complex dependencies.
+def reorder_fields(field_target_orders: ModelFieldsDict, migration_models: Dict[str, ModelInformation], migration_path: str):
+    """Reorder only the fields within CreateModel calls for the given migration 
+    in-place. Perform this step after reordering the models.
 
     :param model_target_orders: Maps model names to a list of fields in the expected order
     :param migration_models: Information objects describing models in migration
@@ -226,7 +229,7 @@ def reorder_CreateModels(model_target_orders: ModelFieldsDict, migration_models:
 
     for model_name in migration_models:
         model_information = migration_models[model_name]
-        target_order = model_target_orders[model_name]
+        target_order = field_target_orders[model_name]
 
         # Remove field lines from content to be sorted
         field_lines: List[Tuple[str, str]] = []
@@ -273,11 +276,11 @@ def get_order(migration_models: Dict[str, ModelInformation], app_name: str) -> L
     return stable_topological_sort(nodes, dependency_graph)
 
 
-def reorder_migration(field_target_orders: ModelFieldsDict, migration_models: Dict[str, ModelInformation], migration_path: str, app_name: str):
-    """Attempt to reorder the entire migration so that table columns match order
-    in the corresponding models.py file. Uses a topological sort to determine order of
-    CreateModel calls such that no AddField calls are necessary later -- allowing all
-    fields to be instantiated within the CreateModel calls in the expected order.
+def reorder_models(migration_models: Dict[str, ModelInformation], migration_path: str, app_name: str):
+    """Attempt to reorder the positions of the CreateModel. Uses a topological sort
+    to determine order of CreateModel calls such that no AddField calls are necessary
+    later -- allowing all fields to be instantiated within the CreateModel calls in
+    the expected order.
 
     :param model_target_orders: Maps model names to a list of fields in the expected order
     :param migration_models: Information objects describing models in migration
@@ -289,7 +292,68 @@ def reorder_migration(field_target_orders: ModelFieldsDict, migration_models: Di
     with open(migration_path) as f:
         migrations_content = f.read()
 
-    model_order = get_order(migration_models, app_name)
+    new_content = migrations_content.split("\n")
+
+    try:
+        necessary_model_order = get_order(migration_models, app_name)
+    except CyclicDependencyError:
+        # Dependency graph is too complex to automatically reorder CreateModel positions
+        # Instead, just reorder fields within each CreateModel
+        warnings.warn(f"Could not reorder CreateModel positions for {app_name} due to complex dependencies graph. Only reordering fields within CreateModels. AddField calls may introduce fields in the wrong location. This must be fixed by manually altering the migration so that fields are in the expected")
+        return
+
+    ModelLocation = namedtuple("ModelLocation", "operation_type model_name location field_name")
+
+    # Sort the operations by current location
+    current_model_order = []
+    for model_name in migration_models:
+        model_info = migration_models[model_name]
+        current_model_order.append(ModelLocation("CreateModel", model_name, model_info.operation_lines, None))
+        if model_info.AddField_locations:
+            for field_name in model_info.AddField_locations:
+                location = model_info.AddField_locations[field_name]
+                current_model_order.append(ModelLocation("AddField", model_name, location, field_name))
+
+    current_model_order.sort(key=lambda m: m.location[0])
+    first_line = current_model_order[0].location[0]
+
+    # Remove all CreateModel and AddField operations from file
+    create_models_lines = {}
+    for model_op in current_model_order[::-1]:
+        lines = []
+        for line_ind in range(model_op.location[1], model_op.location[0] - 1, -1):
+            lines.append(new_content.pop(line_ind))
+        # Already stored necessary AddField info during migration file parse
+        if model_op.operation_type == "CreateModel":
+            create_models_lines[model_op.model_name] = lines
+
+    # Insert AddField fields into CreateModel lines
+    for model_name in migration_models:
+        model_info = migration_models[model_name]
+        if not model_info.AddField_objs:
+            continue
+        create_model_lines = create_models_lines[model_name]
+        fields_lineno = model_info.field_line_start - first_line
+        fields_lineno = len(create_model_lines) - fields_lineno # lines are stored backwards
+        
+        prev_line = create_model_lines[fields_lineno - 1]
+        iden = re.match("\\s*", prev_line).group(0)
+        for field_name in model_info.AddField_objs:
+            add_field_obj = model_info.AddField_objs[field_name]
+            new_line = f"{iden}('{field_name}', {add_field_obj}),"
+            create_model_lines.insert(fields_lineno, new_line)
+
+    # Re-add CreateModel operations in necessary order
+    for model_name in necessary_model_order[::-1]:
+        if model_name not in create_models_lines:
+            continue  # Dependencies from other apps
+        for line in create_models_lines[model_name]:
+            new_content.insert(first_line, line)
+
+    # Write updated migration to file
+    new_content = "\n".join(new_content)
+    with open(migration_path, "w") as f:
+        f.write(new_content)
 
 
 def reorder_all():
@@ -325,7 +389,9 @@ def reorder_all():
             if not continue_parse:
                 continue
 
-            reorder_migration(field_target_orders, model_informations, current_migration_path, app)
+            reorder_models(model_informations, current_migration_path, app)
+            model_informations, continue_parse = parse_migration(current_migration_path)
+            reorder_fields(field_target_orders, model_informations, current_migration_path)
 
 
 if __name__ == "__main__":
