@@ -22,16 +22,6 @@ APPS_PATH = "/var/django/ops/"  # TODO[reece]: take from command line
 MIGRATION_MATCH = "[0-9]+_.*\\.py"  # Parse only migrations which match this regex
 ONLY_INITIAL_MIGRATIONS = True  # Only edit initial migrations
 
-# Order to place models in migrations (first in list goes at top of migration, etc)
-# Unlisted models are left alone
-# Used to prevent frames model from being created before segments, therefore requiring
-#    an AddField call which places the segment field in the wrong column -- causing
-#    parse errors in pg_bulkload
-MODEL_PRIORITIES = ["season_groups", "locations", "seasons", "radars", "segments"]
-# Models for which any AddField calls should be removed in favor of inserting the field
-#    into the corresponding expected position in CreateModel
-ADD_FIELD_CONSOLIDATIONS = ["frames"]
-
 # Type aliases
 ModelFieldsDict = Dict[str, List[str]]  # Map models to a list of their fields
 FieldLocationDict = Dict[str, int]  # Map field names to their line numbers
