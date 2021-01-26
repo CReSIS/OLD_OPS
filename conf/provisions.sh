@@ -224,7 +224,7 @@ after_reboot() {
     cp /opt/python/bin/python3.8 /opt/python/bin/python
     cp /opt/python/bin/pip3.8 /opt/python/bin/pip
     printf "${STATUS_COLOR}Adding /opt/python/bin to PATH${NC}\n";
-    echo -e "#!/bin/bash\nexport PATH=/opt/python/bin/:\$PATH" >> /etc/profile.d/python_path.sh
+    echo -e "#!/bin/bash\nexport PATH=/opt/python/bin/:\$PATH" >> /etc/profile.d/python38.sh
     export PATH=/opt/python/bin/:$PATH
 
     printf "${STATUS_COLOR}Updating pip${NC}\n";
@@ -232,6 +232,7 @@ after_reboot() {
     python -m pip install pip --no-cache-dir # Try twice as it seems to fail sometimes
     printf "${STATUS_COLOR}Creating and activating python virtual env${NC}\n";
     python -m venv /usr/bin/venv
+    # Source python venv after adding python install path to path so that it takes priority
     source /usr/bin/venv/bin/activate
     echo -e "#!/bin/bash\nsource /usr/bin/venv/bin/activate" >> /etc/profile.d/python38.sh
     printf "${STATUS_COLOR}Updating venv pip${NC}\n";
@@ -263,7 +264,7 @@ wsgiStr="
 "$(mod_wsgi-express module-config)"
 
 WSGISocketPrefix run/wsgi
-WSGIDaemonProcess $appName user=apache python-path=/var/django/$appName:/usr/bin/venv/lib/python3.8/site-packages
+WSGIDaemonProcess $appName user=apache python-home=/usr/bin/venv python-path=/var/django/$appName:/usr/bin/venv/lib/python3.8/site-packages
 WSGIProcessGroup $appName
 WSGIScriptAlias /$appName /var/django/$appName/$appName/wsgi.py process-group=$appName application-group=%{GLOBAL}
 <Directory /var/django/$appName/$appName>
