@@ -24,8 +24,6 @@ ONLY_INITIAL_MIGRATIONS = True  # Only edit initial migrations
 
 # Type aliases
 ModelFieldsDict = Dict[str, List[str]]  # Map models to a list of their fields
-FieldLocationDict = Dict[str, int]  # Map field names to their line numbers
-
 
 class ModelInformation:
     """Location of fields in a migration file for a model."""
@@ -189,14 +187,13 @@ def parse_migration(migration_path: str) -> Tuple[Dict[str, ModelInformation], b
         if operation_type == "CreateModel":
             model_information.field_line_start = fields_line_index + 1
             model_information.operation_lines = operation_lines
-            # Determine field line numbers
+            # Find fields in this model
             for field_stmt in field_stmts:
                 field_name = field_stmt.elts[0].s
                 model_information.fields.append(field_name)
         elif operation_type == "AddField":
             model_information.AddField_locations[AddField_field_name] = operation_lines
             model_information.AddField_objs[AddField_field_name] = AddField_field_obj
-
 
 
     return model_informations, True
@@ -289,7 +286,7 @@ def reorder_models(migration_models: Dict[str, ModelInformation], migration_path
     except CyclicDependencyError:
         # Dependency graph is too complex to automatically reorder CreateModel positions
         # Instead, just reorder fields within each CreateModel
-        warnings.warn(f"Could not reorder CreateModel positions for {app_name} due to complex dependencies graph. Only reordering fields within CreateModels. AddField calls may introduce fields in the wrong location. This must be fixed by manually altering the migration so that fields are in the expected")
+        warnings.warn(f"Could not reorder CreateModel positions for {migration_path} due to complex dependencies graph. Only reordering fields within CreateModels. AddField calls may introduce fields in the wrong location. This must be fixed by manually altering the migration so that fields are in the expected location")
         return
 
     ModelLocation = namedtuple("ModelLocation", "operation_type model_name location field_name")
@@ -325,7 +322,7 @@ def reorder_models(migration_models: Dict[str, ModelInformation], migration_path
         create_model_lines = create_models_lines[model_name]
         fields_lineno = model_info.field_line_start - first_line
         fields_lineno = len(create_model_lines) - fields_lineno # lines are stored backwards
-        
+
         prev_line = create_model_lines[fields_lineno - 1]
         iden = re.match("\\s*", prev_line).group(0)
         for field_name in model_info.AddField_objs:

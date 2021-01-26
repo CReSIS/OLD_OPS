@@ -268,8 +268,7 @@ WSGIProcessGroup $appName
 WSGIScriptAlias /$appName /var/django/$appName/$appName/wsgi.py process-group=$appName application-group=%{GLOBAL}
 <Directory /var/django/$appName/$appName>
     <Files wsgi.py>
-        Order deny,allow
-        Allow from all
+        Require all granted
     </Files>
 </Directory>";
 
@@ -282,8 +281,7 @@ ProxyRequests Off
 ProxyPreserveHost On
 
 <Proxy *>
-    Order deny,allow
-    Allow from all
+    Require all granted
 </Proxy>
 
 ProxyPass /geoserver http://localhost:8080/geoserver
@@ -320,8 +318,7 @@ siteConf="
     <Directory "$webDataDir">
         Options Indexes FollowSymLinks
         AllowOverride None
-        Order allow,deny
-        Allow from all
+        Require all granted
         ForceType application/octet-stream
         Header set Content-Disposition attachment
     </Directory>
@@ -330,8 +327,7 @@ siteConf="
     <Directory ""/var/profile_logs/txt"">
         Options Indexes FollowSymLinks
         AllowOverride None
-        Order allow,deny
-        Allow from all
+        Require all granted
     </Directory>
 
 </VirtualHost>"
@@ -549,10 +545,6 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
         /usr/pgsql-12/bin/postgresql-12-setup initdb
         printf "${STATUS_COLOR}Enabling postgres service${NC}\n";
         systemctl enable --now postgresql-12
-        printf "${STATUS_COLOR}Adding postgres to firewall${NC}\n";
-        firewall-cmd --add-service=postgresql --permanent
-        printf "${STATUS_COLOR}Reloading firewall${NC}\n";
-        firewall-cmd --reload
         
         # CREATE STARTUP LOG
         printf "${STATUS_COLOR}Creating pg startup log${NC}\n";

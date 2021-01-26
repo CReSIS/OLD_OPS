@@ -22,7 +22,7 @@ import ops.monitor
 ops.monitor.start(interval=1.0)
 
 # Add the site-packages of the OPS virtualenv
-site.addsitedir("/usr/bin/venv/lib/python3.6/site-packages")
+site.addsitedir("/usr/bin/venv/lib/python3.8/site-packages")
 
 # Add ops directory to the PYTHONPATH
 sys.path.append("/var/django/ops/")

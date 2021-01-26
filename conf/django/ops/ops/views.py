@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.http import HttpResponse
 from .utility import ipAuth
 from decimal import Decimal
-import ops.utility
+import ops.utility as utility
 import sys
 import os
 import datetime
