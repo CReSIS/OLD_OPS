@@ -19,9 +19,16 @@ def response(status, data, cookies):
             HttpResponse: http response object returned to web server
 
     """
-    outResponse = HttpResponse(
-        ujson.dumps({"status": status, "data": data}), content_type="application/json"
-    )
+    try:
+        outResponse = HttpResponse(
+            ujson.dumps({"status": status, "data": data}), content_type="application/json"
+        )
+    except TypeError:
+        # Non serializable objects (such as datetime objects) get converted to string
+        outResponse = HttpResponse(
+            json.dumps({"status": status, "data": data}, default=str), content_type="application/json"
+        )
+
     for key, value in cookies.items():
         outResponse.set_cookie(key, value, max_age=3600)
     return outResponse
