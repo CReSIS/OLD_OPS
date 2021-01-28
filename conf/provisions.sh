@@ -234,7 +234,7 @@ after_reboot() {
     python -m venv /usr/bin/venv
     # Source python venv after adding python install path to path so that it takes priority
     source /usr/bin/venv/bin/activate
-    echo -e "#!/bin/bash\nsource /usr/bin/venv/bin/activate" >> /etc/profile.d/python38.sh
+    echo -e "source /usr/bin/venv/bin/activate" >> /etc/profile.d/python38.sh
     printf "${STATUS_COLOR}Updating venv pip${NC}\n";
     python -m pip install --upgrade pip --no-cache-dir
 
