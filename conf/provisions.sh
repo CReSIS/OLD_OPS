@@ -708,12 +708,12 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
         cd /var/django/$appName/
         for app in */
         do
-            if [ -d "fixtures" ]
+            if [ -d "${app}fixtures" ]
             then
                 for data_file in $app/fixtures/*
                 do
-                    printf "${STATUS_COLOR}Loading data ${data_file} for app ${app}${NC}\n";
-                    python manage.py loaddata "${app}/fixtures/${data_file}";
+                    printf "${STATUS_COLOR}Loading data ${data_file}${NC}\n";
+                    python manage.py loaddata "${data_file}";
                 done
             fi
         done
