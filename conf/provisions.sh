@@ -703,7 +703,24 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
 
         printf "${STATUS_COLOR}Migrating${NC}\n";
         python /var/django/$appName/manage.py migrate
-        
+
+        printf "${STATUS_COLOR}Loading initial data${NC}\n";
+        cd /var/django/$appName/
+        for app in */
+        do
+            if [ -d "fixtures" ]
+            then
+                for data_file in $app/fixtures/*
+                do
+                    printf "${STATUS_COLOR}Loading data ${data_file} for app ${app}${NC}\n";
+                    python manage.py loaddata "${app}/fixtures/${data_file}";
+                done
+            fi
+        done
+
+        printf "${STATUS_COLOR}Creating default user${NC}\n";
+        python manage.py shell -c "exec(open('/vagrant/conf/tools/createDefaultUser.py').read())"
+
         # CREATE INDEXES ON POINT PATH GEOMETRIES
         printf "${STATUS_COLOR}Creating indices on point path geometries${NC}\n";
         indexStr='psql -U postgres -d '$dbName' -c "CREATE INDEX app_antarctic_geom_idx ON app_point_paths USING gist (ST_Transform(geom,3031)) WHERE location_id = 2; CREATE INDEX app_arctic_geom_idx ON app_point_paths USING gist (ST_Transform(geom,3413)) WHERE location_id = 1;"'
