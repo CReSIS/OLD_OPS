@@ -22,13 +22,13 @@ class UserProfile(models.Model):
     def create_profile(sender, instance, created, **kwargs):
         if created:
             profile, created = UserProfile.objects.get_or_create(user=instance)
-            profile.rds_season_groups = [1]
-            profile.accum_season_groups = [1]
-            profile.snow_season_groups = [1]
-            profile.kuband_season_groups = [1]
-            profile.rds_layer_groups = [1, 2]
-            profile.accum_layer_groups = [1, 2]
-            profile.snow_layer_groups = [1, 2]
-            profile.kuband_layer_groups = [1, 2]
+            profile.rds_season_groups.set([1])
+            profile.accum_season_groups.set([1])
+            profile.snow_season_groups.set([1])
+            profile.kuband_season_groups.set([1])
+            profile.rds_layer_groups.set([1, 2])
+            profile.accum_layer_groups.set([1, 2])
+            profile.snow_layer_groups.set([1, 2])
+            profile.kuband_layer_groups.set([1, 2])
 
     post_save.connect(create_profile, sender=User)
