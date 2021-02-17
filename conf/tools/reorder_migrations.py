@@ -1,6 +1,30 @@
 """
-Reorder the fields in all migrations such that they match the order of the 
+Reorder the fields in migrations such that they match the order of the
 fields in the corresponding models files.
+
+Because the columns are created in the db tables in the order they appear in the
+migration files, and because the migration files get ordered more-or-less
+alphabetically, the db table columns will be created in an order different from the
+order used in previously-exported data (such as the SampleData.zip). Likewise, if
+columns are added to the postgres db later, they will appear at the end. But a migration
+file created during a new vbox's provisioning will insert the field somewhere in the
+middle, alphabetically. So changes to the database would break future vboxes in this
+manner.
+
+Reordering the fields in the migration file would require simply moving the fields
+within the CreateModel calls, but several models have fields which depend on other
+models. In some of these cases, the model with a dependency on a later model is
+created anyway and the dependent field is simply added in later with a AddField call.
+Therefore, dependent fields are much more difficult to insert in the correct location.
+
+This script parses migration files and topologically sorts the dependencies between
+models to determine an order such that no AddField calls are necessary. It then
+rearranges the migration's CreateModel calls accordingly and collapses the AddField
+calls into the appropriate CreateModel call instead. The fields are then able to be
+sorted to match the order in which they present in the corresponding models.py file.
+
+This script solves the issue of the db tables' column order differing between ops
+instances.
 
 Author: Reece Mathews
 """
@@ -24,6 +48,7 @@ ONLY_INITIAL_MIGRATIONS = True  # Only edit initial migrations
 
 # Type aliases
 ModelFieldsDict = Dict[str, List[str]]  # Map models to a list of their fields
+
 
 class ModelInformation:
     """Location of fields in a migration file for a model."""
