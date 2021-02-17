@@ -629,6 +629,10 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
     printf "${STATUS_COLOR}Copying site from vagrant to django${NC}\n";
     cp -rf /vagrant/conf/django/* /var/django/
 
+    printf "${STATUS_COLOR}Setting Django settings env var${NC}\n";
+    echo -e "#!/bin/bash\nexport DJANGO_SETTINGS_MODULE=ops.settings" >> /etc/profile.d/django.sh
+    export DJANGO_SETTINGS_MODULE=ops.settings
+
     # GENERATE A NEW SECRET_KEY
     printf "${STATUS_COLOR}Generating secret key${NC}\n";
     NEW_SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9*^+()@' | fold -w 40 | head -n 1);

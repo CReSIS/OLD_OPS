@@ -39,12 +39,13 @@ jsonStr = (
 
 # Import necessary modules
 from django.test.client import RequestFactory
-import ops.views
 import django
 
 # When Django starts, django.setup() is responsible for populating the application registry.
 # This function must be called in plain python script above Django 1.6
 django.setup()
+
+import ops.views
 
 # Create the RequestFactory object and form the request
 rf = RequestFactory()

@@ -8,7 +8,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.6/ref/settings/
 """
 # OPS_DATA_PATH. This sets the path to the OPS data directory (e.g., '/cresis/snfs1/web/ops(2)/' OR '/db/')
-OPS_DATA_PATH = ""
+OPS_DATA_PATH = "/db/"
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
@@ -64,7 +64,7 @@ SESSION_COOKIE_PATH = "/ops"
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_HTTPONLY = True
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE  = (
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     #'django.middleware.csrf.CsrfViewMiddleware',
