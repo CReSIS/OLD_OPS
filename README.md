@@ -28,7 +28,7 @@ COMING SOON.
 
 ### Public OPS Authentication
 
-The distributed source code is meant for public use and therefore the username and password information is included here. Obviously these values have changed for the CReSIS hosted OPS system.
+The username and password for the default setup are included here.
 
 **Linux OS**
 
