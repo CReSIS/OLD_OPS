@@ -16,17 +16,18 @@ The OpenPolarServer (OPS) is a complete spatial data infrastructure (SDI) built 
  
 ##Requirements
 
-To install the OPS SDI you need to download and install the following:
+A Centos 6 Linux server or virtual machine. We test the setup using Oracle VirtualBox at https://www.virtualbox.org/wiki/Downloads.
 
-Oracle VirtualBox (4.3.6+): https://www.virtualbox.org/wiki/Downloads
+Provisioned Virtual Machines are available at:
+https://data.cresis.ku.edu/data/temp/ct/ops/
 
-A VM WILL EVENTUALLY BE MADE AVAILBLE FOR DISTIBUTION. THIS IS CURRENTLY IN PROGRESS.
+**NOTE: We are currently updating all the packages to the latest releases on a Centos 7 virtual box which we aim to distribute in April 2021.**
 
 ##Installation
 
-COMING SOON.
+Check https://github.com/CReSIS/OPS/wiki for instructions.
 
-### Public OPS Authentication
+###Public OPS Authentication
 
 The username and password for the default setup are included here.
 
