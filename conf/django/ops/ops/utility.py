@@ -385,7 +385,7 @@ def buildEchogramList(app, seasonName, frameName):
 
     """
     baseEchoURl = (
-        "ftp://data.cresis.ku.edu/data/"
+        "http://data.cresis.ku.edu/data/"
         + app
         + "/"
         + seasonName

@@ -5,6 +5,7 @@ from django.contrib.gis.gdal import SpatialReference, CoordTransform
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.http import HttpResponse
+from django.conf import settings
 from .utility import ipAuth
 from decimal import Decimal
 import ops.utility as utility
@@ -27,6 +28,10 @@ import ops.settings as opsSettings
 # =======================================
 # DATA INPUT/DELETE FUNCTIONS
 # =======================================
+
+
+if settings.DEBUG:
+    import debugpy
 
 
 @ipAuth()
@@ -3306,7 +3311,6 @@ def updateMaterializedView(request):
 
     """
     try:
-        pydevd.settrace()
         queryStr, cookies = utility.getQuery(request)  # get the input
 
         # perform the function logic

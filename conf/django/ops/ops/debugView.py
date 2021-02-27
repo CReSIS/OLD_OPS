@@ -18,16 +18,16 @@
 
 # ------------------------------------------------------------------------------------------
 # viewName: the name of the view to be debugged
-viewName = "getSystemInfo"
+viewName = "loginUser"
 
 # ------------------------------------------------------------------------------------------
 # app: the app for which the view will be debugged for ('rds','snow','kuband','accum')
-app = ""
+app = "rds"
 
 # ------------------------------------------------------------------------------------------
 # jsonStr: the json string containing the properties used by the view being debugged.
 jsonStr = (
-    '{ "properties": { "userName": "paden", "isAuthenticated": true, "mat": true } }'
+    '{ "properties": { "mat": true, "userName": "anonymous", "password": "anonymous" } }'
 )
 
 # f = open('/users/paden/jsonStr.txt')
@@ -39,6 +39,7 @@ jsonStr = (
 
 # Import necessary modules
 from django.test.client import RequestFactory
+from django.contrib.sessions.middleware import SessionMiddleware
 import django
 
 # When Django starts, django.setup() is responsible for populating the application registry.
@@ -49,7 +50,13 @@ import ops.views
 
 # Create the RequestFactory object and form the request
 rf = RequestFactory()
+
 request = rf.post("", {"app": app, "data": jsonStr})
+# Add a session to the request
+middleware = SessionMiddleware()
+middleware.process_request(request)
+request.session.save()
+
 # Send the request to views.
 response = eval("ops.views." + viewName + "(request)")
 

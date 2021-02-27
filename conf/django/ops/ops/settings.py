@@ -24,6 +24,8 @@ with open("/etc/secret_key.txt") as f:
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
+ATTACH_DEBUG_LOG_PATH = OPS_DATA_PATH + 'django_logs/debug/'
+ATTACH_DEBUG_PORT = 65078
 
 TEMPLATE_DEBUG = DEBUG
 

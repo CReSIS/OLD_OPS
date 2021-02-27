@@ -155,9 +155,6 @@ before_reboot() {
     echo $geoServerStr >> ~/.bashrc
     . ~/.bashrc
 
-    # --------------------------------------------------------------------
-    # UPDATE THE SYSTEM AND INSTALL PGDG REPO
-
     # UPDATE SYSTEM
     printf "${STATUS_COLOR}Updating yum (outside conditional)${NC}\n";
     yum update -y
@@ -620,8 +617,10 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
     # INSTALL AND CONFIGURE DJANGO
 
     # INSTALL DJANGO
-    printf "${STATUS_COLOR}Pip installing django${NC}\n";
+    printf "${STATUS_COLOR}Pip installing django and debugpy${NC}\n";
     pip install Django==3.1.2
+    # Used to open port for remote debugger attachment to Django instance in wsgi.py
+    pip install debugpy
 
     # CREATE DIRECTORY AND COPY PROJECT
     printf "${STATUS_COLOR}Creating django dir${NC}\n";
@@ -853,7 +852,7 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
     mkdir -m 777 -p  $opsDataPath"data/datapacks/"
     mkdir -m 777 -p $opsDataPath"data/reports/"
     mkdir -m 777 -p $opsDataPath"postgresql_reports/"
-    mkdir -m 777 -p $opsDataPath"django_logs/"
+    mkdir -m 777 -p $opsDataPath"django_logs/debug/"
     mkdir -m 777 -p /var/profile_logs/txt/
 
     # --------------------------------------------------------------------

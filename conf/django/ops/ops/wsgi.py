@@ -38,6 +38,16 @@ os.environ["DJANGO_SETTINGS_MODULE"] = "ops.settings"
 # file. This includes Django's development server, if the WSGI_APPLICATION
 # setting points here.
 from django.core.wsgi import get_wsgi_application
+from django.conf import settings
+
+if settings.DEBUG:
+    import debugpy
+    try:
+        debugpy.log_to(settings.ATTACH_DEBUG_LOG_PATH)
+    except RuntimeError:
+        print("Debug a live instance with 'Attach to Django', not launch")
+        raise
+    debugpy.listen(("0.0.0.0", settings.ATTACH_DEBUG_PORT))
 
 application = get_wsgi_application()
 
