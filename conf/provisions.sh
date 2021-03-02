@@ -221,7 +221,19 @@ after_reboot() {
     cp /opt/python/bin/python3.8 /opt/python/bin/python
     cp /opt/python/bin/pip3.8 /opt/python/bin/pip
     printf "${STATUS_COLOR}Adding /opt/python/bin to PATH${NC}\n";
-    echo -e "#!/bin/bash\nexport PATH=/opt/python/bin/:\$PATH" >> /etc/profile.d/python38.sh
+    cat > /etc/profile.d/python38.sh << "
+#!/bin/bash
+if [[ -z "${VIRTUAL_ENV_LAUNCHED_PREV}" ]]; then
+    export VIRTUAL_ENV_LAUNCHED_PREV=1
+    if [[ ":$PATH:" != *":/opt/python/bin/:"* ]]; then
+        export PATH=/opt/python/bin/:$PATH
+        source /usr/bin/venv/bin/activate
+    fi
+    if [[ ":$PATH:" != *":/usr/bin/venv/bin:"* ]]; then
+        source /usr/bin/venv/bin/activate
+    fi
+fi
+"
     export PATH=/opt/python/bin/:$PATH
 
     printf "${STATUS_COLOR}Updating pip${NC}\n";

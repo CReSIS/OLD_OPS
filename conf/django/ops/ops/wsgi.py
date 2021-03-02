@@ -45,6 +45,8 @@ if settings.DEBUG:
     try:
         debugpy.log_to(settings.ATTACH_DEBUG_LOG_PATH)
     except RuntimeError:
+        # This error occurs if the logging is already setup when attempting to launch
+        #  wsgi.py -- such as when remoted into a virtual box repo hosting a live, Apache instance
         print("Debug a live instance with 'Attach to Django', not launch")
         raise
     debugpy.listen(("0.0.0.0", settings.ATTACH_DEBUG_PORT))
