@@ -464,7 +464,7 @@ def alterPathResolution(request):
                 messageStr += segmentObj.name + '; '
 
         except DatabaseError as dberror:
-            return utility.response(0, dberror[0], {})
+            return utility.response(0, dberror.args[0], {})
         finally:
             # Close the cursor's connection to the database
             cursor.close()
@@ -1114,7 +1114,7 @@ def getFrameClosest(request):
                     inSeasonNames, location_id, epsg, pointTxt, epsg, epsg])
             closestFrame = cursor.fetchone()
         except DatabaseError as dberror:
-            return utility.response(0, dberror[0], {})
+            return utility.response(0, dberror.args[0], {})
 
         finally:
             cursor.close()
@@ -1493,7 +1493,7 @@ def getLayerPointsCsv(request):
             data = cursor.fetchall()
 
         except DatabaseError as dberror:
-            return utility.response(0, dberror[0], {})
+            return utility.response(0, dberror.args[0], {})
         finally:
             cursor.close()
 
@@ -1780,7 +1780,7 @@ def getPointsWithinPolygon(request):
             data = cursor.fetchall()
 
         except DatabaseError as dberror:
-            return utility.response(0, dberror[0], {})
+            return utility.response(0, dberror.args[0], {})
         finally:
             cursor.close()
 
@@ -2392,7 +2392,7 @@ def getCrossovers(request):
                         sourceElev.append(crossoverData[3])
 
         except DatabaseError as dberror:
-            return utility.response(0, dberror[0], {})
+            return utility.response(0, dberror.args[0], {})
 
         finally:
             cursor.close()  # close the cursor in case of exception
@@ -2500,7 +2500,7 @@ def getCrossoversReport(request):
             crossoverRows = cursor.fetchall()
 
         except DatabaseError as dberror:
-            return utility.response(0, dberror[0], {})
+            return utility.response(0, dberror.args[0], {})
         finally:
             cursor.close()
 
@@ -2713,7 +2713,7 @@ def getFrameSearch(request):
             cursor.execute(queryStr, [epsg, framesObj.pk])
             pointPathsObj = cursor.fetchone()
         except DatabaseError as dberror:
-            return utility.response(0, dberror[0], {})
+            return utility.response(0, dberror.args[0], {})
         finally:
             cursor.close()
 
@@ -2882,7 +2882,7 @@ def getInitialData(request):
                 cursor.execute(sqlStr.replace('[', '(').replace(']', ')'))
 
         except DatabaseError as dberror:
-            return utility.response(0, dberror[0], {})
+            return utility.response(0, dberror.args[0], {})
 
         finally:
             cursor.close()  # close the cursor in case of exception
@@ -3295,7 +3295,7 @@ def query(request):
             return utility.response(1, queryData, {})
 
     except DatabaseError as dbError:
-        return utility.response(0, dbError[0], {})
+        return utility.response(0, dberror.args[0], {})
 
 
 @ipAuth()
@@ -3323,7 +3323,7 @@ def updateMaterializedView(request):
             1, "SUCESS: The materialized view has been updated.", {})
 
     except DatabaseError as dbError:
-        return utility.response(0, dbError[0], {})
+        return utility.response(0, dberror.args[0], {})
 
     finally:
         cursor.close()  # close the connection if there is an error
@@ -3359,7 +3359,7 @@ def analyze(request):
                 cursor.execute("ANALYZE " + app + "_" + table)  # execute the query
 
         except DatabaseError as dbError:
-            return utility.response(0, dbError[0], {})
+            return utility.response(0, dberror.args[0], {})
 
         finally:
             cursor.close()  # close the connection if there is an error
