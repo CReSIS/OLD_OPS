@@ -155,6 +155,14 @@ before_reboot() {
     echo $geoServerStr >> ~/.bashrc
     . ~/.bashrc
 
+    # Update git to v2
+    printf "${STATUS_COLOR}Removing old version of git${NC}\n";
+    yum remove -y git*
+    printf "${STATUS_COLOR}Adding repo which includes git v2 for centos 7${NC}\n";
+    yum -y install https://packages.endpoint.com/rhel/7/os/x86_64/endpoint-repo-1.7-1.x86_64.rpm
+    printf "${STATUS_COLOR}Install git v2${NC}\n";
+    yum install -y git
+
     # UPDATE SYSTEM
     printf "${STATUS_COLOR}Updating yum (outside conditional)${NC}\n";
     yum update -y
