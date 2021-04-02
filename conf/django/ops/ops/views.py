@@ -3294,7 +3294,7 @@ def query(request):
         else:
             return utility.response(1, queryData, {})
 
-    except DatabaseError as dbError:
+    except DatabaseError as dberror:
         return utility.response(0, dberror.args[0], {})
 
 
@@ -3322,7 +3322,7 @@ def updateMaterializedView(request):
         return utility.response(
             1, "SUCESS: The materialized view has been updated.", {})
 
-    except DatabaseError as dbError:
+    except DatabaseError as dberror:
         return utility.response(0, dberror.args[0], {})
 
     finally:
@@ -3358,7 +3358,7 @@ def analyze(request):
             for table in tables:
                 cursor.execute("ANALYZE " + app + "_" + table)  # execute the query
 
-        except DatabaseError as dbError:
+        except DatabaseError as dberror:
             return utility.response(0, dberror.args[0], {})
 
         finally:
