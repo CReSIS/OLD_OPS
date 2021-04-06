@@ -3258,7 +3258,7 @@ def logoutUser(request):
         logout(request)
 
         return utility.response(
-            1, 'SUCESS: USER LOGGED OUT', {
+            1, 'SUCCESS: USER LOGGED OUT', {
                 'userName': '', 'isAuthenticated': 0})
 
     except Exception as e:
@@ -3320,7 +3320,7 @@ def updateMaterializedView(request):
         connection.commit()
 
         return utility.response(
-            1, "SUCESS: The materialized view has been updated.", {})
+            1, "SUCCESS: The materialized view has been updated.", {})
 
     except DatabaseError as dberror:
         return utility.response(0, dberror.args[0], {})
@@ -3365,7 +3365,7 @@ def analyze(request):
             cursor.close()  # close the connection if there is an error
 
         # return the output
-        return utility.response(1, "SUCESS: DATABASE TABLES ANALYZED.", {})
+        return utility.response(1, "SUCCESS: DATABASE TABLES ANALYZED.", {})
 
     except Exception as e:
         return utility.errorCheck(e, sys)
