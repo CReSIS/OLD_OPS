@@ -425,16 +425,15 @@ def alterPathResolution(request):
         # Perform the function logic
 
         messageStr = 'Resolution has successfully been altered for the following segments: '
-        # Create a cursor connected to the database.
-        cursor = connection.cursor()
         try:
             for segmentObj in segmentObjs:
 
                 # Create a linepath constructed from the point paths.
                 sqlStr = 'WITH pts AS (SELECT loc.name, ST_Force_2D(pp.geom) as geom FROM {app}_point_paths pp JOIN {app}_locations loc ON pp.location_id = loc.id WHERE pp.segment_id = %s ORDER BY gps_time) SELECT DISTINCT(name), ST_MakeLine(ST_Force_2D(geom)) FROM pts GROUP BY name'.format(
                     app=app)
-                cursor.execute(sqlStr, [segmentObj.pk])
-                pointLine = cursor.fetchone()
+                with connection.cursor() as cursor:
+                    cursor.execute(sqlStr, [segmentObj.pk])
+                    pointLine = cursor.fetchone()
 
                 # determine the projection
                 proj = utility.epsgFromLocation(pointLine[0])
@@ -465,9 +464,6 @@ def alterPathResolution(request):
 
         except DatabaseError as dberror:
             return utility.response(0, dberror.args[0], {})
-        finally:
-            # Close the cursor's connection to the database
-            cursor.close()
 
         # return the response.
 
@@ -1104,20 +1100,16 @@ def getFrameClosest(request):
         # Prepare the input point as text for ST_GeomFromText
         pointTxt = 'POINT(%s %s)' % (inPointX, inPointY)
 
-        # Create a connection to the database.
-        cursor = connection.cursor()
         try:
             # Get the closest frame to the input point as a linestring.
             queryStr = "WITH pt AS (SELECT pp.frame_id FROM {app}_point_paths pp JOIN {app}_seasons ss ON pp.season_id=ss.id WHERE ss.name IN %s AND pp.location_id = %s ORDER BY ST_Transform(pp.geom,%s) <-> ST_GeomFromText(%s,%s) LIMIT 1) SELECT ss.name, pp.segment_id,  min(pp.gps_time), max(pp.gps_time), frm.name, ST_MakeLine(ST_Transform(ST_GeomFromText('POINTZ('|| ST_X(pp.geom)|| ' ' || ST_Y(pp.geom)|| ' ' || pp.gps_time||')',4326),%s)) FROM pt, {app}_point_paths pp JOIN {app}_seasons ss ON pp.season_id=ss.id JOIN {app}_frames frm ON pp.frame_id=frm.id WHERE pt.frame_id = pp.frame_id GROUP BY ss.name,pp.segment_id,frm.name;".format(app=app)
-            cursor.execute(
-                queryStr, [
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    queryStr, [
                     inSeasonNames, location_id, epsg, pointTxt, epsg, epsg])
-            closestFrame = cursor.fetchone()
+                closestFrame = cursor.fetchone()
         except DatabaseError as dberror:
             return utility.response(0, dberror.args[0], {})
-
-        finally:
-            cursor.close()
 
         # Extract x,y, and gps_time from linestring
         xCoords, yCoords, gpsTimes = list(zip(*GEOSGeometry(closestFrame[-1])))
@@ -1480,7 +1472,6 @@ def getLayerPointsCsv(request):
             name=inLocationName).values_list(
             'pk', flat=True)[0]
 
-        cursor = connection.cursor()  # Create a database cursor
         try:
             # Construct query string
             if getAllPoints:
@@ -1489,13 +1480,12 @@ def getLayerPointsCsv(request):
                 sqlStr = "WITH surflp AS (SELECT lp.twtt,lp.type,lp.quality,lp.point_path_id FROM {app}_layer_points lp WHERE lp.layer_id = 1), botlp AS (SELECT lp.twtt, lp.type, lp.quality, lp.point_path_id FROM {app}_layer_points lp WHERE lp.layer_id = 2) SELECT ST_Y(pp.geom) LAT, ST_X(pp.geom) LON, ST_Z(pp.geom) ELEVATION, pp.roll, pp.pitch, pp.heading, pp.gps_time, surflp.twtt*(299792458.0/2) surface, surflp.twtt*(299792458.0/2) + ((botlp.twtt-surflp.twtt)*(299792458.0/2/sqrt(3.15))) bottom,  ABS((surflp.twtt*(299792458.0/2)) - (surflp.twtt*(299792458.0/2) + ((botlp.twtt-surflp.twtt)*(299792458.0/2/sqrt(3.15))))) thickness, surflp.type, botlp.type, surflp.quality, botlp.quality,s.name SEASON, frm.name FRAME FROM {app}_point_paths pp JOIN surflp ON pp.id=surflp.point_path_id JOIN botlp ON pp.id=botlp.point_path_id JOIN (SELECT id,name,season_group_id FROM {app}_seasons WHERE season_group_id=1) as s ON s.id=pp.season_id JOIN {app}_frames frm ON frm.id=pp.frame_id WHERE pp.location_id = %s AND ST_Within(pp.geom,ST_GeomFromText(%s,4326));".format(app=app)
 
             # Query the database and fetch results
-            cursor.execute(sqlStr, [locationId, inBoundaryWkt])
-            data = cursor.fetchall()
+            with connection.cursor() as cursor:
+                cursor.execute(sqlStr, [locationId, inBoundaryWkt])
+                data = cursor.fetchall()
 
         except DatabaseError as dberror:
             return utility.response(0, dberror.args[0], {})
-        finally:
-            cursor.close()
 
         # generate the output csv information
         serverDir = opsSettings.OPS_DATA_PATH + 'data/csv/'
@@ -1771,18 +1761,16 @@ def getPointsWithinPolygon(request):
             name=inLocationName).values_list(
             'pk', flat=True)[0]
 
-        cursor = connection.cursor()  # Create a database cursor
         try:
             sqlStr = "WITH surflp AS (SELECT lp.twtt,lp.type,lp.quality,lp.point_path_id FROM {app}_layer_points lp WHERE lp.layer_id = 1), botlp AS (SELECT lp.twtt, lp.type, lp.quality, lp.point_path_id FROM {app}_layer_points lp WHERE lp.layer_id = 2) SELECT ST_Y(pp.geom) LAT, ST_X(pp.geom) LON, ST_Z(pp.geom) ELEVATION, pp.gps_time, surflp.twtt*(299792458.0/2) surface, surflp.twtt*(299792458.0/2) + ((botlp.twtt-surflp.twtt)*(299792458.0/2/sqrt(3.15))) bottom,  ABS((surflp.twtt*(299792458.0/2)) - (surflp.twtt*(299792458.0/2) + ((botlp.twtt-surflp.twtt)*(299792458.0/2/sqrt(3.15))))) thickness, surflp.quality, botlp.quality,s.name SEASON, frm.name FRAME FROM {app}_point_paths pp JOIN surflp ON pp.id=surflp.point_path_id LEFT JOIN botlp ON pp.id=botlp.point_path_id JOIN {app}_seasons s ON s.id=pp.season_id JOIN {app}_frames frm ON frm.id=pp.frame_id WHERE pp.location_id = %s AND ST_Within(pp.geom,ST_GeomFromText(%s,4326));".format(app=app)
 
             # Query the database and fetch results
-            cursor.execute(sqlStr, [locationId, inBoundaryWkt])
-            data = cursor.fetchall()
+            with connection.cursor() as cursor:
+                cursor.execute(sqlStr, [locationId, inBoundaryWkt])
+                data = cursor.fetchall()
 
         except DatabaseError as dberror:
             return utility.response(0, dberror.args[0], {})
-        finally:
-            cursor.close()
 
         if len(data) == 0:
             return utility.response(
@@ -2483,26 +2471,24 @@ def getCrossoversReport(request):
                         name__in=inLayerNames).values_list(
                         'pk', flat=True)))
 
-        cursor = connection.cursor()  # create a database cursor
         try:
             # Create, execute, and retrieve results from query to get crossover error
             # information.
-            if inSeasonNames:
-                sql_str = "WITH cx1 AS (SELECT cx.point_path_1_id,cx.id, cx.angle, cx.geom, pp1.geom AS pp1_geom,pp1.gps_time, frm1.name AS frm1Name, ss1.name AS ss1Name, lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id JOIN {app}_frames frm1 ON pp1.frame_id=frm1.id JOIN {app}_seasons ss1 ON pp1.season_id=ss1.id  JOIN {app}_layer_points lp ON cx.point_path_1_id=lp.point_path_id AND lp.layer_id IN %s WHERE ss1.name IN %s), cx2 AS (SELECT cx.point_path_2_id, cx.id, pp2.geom AS pp2_geom,pp2.gps_time, frm2.name AS frm2Name, ss2.name AS ss2Name, lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id JOIN {app}_frames frm2 ON pp2.frame_id=frm2.id JOIN {app}_seasons ss2 ON pp2.season_id=ss2.id JOIN {app}_layer_points lp ON cx.point_path_2_id=lp.point_path_id AND lp.layer_id IN %s WHERE ss2.name IN %s) SELECT CASE WHEN COALESCE(cx1.layer_id,cx2.layer_id) = 1 THEN (ST_Z(cx1.pp1_geom) - cx1.twtt*299792458.0003452/2) ELSE (ST_Z(cx1.pp1_geom) - (SELECT twtt FROM {app}_layer_points WHERE layer_id=1 AND point_path_id = cx1.point_path_1_id)*299792458.0003452/2 - (cx1.twtt - (SELECT twtt FROM {app}_layer_points WHERE layer_id = 1 AND point_path_id = cx1.point_path_1_id))*299792458.0003452/2/sqrt(3.15)) END AS layer_elev_1, CASE WHEN COALESCE(cx1.layer_id,cx2.layer_id) = 1 THEN (ST_Z(cx2.pp2_geom) - cx2.twtt*299792458.0003452/2) ELSE (ST_Z(cx2.pp2_geom) - (SELECT twtt FROM {app}_layer_points WHERE layer_id=1 AND point_path_id = cx2.point_path_2_id)*299792458.0003452/2 - (cx2.twtt - (SELECT twtt FROM {app}_layer_points WHERE layer_id = 1 AND point_path_id = cx2.point_path_2_id))*299792458.0003452/2/sqrt(3.15)) END AS layer_elev_2,   cx1.twtt, cx2.twtt, cx1.angle, lyr.name, cx1.ss1Name,cx2.ss2Name, frm1Name, frm2Name, cx1.gps_time, cx2.gps_time, cx1.pp1_geom, cx2.pp2_geom, cx1.geom FROM cx1 JOIN cx2 ON cx1.id=cx2.id AND cx1.layer_id=cx2.layer_id JOIN {app}_layers lyr ON lyr.id=cx1.layer_id;".format(app=app)
-                cursor.execute(
-                    sql_str, [
-                        layerIds, inSeasonNames, layerIds, inSeasonNames])
-            else:
-                sql_str = "WITH cx1 AS (SELECT cx.point_path_1_id,cx.id, cx.angle, cx.geom, pp1.geom AS pp1_geom,pp1.gps_time, frm1.name AS frm1Name, ss1.name AS ss1Name, lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id JOIN {app}_frames frm1 ON pp1.frame_id=frm1.id JOIN {app}_seasons ss1 ON pp1.season_id=ss1.id  JOIN {app}_layer_points lp ON cx.point_path_1_id=lp.point_path_id AND lp.layer_id IN %s WHERE frm1.name IN %s), cx2 AS (SELECT cx.point_path_2_id, cx.id, pp2.geom AS pp2_geom,pp2.gps_time, frm2.name AS frm2Name, ss2.name AS ss2Name, lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id JOIN {app}_frames frm2 ON pp2.frame_id=frm2.id JOIN {app}_seasons ss2 ON pp2.season_id=ss2.id JOIN {app}_layer_points lp ON cx.point_path_2_id=lp.point_path_id AND lp.layer_id IN %s WHERE frm2.name IN %s) SELECT CASE WHEN COALESCE(cx1.layer_id,cx2.layer_id) = 1 THEN (ST_Z(cx1.pp1_geom) - cx1.twtt*299792458.0003452/2) ELSE (ST_Z(cx1.pp1_geom) - (SELECT twtt FROM {app}_layer_points WHERE layer_id=1 AND point_path_id = cx1.point_path_1_id)*299792458.0003452/2 - (cx1.twtt - (SELECT twtt FROM {app}_layer_points WHERE layer_id = 1 AND point_path_id = cx1.point_path_1_id))*299792458.0003452/2/sqrt(3.15)) END AS layer_elev_1, CASE WHEN COALESCE(cx1.layer_id,cx2.layer_id) = 1 THEN (ST_Z(cx2.pp2_geom) - cx2.twtt*299792458.0003452/2) ELSE (ST_Z(cx2.pp2_geom) - (SELECT twtt FROM {app}_layer_points WHERE layer_id=1 AND point_path_id = cx2.point_path_2_id)*299792458.0003452/2 - (cx2.twtt - (SELECT twtt FROM {app}_layer_points WHERE layer_id = 1 AND point_path_id = cx2.point_path_2_id))*299792458.0003452/2/sqrt(3.15)) END AS layer_elev_2,   cx1.twtt, cx2.twtt, cx1.angle, lyr.name, cx1.ss1Name,cx2.ss2Name, frm1Name, frm2Name, cx1.gps_time, cx2.gps_time, cx1.pp1_geom, cx2.pp2_geom, cx1.geom FROM cx1 JOIN cx2 ON cx1.id=cx2.id AND cx1.layer_id=cx2.layer_id JOIN {app}_layers lyr ON lyr.id=cx1.layer_id;".format(app=app)
-                cursor.execute(
-                    sql_str, [
-                        layerIds, inFrameNames, layerIds, inFrameNames])
-            crossoverRows = cursor.fetchall()
+            with connection.cursor() as cursor:
+                if inSeasonNames:
+                    sql_str = "WITH cx1 AS (SELECT cx.point_path_1_id,cx.id, cx.angle, cx.geom, pp1.geom AS pp1_geom,pp1.gps_time, frm1.name AS frm1Name, ss1.name AS ss1Name, lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id JOIN {app}_frames frm1 ON pp1.frame_id=frm1.id JOIN {app}_seasons ss1 ON pp1.season_id=ss1.id  JOIN {app}_layer_points lp ON cx.point_path_1_id=lp.point_path_id AND lp.layer_id IN %s WHERE ss1.name IN %s), cx2 AS (SELECT cx.point_path_2_id, cx.id, pp2.geom AS pp2_geom,pp2.gps_time, frm2.name AS frm2Name, ss2.name AS ss2Name, lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id JOIN {app}_frames frm2 ON pp2.frame_id=frm2.id JOIN {app}_seasons ss2 ON pp2.season_id=ss2.id JOIN {app}_layer_points lp ON cx.point_path_2_id=lp.point_path_id AND lp.layer_id IN %s WHERE ss2.name IN %s) SELECT CASE WHEN COALESCE(cx1.layer_id,cx2.layer_id) = 1 THEN (ST_Z(cx1.pp1_geom) - cx1.twtt*299792458.0003452/2) ELSE (ST_Z(cx1.pp1_geom) - (SELECT twtt FROM {app}_layer_points WHERE layer_id=1 AND point_path_id = cx1.point_path_1_id)*299792458.0003452/2 - (cx1.twtt - (SELECT twtt FROM {app}_layer_points WHERE layer_id = 1 AND point_path_id = cx1.point_path_1_id))*299792458.0003452/2/sqrt(3.15)) END AS layer_elev_1, CASE WHEN COALESCE(cx1.layer_id,cx2.layer_id) = 1 THEN (ST_Z(cx2.pp2_geom) - cx2.twtt*299792458.0003452/2) ELSE (ST_Z(cx2.pp2_geom) - (SELECT twtt FROM {app}_layer_points WHERE layer_id=1 AND point_path_id = cx2.point_path_2_id)*299792458.0003452/2 - (cx2.twtt - (SELECT twtt FROM {app}_layer_points WHERE layer_id = 1 AND point_path_id = cx2.point_path_2_id))*299792458.0003452/2/sqrt(3.15)) END AS layer_elev_2,   cx1.twtt, cx2.twtt, cx1.angle, lyr.name, cx1.ss1Name,cx2.ss2Name, frm1Name, frm2Name, cx1.gps_time, cx2.gps_time, cx1.pp1_geom, cx2.pp2_geom, cx1.geom FROM cx1 JOIN cx2 ON cx1.id=cx2.id AND cx1.layer_id=cx2.layer_id JOIN {app}_layers lyr ON lyr.id=cx1.layer_id;".format(app=app)
+                    cursor.execute(
+                        sql_str, [
+                            layerIds, inSeasonNames, layerIds, inSeasonNames])
+                else:
+                    sql_str = "WITH cx1 AS (SELECT cx.point_path_1_id,cx.id, cx.angle, cx.geom, pp1.geom AS pp1_geom,pp1.gps_time, frm1.name AS frm1Name, ss1.name AS ss1Name, lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp1 ON cx.point_path_1_id=pp1.id JOIN {app}_frames frm1 ON pp1.frame_id=frm1.id JOIN {app}_seasons ss1 ON pp1.season_id=ss1.id  JOIN {app}_layer_points lp ON cx.point_path_1_id=lp.point_path_id AND lp.layer_id IN %s WHERE frm1.name IN %s), cx2 AS (SELECT cx.point_path_2_id, cx.id, pp2.geom AS pp2_geom,pp2.gps_time, frm2.name AS frm2Name, ss2.name AS ss2Name, lp.layer_id, lp.twtt FROM {app}_crossovers cx JOIN {app}_point_paths pp2 ON cx.point_path_2_id=pp2.id JOIN {app}_frames frm2 ON pp2.frame_id=frm2.id JOIN {app}_seasons ss2 ON pp2.season_id=ss2.id JOIN {app}_layer_points lp ON cx.point_path_2_id=lp.point_path_id AND lp.layer_id IN %s WHERE frm2.name IN %s) SELECT CASE WHEN COALESCE(cx1.layer_id,cx2.layer_id) = 1 THEN (ST_Z(cx1.pp1_geom) - cx1.twtt*299792458.0003452/2) ELSE (ST_Z(cx1.pp1_geom) - (SELECT twtt FROM {app}_layer_points WHERE layer_id=1 AND point_path_id = cx1.point_path_1_id)*299792458.0003452/2 - (cx1.twtt - (SELECT twtt FROM {app}_layer_points WHERE layer_id = 1 AND point_path_id = cx1.point_path_1_id))*299792458.0003452/2/sqrt(3.15)) END AS layer_elev_1, CASE WHEN COALESCE(cx1.layer_id,cx2.layer_id) = 1 THEN (ST_Z(cx2.pp2_geom) - cx2.twtt*299792458.0003452/2) ELSE (ST_Z(cx2.pp2_geom) - (SELECT twtt FROM {app}_layer_points WHERE layer_id=1 AND point_path_id = cx2.point_path_2_id)*299792458.0003452/2 - (cx2.twtt - (SELECT twtt FROM {app}_layer_points WHERE layer_id = 1 AND point_path_id = cx2.point_path_2_id))*299792458.0003452/2/sqrt(3.15)) END AS layer_elev_2,   cx1.twtt, cx2.twtt, cx1.angle, lyr.name, cx1.ss1Name,cx2.ss2Name, frm1Name, frm2Name, cx1.gps_time, cx2.gps_time, cx1.pp1_geom, cx2.pp2_geom, cx1.geom FROM cx1 JOIN cx2 ON cx1.id=cx2.id AND cx1.layer_id=cx2.layer_id JOIN {app}_layers lyr ON lyr.id=cx1.layer_id;".format(app=app)
+                    cursor.execute(
+                        sql_str, [
+                            layerIds, inFrameNames, layerIds, inFrameNames])
+                crossoverRows = cursor.fetchall()
 
         except DatabaseError as dberror:
             return utility.response(0, dberror.args[0], {})
-        finally:
-            cursor.close()
 
         if len(crossoverRows) > 0:
 
@@ -2703,19 +2689,16 @@ def getFrameSearch(request):
 
         epsg = utility.epsgFromLocation(inLocationName)  # get the input epsg
 
-        # Create a connection to the database.
-        cursor = connection.cursor()
         try:
             # Query for the rquired information (get the points as a linestring w/ z
             # value of gps_time)
             queryStr = "SELECT ss.name, pp.segment_id, ST_Transform(ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(geom) ||' ' || ST_Y(geom)||' ' || pp.gps_time||')',4326)),%s) FROM {app}_point_paths pp JOIN {app}_seasons ss ON pp.season_id=ss.id WHERE pp.frame_id=%s GROUP BY ss.name, pp.segment_id;".format(
                 app=app)
-            cursor.execute(queryStr, [epsg, framesObj.pk])
-            pointPathsObj = cursor.fetchone()
+            with connection.cursor() as cursor:
+                cursor.execute(queryStr, [epsg, framesObj.pk])
+                pointPathsObj = cursor.fetchone()
         except DatabaseError as dberror:
             return utility.response(0, dberror.args[0], {})
-        finally:
-            cursor.close()
 
         # extract all the elements
         seasonName = pointPathsObj[0]
@@ -2829,8 +2812,6 @@ def getInitialData(request):
         sysCmd = 'mkdir -p -m 777 ' + tmpDir + ' && chown -R postgres:postgres ' + tmpDir
         os.system(sysCmd)
 
-        cursor = connection.cursor()  # create a database cursor
-
         # copy all of the database tables (based on the input filters) to csv
         # files (exclude data from django fixtures)
         try:
@@ -2877,15 +2858,13 @@ def getInitialData(request):
             sqlStrings.append("COPY (SELECT * FROM %s_radars WHERE id IN %s)\
 			TO '%s/%s_radars' WITH CSV" % (app, radarIds, tmpDir, app))
 
-            for sqlStr in sqlStrings:
-                # execute the raw sql, format list insertions as tuples
-                cursor.execute(sqlStr.replace('[', '(').replace(']', ')'))
+            with connection.cursor() as cursor:
+                for sqlStr in sqlStrings:
+                    # execute the raw sql, format list insertions as tuples
+                    cursor.execute(sqlStr.replace('[', '(').replace(']', ')'))
 
         except DatabaseError as dberror:
             return utility.response(0, dberror.args[0], {})
-
-        finally:
-            cursor.close()  # close the cursor in case of exception
 
         # generate the output .tar.gz information
         serverDir = opsSettings.OPS_DATA_PATH + 'data/datapacks/'
@@ -3314,20 +3293,15 @@ def updateMaterializedView(request):
         queryStr, cookies = utility.getQuery(request)  # get the input
 
         # perform the function logic
-
-        cursor = connection.cursor()  # create a database cursor
-        cursor.execute(queryStr)  # execute the query
-        connection.commit()
+        with connection.cursor() as cursor:
+            cursor.execute(queryStr)  # execute the query
+            connection.commit()
 
         return utility.response(
             1, "SUCCESS: The materialized view has been updated.", {})
 
     except DatabaseError as dberror:
         return utility.response(0, dberror.args[0], {})
-
-    finally:
-        cursor.close()  # close the connection if there is an error
-
 
 @ipAuth()
 def analyze(request):
@@ -3352,17 +3326,13 @@ def analyze(request):
             return utility.response(2, "WARNING: NO TABLES ARE ANALYZED.", {})
         # perform the function logic
 
-        cursor = connection.cursor()  # create a database cursor
         try:
-
-            for table in tables:
-                cursor.execute("ANALYZE " + app + "_" + table)  # execute the query
+            with connection.cursor() as cursor:
+                for table in tables:
+                    cursor.execute("ANALYZE " + app + "_" + table)  # execute the query
 
         except DatabaseError as dberror:
             return utility.response(0, dberror.args[0], {})
-
-        finally:
-            cursor.close()  # close the connection if there is an error
 
         # return the output
         return utility.response(1, "SUCCESS: DATABASE TABLES ANALYZED.", {})
