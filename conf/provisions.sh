@@ -638,7 +638,7 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
 
     # INSTALL DJANGO
     printf "${STATUS_COLOR}Pip installing django and debugpy${NC}\n";
-    pip install Django==3.1.2
+    pip install Django==3.2
     # Used to open port for remote debugger attachment to Django instance in wsgi.py
     pip install debugpy
 
