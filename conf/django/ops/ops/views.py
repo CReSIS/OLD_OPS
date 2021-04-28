@@ -2996,16 +2996,16 @@ def createUser(request):
     try:
         _, data, _, cookies = utility.getInput(request)  # get the input and models
 
-        inUsername = data['properties']['userName']
+        inUserName = data['properties']['userName']
         inPassword = data['properties']['password']
         inEmail = data['properties']['email']
 
         try:
-            userObj = User.objects.get(username__exact=inUsername)
+            userObj = User.objects.get(username__exact=inUserName)
             if userObj is not None:
                 return utility.response(2, 'WARNING: USERNAME ALREADY EXISTS', {})
         except BaseException:
-            _ = User.objects.create_user(inUsername, inEmail, inPassword)
+            _ = User.objects.create_user(inUserName, inEmail, inPassword)
 
         return utility.response(1, 'SUCCESS: NEW USER CREATED', {})
 
@@ -3157,7 +3157,7 @@ def alterUserPermissions(request):
                     return utility.response(1, returnStr, {})
                 else:
                     return utility.response(
-                        1, 'No permissions for ' + inUsername + ' were changed', {})
+                        1, 'No permissions for ' + inUserName + ' were changed', {})
             else:
                 return utility.response(
                     0, 'ERROR: YOU ARE NOT AUTHORIZED TO CHANGE PERMISSIONS.', {})
@@ -3184,19 +3184,19 @@ def loginUser(request):
         _, data, _, cookies = utility.getInput(request)  # get the input and models
 
         # get inputs
-        inUsername = data['properties']['userName']
+        inUserName = data['properties']['userName']
         inPassword = data['properties']['password']
 
         if not cookies['isMat']:
             # check the status of the user (log them out if there logged in)
             curUserName = cookies['userName']
-            if curUserName == inUsername:
+            if curUserName == inUserName:
                 userAuthStatus = int(cookies['isAuthenticated'])
                 if userAuthStatus == 1:
                     logout(request)  # log out active user
 
         # authenticate the user
-        user = authenticate(username=inUsername, password=inPassword)
+        user = authenticate(username=inUserName, password=inPassword)
 
         # if the user authenticates log them in
         if user is not None:
@@ -3204,7 +3204,7 @@ def loginUser(request):
                 login(request, user)
                 return utility.response(
                     1, 'SUCCESS: USER NOW LOGGED IN.', {
-                        'userName': inUsername, 'isAuthenticated': 1})
+                        'userName': inUserName, 'isAuthenticated': 1})
             else:
                 return utility.response(
                     2, 'WARNING: USER ACCOUNT IS DISABLED.', {
