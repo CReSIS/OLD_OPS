@@ -216,14 +216,14 @@ def createPath(request):
                              LINE AS
                          (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
                          FROM pts), i_pts AS
-                         (SELECT (ST_Dump(ST_Intersection(ST_Transform(line.ln,{proj}), ST_Transform(o.geom,{proj})))).geom AS i_pt
+                         (SELECT (ST_Dump(ST_Intersection({flip}ST_Transform(line.ln,{proj}){flipclose}, {flip}ST_Transform(o.geom,{proj}){flipclose}))).geom AS i_pt
                          FROM LINE, {app}_segments AS o
                          WHERE o.id != {seg})
-                         SELECT ST_Transform(ST_Force_2D(i_pt), 4326) AS i,
+                         SELECT ST_Transform({flip}ST_Force_2D(i_pt){flipclose}, 4326) AS i,
                              pts1.id,
                              CASE
-                                 WHEN ST_Equals(i_pt, pts1.geom) THEN degrees(ST_Azimuth(i_pt, ST_Transform(pts2.geom,{proj})))
-                                 ELSE degrees(ST_Azimuth(i_pt, ST_Transform(pts1.geom,{proj})))
+                                 WHEN ST_Equals(i_pt, pts1.geom) THEN degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts2.geom,{proj}){flipclose}))
+                                 ELSE degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts1.geom,{proj}){flipclose}))
                              END
                          FROM i_pts,
                              pts AS pts1,
@@ -235,7 +235,7 @@ def createPath(request):
                              WHERE rn != ST_Z(i_pts.i_pt)::int
                              ORDER BY ABS(ST_Z(i_pts.i_pt)::int - rn) ASC
                              LIMIT 1)
-                         ORDER BY i;""".format(app=app, proj=proj, seg=segmentsObj.pk)
+                         ORDER BY i;""".format(app=app, proj=proj, seg=segmentsObj.pk, flip="ST_FlipCoordinates(" if proj==3413 else "", flipclose=")" if proj==3413 else "")
             cursor.execute(sql_str)
             cross_info1 = cursor.fetchall()
 
@@ -262,13 +262,13 @@ def createPath(request):
                              (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
                              FROM pts
                              GROUP BY pts.segment_id), i_pts AS
-                             (SELECT (ST_Dump(ST_Intersection(ST_Transform(line.ln,{proj}), ST_Transform(o.geom,{proj})))).geom AS i_pt
+                             (SELECT (ST_Dump(ST_Intersection({flip}ST_Transform(line.ln,{proj}){flipclose}, {flip}ST_Transform(o.geom,{proj}){flipclose}))).geom AS i_pt
                              FROM LINE, {app}_segments AS o
                              WHERE o.id = {seg})
                              SELECT pts1.id,
                                  CASE
-                                     WHEN ST_Equals(i_pt, pts1.geom) THEN degrees(ST_Azimuth(i_pt, ST_Transform(pts2.geom,{proj})))
-                                     ELSE degrees(ST_Azimuth(i_pt, ST_Transform(pts1.geom,{proj})))
+                                     WHEN ST_Equals(i_pt, pts1.geom) THEN degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts2.geom,{proj}){flipclose}))
+                                     ELSE degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts1.geom,{proj}){flipclose}))
                                  END
                              FROM i_pts,
                                  pts AS pts1,
@@ -280,7 +280,7 @@ def createPath(request):
                                  WHERE rn != ST_Z(i_pts.i_pt)::int
                                  ORDER BY ABS(ST_Z(i_pts.i_pt)::int - rn) ASC
                                  LIMIT 1)
-                             ORDER BY ST_Transform(ST_Force_2D(i_pt), 4326);""".format(app=app, proj=proj, seg=segmentsObj.pk)
+                             ORDER BY ST_Transform({flip}ST_Force_2D(i_pt){flipclose}, 4326);""".format(app=app, proj=proj, seg=segmentsObj.pk, flip="ST_FlipCoordinates(" if proj==3413 else "", flipclose=")" if proj==3413 else "")
                 cursor.execute(sql_str)
                 cross_info2 = cursor.fetchall()
 
@@ -322,8 +322,8 @@ def createPath(request):
                         FROM {app}_point_paths
                         WHERE segment_id = {seg}
                         ORDER BY gps_time)
-                        SELECT ST_UnaryUnion(ST_Transform(ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.id||')', 4326)),{proj}))
-                        FROM pts;""".format(app=app, proj=proj, seg=segmentsObj.pk)
+                        SELECT ST_UnaryUnion({flip}ST_Transform(ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.id||')', 4326)),{proj}){flipclose})
+                        FROM pts;""".format(app=app, proj=proj, seg=segmentsObj.pk, flip="ST_FlipCoordinates(" if proj==3413 else "", flipclose=")" if proj==3413 else "")
             cursor.execute(sql_str)
             line = cursor.fetchone()
 
@@ -1195,19 +1195,19 @@ def getFrameClosest(request):
                     ON       pp.season_id=ss.id
                     WHERE    ss.NAME IN %s
                     AND      pp.location_id = %s
-                    ORDER BY st_transform(pp.geom,%s) <-> st_geomfromtext(%s,%s) limit 1)
+                    ORDER BY {flip}st_transform(pp.geom,%s){flipclose} <-> st_geomfromtext(%s,%s) limit 1)
             SELECT   ss.NAME,
                     pp.segment_id,
                     min(pp.gps_time),
                     max(pp.gps_time),
                     frm.NAME,
-                    st_makeline(st_transform(st_geomfromtext('POINTZ('
+                    st_makeline({flip}st_transform(st_geomfromtext('POINTZ('
                             || st_x(pp.geom)
                             || ' '
                             || st_y(pp.geom)
                             || ' '
                             || pp.gps_time
-                            ||')',4326),%s))
+                            ||')',4326),%s){flipclose})
             FROM     pt,
                     {app}_point_paths pp
             JOIN     {app}_seasons ss
@@ -1218,7 +1218,7 @@ def getFrameClosest(request):
             GROUP BY ss.NAME,
                     pp.segment_id,
                     frm.NAME;
-            """.format(app=app)
+            """.format(app=app, flip="ST_FlipCoordinates(" if epsg==3413 else "", flipclose=")" if epsg==3413 else "")
             with connection.cursor() as cursor:
                 cursor.execute(
                     queryStr, [
@@ -3289,21 +3289,20 @@ def getFrameSearch(request):
             queryStr = """
             SELECT  ss.name,
                     pp.segment_id,
-                    st_transform(St_makeline(St_geomfromtext('POINTZ('
+                    {flip}st_transform(St_makeline(St_geomfromtext('POINTZ('
                             ||St_x(geom)
                             ||' '
                             || St_y(geom)
                             ||' '
                             || pp.gps_time
-                            ||')',4326)),%s)
+                            ||')',4326)),%s){flipclose}
             FROM     {app}_point_paths pp
             JOIN     {app}_seasons ss
             ON       pp.season_id=ss.id
             WHERE    pp.frame_id=%s
             GROUP BY ss.name,
                     pp.segment_id;
-            """.format(
-                app=app)
+            """.format(app=app, flip="ST_FlipCoordinates(" if epsg==3413 else "", flipclose=")" if epsg==3413 else "")
             with connection.cursor() as cursor:
                 cursor.execute(queryStr, [epsg, framesObj.pk])
                 pointPathsObj = cursor.fetchone()
