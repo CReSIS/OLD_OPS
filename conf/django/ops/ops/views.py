@@ -29,7 +29,6 @@ import ops.settings as opsSettings
 # DATA INPUT/DELETE FUNCTIONS
 # =======================================
 
-
 if settings.DEBUG:
     import debugpy
 
@@ -138,7 +137,12 @@ def createPath(request):
             frmPks.append(frmObj.pk)  # store the pk for use in point paths
 
         # Open a temporary file to hold point path records
-        with tempfile.NamedTemporaryFile(mode='w', prefix='tmp_', suffix='_pointPaths.csv', delete=False) as f:
+        temppath = opsSettings.OPS_DATA_PATH + "datapacktmp/createPath"
+        os.makedirs(temppath, mode=0o777, exist_ok=True)
+        # os.chown(temppath, uid, gid)
+
+        with tempfile.NamedTemporaryFile(mode='w', prefix='tmp_', dir=temppath, suffix='_pointPaths.csv', delete=False) as f:
+            
             # Create a csv writer object
             fwrite = csv.writer(f, delimiter=',')
 
@@ -163,7 +167,7 @@ def createPath(request):
                                  inRoll[ptIdx],
                                  inPitch[ptIdx],
                                  inHeading[ptIdx],
-                                 str(pointPathGeom.hexewkb)])
+                                 str(pointPathGeom.hexewkb.decode())])
 
         logging.info(
             'Point paths CSV for segment %s of season %s has now been created (%s).',
@@ -219,7 +223,7 @@ def createPath(request):
                          (SELECT (ST_Dump(ST_Intersection({flip}ST_Transform(line.ln,{proj}){flipclose}, {flip}ST_Transform(o.geom,{proj}){flipclose}))).geom AS i_pt
                          FROM LINE, {app}_segments AS o
                          WHERE o.id != {seg})
-                         SELECT ST_Transform({flip}ST_Force_2D(i_pt){flipclose}, 4326) AS i,
+                         SELECT ST_Transform({flip}ST_Force2D(i_pt){flipclose}, 4326) AS i,
                              pts1.id,
                              CASE
                                  WHEN ST_Equals(i_pt, pts1.geom) THEN degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts2.geom,{proj}){flipclose}))
@@ -280,7 +284,7 @@ def createPath(request):
                                  WHERE rn != ST_Z(i_pts.i_pt)::int
                                  ORDER BY ABS(ST_Z(i_pts.i_pt)::int - rn) ASC
                                  LIMIT 1)
-                             ORDER BY ST_Transform({flip}ST_Force_2D(i_pt){flipclose}, 4326);""".format(app=app, proj=proj, seg=segmentsObj.pk, flip="ST_FlipCoordinates(" if proj==3413 else "", flipclose=")" if proj==3413 else "")
+                             ORDER BY ST_Transform({flip}ST_Force2D(i_pt){flipclose}, 4326);""".format(app=app, proj=proj, seg=segmentsObj.pk, flip="ST_FlipCoordinates(" if proj==3413 else "", flipclose=")" if proj==3413 else "")
                 cursor.execute(sql_str)
                 cross_info2 = cursor.fetchall()
 
@@ -506,13 +510,13 @@ def alterPathResolution(request):
                 # Create a linepath constructed from the point paths.
                 sqlStr = """WITH pts AS
                             (SELECT loc.name,
-                                    ST_Force_2D(pp.geom) AS geom
+                                    ST_Force2D(pp.geom) AS geom
                             FROM {app}_point_paths pp
                             JOIN {app}_locations loc ON pp.location_id = loc.id
                             WHERE pp.segment_id = %s
                             ORDER BY gps_time)
                             SELECT DISTINCT(name),
-                                ST_MakeLine(ST_Force_2D(geom))
+                                ST_MakeLine(ST_Force2D(geom))
                             FROM pts
                             GROUP BY name;""".format(app=app)
                 with connection.cursor() as cursor:
