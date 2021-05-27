@@ -778,20 +778,58 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
     # --------------------------------------------------------------------
     # INSTALL PGBADGER FOR LOG REPORT GENERATION
 
-    printf "${STATUS_COLOR}Yum installing pgbadger and tomcat${NC}\n";
+    printf "${STATUS_COLOR}Yum installing pgbadger${NC}\n";
     yum install -y pgbadger
 
     # --------------------------------------------------------------------
     # INSTALL AND CONFIGURE APACHE TOMCAT AND GEOSERVER(WAR)
 
     # INSALL APACHE TOMCAT
-    yum install -y tomcat
+
+    printf "${STATUS_COLOR}Creating Tomcat user${NC}\n";
+    useradd -m -U -d /opt/tomcat -s /bin/false tomcat
+    printf "${STATUS_COLOR}Downloading tomcat 8.5${NC}\n";
+    cd /tmp
+    wget http://www-us.apache.org/dist/tomcat/tomcat-8/v8.5.37/bin/apache-tomcat-8.5.37.zip
+
+    printf "${STATUS_COLOR}Installing tomcat8.5${NC}\n";
+    unzip apache-tomcat-*.zip
+    sudo mkdir -p /opt/tomcat
+    sudo mv apache-tomcat-8.5.37 /opt/tomcat/
+
+    printf "${STATUS_COLOR}Linking tomcat${NC}\n";
+    sudo ln -s /opt/tomcat/apache-tomcat-8.5.37 /opt/tomcat/latest
+    chown -R tomcat:tomcat /opt/tomcat
+    chmod +x /opt/tomcat/latest/bin/*.sh
 
     # CONFIGURE tomcat
-    printf "${STATUS_COLOR}Setting env vars in tomcat.conf${NC}\n";
-    echo "JAVA_HOME=\"${java_path}\"" >> /etc/tomcat/tomcat.conf
-    echo 'JAVA_OPTS="-server -Xms512m -Xmx512m -XX:+UseParallelGC -XX:+UseParallelOldGC"' >> /etc/tomcat/tomcat.conf
-    echo 'CATALINA_OPTS="-DGEOSERVER_DATA_DIR='$opsDataPath'geoserver"' >> /etc/tomcat/tomcat.conf
+    printf "${STATUS_COLOR}Configuring Tomcat${NC}\n";
+    tomcatService = "
+[Unit]
+Description=Tomcat 8.5 servlet container
+After=network.target
+
+[Service]
+Type=forking
+
+User=tomcat
+Group=tomcat
+
+Environment=\"JAVA_HOME=/usr/lib/jvm/jre\"
+Environment=\"JAVA_OPTS=-Djava.security.egd=file:///dev/urandom\"
+
+Environment=\"CATALINA_BASE=/opt/tomcat/latest\"
+Environment=\"CATALINA_HOME=/opt/tomcat/latest\"
+Environment=\"CATALINA_PID=/opt/tomcat/latest/temp/tomcat.pid\"
+Environment=\"CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC -XX:+UseParallelOldGC -DGEOSERVER_DATA_DIR='$opsDataPath'geoserver\"
+
+ExecStart=/opt/tomcat/latest/bin/startup.sh
+ExecStop=/opt/tomcat/latest/bin/shutdown.sh
+
+[Install]
+WantedBy=multi-user.target"
+
+    echo -e "$tomcatService" > /etc/systemd/system/tomcat.service
 
     # MAKE THE EXTERNAL GEOSERVER DATA DIRECTORY (IF IT DOESNT EXIST)
     geoServerDataPath=$opsDataPath"geoserver/"
@@ -831,18 +869,18 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
     # Download and move THE GEOSERVER WAR TO TOMCAT
     printf "${STATUS_COLOR}Dowloading geoserver war${NC}\n";
     cd ~
-    wget https://sourceforge.net/projects/geoserver/files/GeoServer/2.18.0/geoserver-2.18.0-war.zip/download -O geoserver-2.18.0-war.zip
+    wget https://sourceforge.net/projects/geoserver/files/GeoServer/2.19.1/geoserver-2.19.1-bin.zip/download -O geoserver-2.19.1-war.zip
     printf "${STATUS_COLOR}Checking geoserver war hash${NC}\n";
-    if echo ae0ba0207e7bdf067893412a458f0115 geoserver-2.18.0-war.zip | md5sum --check; then
+    if echo d78dc17560c4626f8e85db0f14dcf802 geoserver-2.19.1-war.zip | md5sum --check; then
         printf "${STATUS_COLOR}Unzipping geoserver war${NC}\n";
-        unzip geoserver-2.18.0-war.zip -d geoserver-2.18.0-war
+        unzip geoserver-2.19.1-war.zip -d geoserver-2.19.1-war
         printf "${STATUS_COLOR}Moving geoserver war${NC}\n";
-        mv geoserver-2.18.0-war/geoserver.war /var/lib/tomcat/webapps/geoserver.war
-        rm -rf geoserver-2.18.0-war
+        mv geoserver-2.19.1-war/geoserver.war /opt/tomcat/latest/webapps/geoserver.war
+        rm -rf geoserver-2.19.1-war
     else
         echo "GEOSERVER HASH COULD NOT BE VERIFIED, SKIPPING DOWNLOAD"
     fi
-    rm -f geoserver-2.18.0-war.zip
+    rm -f geoserver-2.19.1-war.zip
 
 
     # SET OWNERSHIP/PERMISSIONS OF GEOSERVER DATA DIRECTORY
@@ -852,8 +890,10 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
 
     # START APACHE TOMCAT
     printf "${STATUS_COLOR}Starting tomcat service${NC}\n";
-    service tomcat start
-
+    systemctl daemon-reload
+    systemctl start tomcat
+    systemctl enable tomcat
+    
     # --------------------------------------------------------------------
     # INSTALL AND CONFIGURE WEB APPLICATION
 

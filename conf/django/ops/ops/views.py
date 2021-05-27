@@ -137,9 +137,10 @@ def createPath(request):
             frmPks.append(frmObj.pk)  # store the pk for use in point paths
 
         # Open a temporary file to hold point path records
+        # Centos 7 places tmp files into service-level subdirs which do not reflect the path returned in Python
+        # Instead, create a dir in /db/
         temppath = opsSettings.OPS_DATA_PATH + "datapacktmp/createPath"
         os.makedirs(temppath, mode=0o777, exist_ok=True)
-        # os.chown(temppath, uid, gid)
 
         with tempfile.NamedTemporaryFile(mode='w', prefix='tmp_', dir=temppath, suffix='_pointPaths.csv', delete=False) as f:
             
