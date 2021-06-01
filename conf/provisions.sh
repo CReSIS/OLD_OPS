@@ -794,17 +794,17 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
 
     printf "${STATUS_COLOR}Installing tomcat8.5${NC}\n";
     unzip apache-tomcat-*.zip
-    sudo mkdir -p /opt/tomcat
-    sudo mv apache-tomcat-8.5.37 /opt/tomcat/
+    mkdir -p /opt/tomcat
+    mv apache-tomcat-8.5.37 /opt/tomcat/
 
-    printf "${STATUS_COLOR}Linking tomcat${NC}\n";
-    sudo ln -s /opt/tomcat/apache-tomcat-8.5.37 /opt/tomcat/latest
+    printf "${STATUS_COLOR}Linking tomcat and setting permissions${NC}\n";
+    ln -s /opt/tomcat/apache-tomcat-8.5.37 /opt/tomcat/latest
     chown -R tomcat:tomcat /opt/tomcat
-    chmod +x /opt/tomcat/latest/bin/*.sh
+    sh -c 'chmod +x /opt/tomcat/latest/bin/*.sh'
 
     # CONFIGURE tomcat
     printf "${STATUS_COLOR}Configuring Tomcat${NC}\n";
-    tomcatService = "
+    tomcatService="
 [Unit]
 Description=Tomcat 8.5 servlet container
 After=network.target
@@ -815,13 +815,13 @@ Type=forking
 User=tomcat
 Group=tomcat
 
-Environment=\"JAVA_HOME=/usr/lib/jvm/jre\"
+Environment=\"JAVA_HOME=${java_path}\"
 Environment=\"JAVA_OPTS=-Djava.security.egd=file:///dev/urandom\"
 
 Environment=\"CATALINA_BASE=/opt/tomcat/latest\"
 Environment=\"CATALINA_HOME=/opt/tomcat/latest\"
 Environment=\"CATALINA_PID=/opt/tomcat/latest/temp/tomcat.pid\"
-Environment=\"CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC -XX:+UseParallelOldGC -DGEOSERVER_DATA_DIR='$opsDataPath'geoserver\"
+Environment=\"CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC -XX:+UseParallelOldGC -DGEOSERVER_DATA_DIR=${opsDataPath}geoserver\"
 
 ExecStart=/opt/tomcat/latest/bin/startup.sh
 ExecStop=/opt/tomcat/latest/bin/shutdown.sh
@@ -829,7 +829,7 @@ ExecStop=/opt/tomcat/latest/bin/shutdown.sh
 [Install]
 WantedBy=multi-user.target"
 
-    echo -e "$tomcatService" > /etc/systemd/system/tomcat.service
+    echo -e "$tomcatService" >> /etc/systemd/system/tomcat.service
 
     # MAKE THE EXTERNAL GEOSERVER DATA DIRECTORY (IF IT DOESNT EXIST)
     geoServerDataPath=$opsDataPath"geoserver/"
@@ -869,13 +869,14 @@ WantedBy=multi-user.target"
     # Download and move THE GEOSERVER WAR TO TOMCAT
     printf "${STATUS_COLOR}Dowloading geoserver war${NC}\n";
     cd ~
-    wget https://sourceforge.net/projects/geoserver/files/GeoServer/2.19.1/geoserver-2.19.1-bin.zip/download -O geoserver-2.19.1-war.zip
+    wget https://sourceforge.net/projects/geoserver/files/GeoServer/2.19.1/geoserver-2.19.1-war.zip/download -O geoserver-2.19.1-war.zip
     printf "${STATUS_COLOR}Checking geoserver war hash${NC}\n";
-    if echo d78dc17560c4626f8e85db0f14dcf802 geoserver-2.19.1-war.zip | md5sum --check; then
+    if echo 87faca3a44f56bdd9967facbf856855f geoserver-2.19.1-war.zip | md5sum --check; then
         printf "${STATUS_COLOR}Unzipping geoserver war${NC}\n";
         unzip geoserver-2.19.1-war.zip -d geoserver-2.19.1-war
         printf "${STATUS_COLOR}Moving geoserver war${NC}\n";
         mv geoserver-2.19.1-war/geoserver.war /opt/tomcat/latest/webapps/geoserver.war
+        chown tomcat:tomcat /opt/tomcat/latest/webapps/geoserver.war
         rm -rf geoserver-2.19.1-war
     else
         echo "GEOSERVER HASH COULD NOT BE VERIFIED, SKIPPING DOWNLOAD"
