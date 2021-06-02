@@ -816,12 +816,12 @@ User=tomcat
 Group=tomcat
 
 Environment=JAVA_HOME="$(find /usr/lib/jvm -name 'java-11-openjdk-*')"
-Environment=JAVA_OPTS=-Djava.security.egd=file:///dev/urandom
+Environment=JAVA_OPTS=-Djava.security.egd=file:///dev/urandom -Xms512M -Xmx1024M -server -XX:+UseParallelGC -XX:+UseParallelOldGC
 
 Environment=CATALINA_BASE=/opt/tomcat/latest
 Environment=CATALINA_HOME=/opt/tomcat/latest
 Environment=CATALINA_PID=/opt/tomcat/latest/temp/tomcat.pid
-Environment=CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC -XX:+UseParallelOldGC -DGEOSERVER_DATA_DIR=${opsDataPath}geoserver
+Environment=CATALINA_OPTS=-DGEOSERVER_DATA_DIR=${opsDataPath}geoserver
 
 ExecStart=/opt/tomcat/latest/bin/startup.sh
 ExecStop=/opt/tomcat/latest/bin/shutdown.sh
