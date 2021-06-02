@@ -28,6 +28,7 @@ ATTACH_DEBUG_LOG_PATH = OPS_DATA_PATH + 'django_logs/debug/'
 ATTACH_DEBUG_PORT = 65078
 
 TEMPLATE_DEBUG = DEBUG
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 ADMINS = ()
 
