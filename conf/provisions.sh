@@ -215,7 +215,7 @@ after_reboot() {
     
     printf "${STATUS_COLOR}Downloading python 3.8.7 tar${NC}\n";
     cd ~
-    wget https://www.python.org/ftp/python/3.8.7/Python-3.8.7.tgz
+    wget https://data.cresis.ku.edu/data/temp/ct/ops/Python-3.8.7.tgz
     printf "${STATUS_COLOR}Extracting python 3.8.7 tar${NC}\n";
     tar xvf Python-3.8.7.tgz
     rm -f Python-3.8.7.tgz
@@ -790,15 +790,15 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
     useradd -m -U -d /opt/tomcat -s /bin/false tomcat
     printf "${STATUS_COLOR}Downloading tomcat 8.5${NC}\n";
     cd /tmp
-    wget http://www-us.apache.org/dist/tomcat/tomcat-8/v8.5.37/bin/apache-tomcat-8.5.37.zip
+    wget https://data.cresis.ku.edu/data/temp/ct/ops/apache-tomcat-8.5.66.zip
 
     printf "${STATUS_COLOR}Installing tomcat8.5${NC}\n";
     unzip apache-tomcat-*.zip
     mkdir -p /opt/tomcat
-    mv apache-tomcat-8.5.37 /opt/tomcat/
+    mv apache-tomcat-8.5.66 /opt/tomcat/
 
     printf "${STATUS_COLOR}Linking tomcat and setting permissions${NC}\n";
-    ln -s /opt/tomcat/apache-tomcat-8.5.37 /opt/tomcat/latest
+    ln -s /opt/tomcat/apache-tomcat-8.5.66 /opt/tomcat/latest
     chown -R tomcat:tomcat /opt/tomcat
     sh -c 'chmod +x /opt/tomcat/latest/bin/*.sh'
 
@@ -815,13 +815,13 @@ Type=forking
 User=tomcat
 Group=tomcat
 
-Environment=\"JAVA_HOME=${java_path}\"
-Environment=\"JAVA_OPTS=-Djava.security.egd=file:///dev/urandom\"
+Environment=JAVA_HOME="$(find /usr/lib/jvm -name 'java-11-openjdk-*')"
+Environment=JAVA_OPTS=-Djava.security.egd=file:///dev/urandom
 
-Environment=\"CATALINA_BASE=/opt/tomcat/latest\"
-Environment=\"CATALINA_HOME=/opt/tomcat/latest\"
-Environment=\"CATALINA_PID=/opt/tomcat/latest/temp/tomcat.pid\"
-Environment=\"CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC -XX:+UseParallelOldGC -DGEOSERVER_DATA_DIR=${opsDataPath}geoserver\"
+Environment=CATALINA_BASE=/opt/tomcat/latest
+Environment=CATALINA_HOME=/opt/tomcat/latest
+Environment=CATALINA_PID=/opt/tomcat/latest/temp/tomcat.pid
+Environment=CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC -XX:+UseParallelOldGC -DGEOSERVER_DATA_DIR=${opsDataPath}geoserver
 
 ExecStart=/opt/tomcat/latest/bin/startup.sh
 ExecStop=/opt/tomcat/latest/bin/shutdown.sh
@@ -829,7 +829,7 @@ ExecStop=/opt/tomcat/latest/bin/shutdown.sh
 [Install]
 WantedBy=multi-user.target"
 
-    echo -e "$tomcatService" >> /etc/systemd/system/tomcat.service
+    echo -e "$tomcatService" > /etc/systemd/system/tomcat.service
 
     # MAKE THE EXTERNAL GEOSERVER DATA DIRECTORY (IF IT DOESNT EXIST)
     geoServerDataPath=$opsDataPath"geoserver/"
@@ -869,18 +869,13 @@ WantedBy=multi-user.target"
     # Download and move THE GEOSERVER WAR TO TOMCAT
     printf "${STATUS_COLOR}Dowloading geoserver war${NC}\n";
     cd ~
-    wget https://sourceforge.net/projects/geoserver/files/GeoServer/2.19.1/geoserver-2.19.1-war.zip/download -O geoserver-2.19.1-war.zip
-    printf "${STATUS_COLOR}Checking geoserver war hash${NC}\n";
-    if echo 87faca3a44f56bdd9967facbf856855f geoserver-2.19.1-war.zip | md5sum --check; then
-        printf "${STATUS_COLOR}Unzipping geoserver war${NC}\n";
-        unzip geoserver-2.19.1-war.zip -d geoserver-2.19.1-war
-        printf "${STATUS_COLOR}Moving geoserver war${NC}\n";
-        mv geoserver-2.19.1-war/geoserver.war /opt/tomcat/latest/webapps/geoserver.war
-        chown tomcat:tomcat /opt/tomcat/latest/webapps/geoserver.war
-        rm -rf geoserver-2.19.1-war
-    else
-        echo "GEOSERVER HASH COULD NOT BE VERIFIED, SKIPPING DOWNLOAD"
-    fi
+    wget https://data.cresis.ku.edu/data/temp/ct/ops/geoserver-2.19.1-war.zip -O geoserver-2.19.1-war.zip
+    printf "${STATUS_COLOR}Unzipping geoserver war${NC}\n";
+    unzip geoserver-2.19.1-war.zip -d geoserver-2.19.1-war
+    printf "${STATUS_COLOR}Moving geoserver war${NC}\n";
+    mv geoserver-2.19.1-war/geoserver.war /opt/tomcat/latest/webapps/geoserver.war
+    chown tomcat:tomcat /opt/tomcat/latest/webapps/geoserver.war
+    rm -rf geoserver-2.19.1-war
     rm -f geoserver-2.19.1-war.zip
 
 
