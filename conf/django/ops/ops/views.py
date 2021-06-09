@@ -1685,7 +1685,7 @@ def getLayerPointsCsv(request):
             'FRAME']
 
         # write the csv file
-        with open(serverFn, 'wb') as csvFile:
+        with open(serverFn, 'w') as csvFile:
             csvWriter = csv.writer(csvFile, delimiter=',', quoting=csv.QUOTE_NONE)
             csvWriter.writerow(csvHeader)
             for row in data:
@@ -3125,7 +3125,7 @@ def getCrossoversReport(request):
                 'CROSS_LAT']
 
             # write the csv file
-            with open(serverFn, 'wb') as csvFile:
+            with open(serverFn, 'w') as csvFile:
 
                 # Create a GEOS Well Known Binary reader
                 wkb_r = WKBReader()
