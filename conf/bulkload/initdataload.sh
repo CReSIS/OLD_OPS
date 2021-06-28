@@ -31,11 +31,11 @@ mkdir /tmp/pgdata/;
 #Find all selected initial data files then unpack and load 
 printf "${STATUS_COLOR}Finding, unpacking, and unloading data files${NC}\n";
 (
-cd /vagrant/data/postgresql/
+cd /opt/ops/data/postgresql/
 for pack in *.tar.gz
 do 
     printf "${STATUS_COLOR}Unpacking ${pack}${NC}\n";
-	tar -zxf /vagrant/data/postgresql/$pack -C /tmp/pgdata/;
+	tar -zxf /opt/ops/data/postgresql/$pack -C /tmp/pgdata/;
 	#Use pg_bulkload to load initial data into the database. 
 	cd /tmp/pgdata/
     printf "${STATUS_COLOR}Loading files from ${pack}${NC}\n";
@@ -52,7 +52,7 @@ rmdir /tmp/pgdata/;
 
 # CALL SQL TO RESUME NORMAL DATABASE 
 printf "${STATUS_COLOR}Cleanup bulkload${NC}\n";
-su - postgres -c "psql -d ops -f /vagrant/conf/bulkload/pg_bulkload_cleanup.sql"
+su - postgres -c "psql -d ops -f /opt/ops/conf/bulkload/pg_bulkload_cleanup.sql"
 
 # RE-SET POSTGRESQL.CONF
 printf "${STATUS_COLOR}Resetting postgresql.conf${NC}\n";

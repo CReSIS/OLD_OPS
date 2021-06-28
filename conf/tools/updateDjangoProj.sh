@@ -8,7 +8,7 @@ cp -f /var/django/ops/.pydevproject /tmp/.pydevproject_tmp > /dev/null 2>&1
 
 cp -f /var/django/ops/ops/settings.py /tmp/DjangoSettings.old
 rm -rf /var/django/*
-cp -rf /vagrant/conf/django/* /var/django/
+cp -rf /opt/ops/conf/django/* /var/django/
 
 #Make updating settings.py optional.
 while true; do

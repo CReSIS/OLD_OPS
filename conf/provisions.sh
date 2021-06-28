@@ -18,7 +18,7 @@
 STATUS_COLOR='\033[1;34m';
 NC='\033[0m' # No Color
 
-configPath="/vagrant/conf/provisions.config"
+configPath="/opt/ops/conf/provisions.config"
 
 # Update $1 in the config with value $2
 update_config() {
@@ -55,7 +55,7 @@ before_reboot() {
             [Yy]* ) 
                 update_config "installPgData" 1;
                 printf "		*****NOTE*****\n"
-                printf "You must place the desired datapacks in \n/vagrant/data/postgresql/ before continuing.\n"
+                printf "You must place the desired datapacks in \n/opt/ops/data/postgresql/ before continuing.\n"
                 printf "		*****NOTE*****\n"
                 read -n1 -r -p "Press space to continue..." key
                 break;;
@@ -73,9 +73,9 @@ before_reboot() {
                 update_config "installPgData" 1;
                 # DOWNLOAD A PREMADE DATA PACK FROM CReSIS (MINIMAL LAYERS)
                 printf "${STATUS_COLOR}Downloading and unzipping premade datapack${NC}\n";
-                wget https://data.cresis.ku.edu/data/ops/SampleData.zip -P /vagrant/data/postgresql/   
-                unzip /vagrant/data/postgresql/SampleData.zip -d /vagrant/data/postgresql/
-                rm /vagrant/data/postgresql/SampleData.zip
+                wget https://data.cresis.ku.edu/data/ops/SampleData.zip -P /opt/ops/data/postgresql/   
+                unzip /opt/ops/data/postgresql/SampleData.zip -d /opt/ops/data/postgresql/
+                rm /opt/ops/data/postgresql/SampleData.zip
                 break;;
             [Nn]* ) break;;
             * ) echo "Please answer yes or no.";;
@@ -117,7 +117,7 @@ before_reboot() {
     if [ "$preProv" -eq 1 ]; then
 
         printf "${STATUS_COLOR}RPM epel-release${NC}\n";
-        cd ~ && cp /vagrant/conf/software/epel-release-latest-7.noarch.rpm ./
+        cd ~ && cp /opt/ops/conf/software/epel-release-latest-7.noarch.rpm ./
         rpm -Uvh epel-release-latest-7*.rpm 
         rm -f epel-release-latest-7.noarch.rpm
         printf "${STATUS_COLOR}Updating yum${NC}\n";
@@ -202,7 +202,7 @@ after_reboot() {
 
     # INSTALL THE PGDG REPO
     printf "${STATUS_COLOR}Installing pgdg repo${NC}\n";
-    cd ~ && cp -f /vagrant/conf/software/pgdg-redhat-repo-latest.noarch.rpm ./
+    cd ~ && cp -f /opt/ops/conf/software/pgdg-redhat-repo-latest.noarch.rpm ./
     rpm -Uvh pgdg-redhat-repo-latest.noarch.rpm
     rm -f pgdg-redhat-repo-latest.noarch.rpm
 
@@ -458,10 +458,10 @@ HOME=/
 0 2 * * * root rm -f $(find "$webDataDir"/datapacks/*.tar.gz -mtime +7);
 
 # VACUUM ANALYZE-ONLY THE ENTIRE OPS DATABASE AT 2 AM DAILY
-0 2 * * * root sh /vagrant/conf/tools/vacuumAnalyze.sh ops
+0 2 * * * root sh /opt/ops/conf/tools/vacuumAnalyze.sh ops
 
 # WEEKLY POSTGRESQL REPORT CREATION AT 2 AM SUNDAY
-0 2 * * 7 root sh /vagrant/conf/tools/createPostgresqlReport.sh "$opsDataPath"postgresql_reports/
+0 2 * * 7 root sh /opt/ops/conf/tools/createPostgresqlReport.sh "$opsDataPath"postgresql_reports/
 
 # REMOVE POSTGRESQL REPORTS OLDER THAN 2 MONTHS EVERY SUNDAY AT 2 AM
 0 2 * * 7 root rm -f $(find "$opsDataPath"postgresql_reports/*.html -mtime +60);
@@ -485,8 +485,8 @@ HOME=/
     # COPY INSTALLATION FILES
     printf "${STATUS_COLOR}Copying JAI bins${NC}\n";
     cd ~
-    cp /vagrant/conf/software/jai-1_1_1_01-lib-linux-i586-jre.bin ./
-    cp /vagrant/conf/software/jai_imageio-1_0_01-lib-linux-i586-jre.bin ./
+    cp /opt/ops/conf/software/jai-1_1_1_01-lib-linux-i586-jre.bin ./
+    cp /opt/ops/conf/software/jai_imageio-1_0_01-lib-linux-i586-jre.bin ./
 
     # INSTALL JAVA JRE
     printf "${STATUS_COLOR}Yum installing java jdk${NC}\n";
@@ -645,8 +645,8 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
     # CREATE DIRECTORY AND COPY PROJECT
     printf "${STATUS_COLOR}Creating django dir${NC}\n";
     mkdir -p /var/django/
-    printf "${STATUS_COLOR}Copying site from vagrant to django${NC}\n";
-    cp -rf /vagrant/conf/django/* /var/django/
+    printf "${STATUS_COLOR}Copying site from opt/ops to django${NC}\n";
+    cp -rf /opt/ops/conf/django/* /var/django/
 
     printf "${STATUS_COLOR}Setting Django settings env var${NC}\n";
     echo -e "#!/bin/bash\nexport DJANGO_SETTINGS_MODULE=ops.settings" >> /etc/profile.d/django.sh
@@ -722,7 +722,7 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
         done
 
         printf "${STATUS_COLOR}Reordering Migrations${NC}\n";
-        python /vagrant/conf/tools/reorder_migrations.py
+        python /opt/ops/conf/tools/reorder_migrations.py
 
         printf "${STATUS_COLOR}Migrating${NC}\n";
         python /var/django/$appName/manage.py migrate
@@ -742,7 +742,7 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
         done
 
         printf "${STATUS_COLOR}Creating default user${NC}\n";
-        python manage.py shell -c "exec(open('/vagrant/conf/tools/createDefaultUser.py').read())"
+        python manage.py shell -c "exec(open('/opt/ops/conf/tools/createDefaultUser.py').read())"
 
         # CREATE INDEXES ON POINT PATH GEOMETRIES
         printf "${STATUS_COLOR}Creating indices on point path geometries${NC}\n";
@@ -767,11 +767,11 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
     su - postgres -c "psql -f /usr/pgsql-12/share/extension/pg_bulkload.sql "$appName"";
 
     if [ "$installPgData" -eq 1 ]; then
-        fCount=$(ls -A /vagrant/data/postgresql/ | wc -l);
+        fCount=$(ls -A /opt/ops/data/postgresql/ | wc -l);
         if [ "$fCount" -gt 1 ]; then
             # LOAD INITIAL DATA INTO THE DATABASE
             printf "${STATUS_COLOR}Running initdataload.sh${NC}\n";
-            sh /vagrant/conf/bulkload/initdataload.sh
+            sh /opt/ops/conf/bulkload/initdataload.sh
         fi
     fi
 
@@ -839,24 +839,24 @@ WantedBy=multi-user.target"
     fi
 
     # EXTRACT THE OPS GEOSERVER DATA DIR TO THE DIRECTORY
-    printf "${STATUS_COLOR}Copying geoserver data dir from vagrant to geoServerDataPath${NC}\n";
-    cp -rf /vagrant/conf/geoserver/geoserver/* $geoServerDataPath
+    printf "${STATUS_COLOR}Copying geoserver data dir from opt/ops to geoServerDataPath${NC}\n";
+    cp -rf /opt/ops/conf/geoserver/geoserver/* $geoServerDataPath
 
     # GET THE GEOSERVER REFERENCE DATA
-    if [ -f /vagrant/data/geoserver/geoserver.zip ]; then
+    if [ -f /opt/ops/data/geoserver/geoserver.zip ]; then
 
         printf "${STATUS_COLOR}Unzipping geoserver.zip${NC}\n";
-        unzip /vagrant/data/geoserver/geoserver.zip -d $geoServerDataPath"data/"
+        unzip /opt/ops/data/geoserver/geoserver.zip -d $geoServerDataPath"data/"
 
     else
 
         # DOWNLOAD THE DATA PACK FROM CReSIS (MINIMAL LAYERS)
         printf "${STATUS_COLOR}Downloading minimal data pack from cresis${NC}\n";
-        cd /vagrant/data/geoserver/ && wget https://data.cresis.ku.edu/data/ops/geoserver.zip
+        cd /opt/ops/data/geoserver/ && wget https://data.cresis.ku.edu/data/ops/geoserver.zip
         
         # UNZIP THE DOWNLOADED DATA PACK
         printf "${STATUS_COLOR}Unzipping geoserver.zip${NC}\n";
-        unzip /vagrant/data/geoserver/geoserver.zip -d $geoServerDataPath"data/"
+        unzip /opt/ops/data/geoserver/geoserver.zip -d $geoServerDataPath"data/"
 
     fi
 
@@ -893,8 +893,8 @@ WantedBy=multi-user.target"
     # --------------------------------------------------------------------
     # INSTALL AND CONFIGURE WEB APPLICATION
 
-    printf "${STATUS_COLOR}Copying geoportal from vagrant to www${NC}\n";
-    cp -rf /vagrant/conf/geoportal/* /var/www/html/ # COPY THE APPLICATION
+    printf "${STATUS_COLOR}Copying geoportal from opt/ops to www${NC}\n";
+    cp -rf /opt/ops/conf/geoportal/* /var/www/html/ # COPY THE APPLICATION
 
     # WRITE THE BASE URL TO app.js
     # sed -i "s,	 baseUrl: ""http://192.168.111.222"",	 baseUrl: ""$serverName"",g" /var/www/html/app.js

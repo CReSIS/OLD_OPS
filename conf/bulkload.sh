@@ -40,7 +40,7 @@ while true; do
 		[Yy]* ) 
 			installPgData=1;
 			printf "		*****NOTE*****\n"
-			printf "You must place the desired datapacks in \n/vagrant/data/postgresql/ before continuing.\n"
+			printf "You must place the desired datapacks in \n/opt/ops/data/postgresql/ before continuing.\n"
 			printf "		*****NOTE*****\n"
 			read -n1 -r -p "Press space to continue..." key
 			break;;
@@ -57,9 +57,9 @@ while true; do
 		[Yy]* ) 
 			installPgData=1;
 			# DOWNLOAD A PREMADE DATA PACK FROM CReSIS (MINIMAL LAYERS)
-			wget https://data.cresis.ku.edu/data/ops/SampleData.zip -P /vagrant/data/postgresql/   
-			unzip /vagrant/data/postgresql/SampleData.zip -d /vagrant/data/postgresql/
-			rm /vagrant/data/postgresql/SampleData.zip
+			wget https://data.cresis.ku.edu/data/ops/SampleData.zip -P /opt/ops/data/postgresql/   
+			unzip /opt/ops/data/postgresql/SampleData.zip -d /opt/ops/data/postgresql/
+			rm /opt/ops/data/postgresql/SampleData.zip
 			break;;
 		[Nn]* ) break;;
 		* ) echo "Please answer yes or no.";;
@@ -70,10 +70,10 @@ done
 # BULKLOAD DATA TO POSTGRESQL 
 
 if [ $installPgData -eq 1 ]; then
-	fCount=$(ls -A /vagrant/data/postgresql/ | wc -l);
+	fCount=$(ls -A /opt/ops/data/postgresql/ | wc -l);
 	if [ $fCount -gt 1 ]; then
 		# LOAD INITIAL DATA INTO THE DATABASE
-		sh /vagrant/conf/bulkload/initdataload.sh
+		sh /opt/ops/conf/bulkload/initdataload.sh
 	fi
 fi
 
