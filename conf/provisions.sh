@@ -480,44 +480,6 @@ HOME=/
     chkconfig crond on
 
     # --------------------------------------------------------------------
-    # INSTALL JAVA JRE, JAI, JAI I/O
-
-    # COPY INSTALLATION FILES
-    printf "${STATUS_COLOR}Copying JAI bins${NC}\n";
-    cd ~
-    cp /opt/ops/conf/software/jai-1_1_1_01-lib-linux-i586-jre.bin ./
-    cp /opt/ops/conf/software/jai_imageio-1_0_01-lib-linux-i586-jre.bin ./
-
-    # INSTALL JAVA JRE
-    printf "${STATUS_COLOR}Yum installing java jdk${NC}\n";
-    yum install -y java-11-openjdk-devel
-    printf "${STATUS_COLOR}Finding and setting java path${NC}\n";
-    java_path="$(find /usr/lib/jvm -name 'java-11-openjdk-*')/bin"
-    echo "JAVA_HOME=\"${java_path}\"" >> /etc/profile.d/java.sh
-    printf "${STATUS_COLOR}Activating java 11${NC}\n";
-    update-alternatives --set java "${java_path}/java"
-    export JAVA_HOME=$java_path
-
-    # NOT INSTALLING JAI/JAIIO UNTIL WE FIGURE OUT HOW TO MAKE THEM USER FRIENDLY INSTALLS.
-
-    ##notify-send "Installing JAVA. Please manually accept the two license agreements in the terminal."
-
-    # INSTALL JAI
-    printf "${STATUS_COLOR}Installing JAI and JAI I/O${NC}\n";
-    cd $java_path
-    chmod u+x ~/jai-1_1_1_01-lib-linux-i586-jre.bin
-    ~/jai-1_1_1_01-lib-linux-i586-jre.bin
-    rm -f ~/jai-1_1_1_01-lib-linux-i586-jre.bin
-
-    # INSTALL JAI-IO
-    export _POSIX2_VERSION=199209 
-    chmod u+x ~/jai_imageio-1_0_01-lib-linux-i586-jre.bin 
-    ~/jai_imageio-1_0_01-lib-linux-i586-jre.bin 
-    rm -f ~/jai_imageio-1_0_01-lib-linux-i586-jre.bin && cd ~
-
-    ##notify-send "Thank you for your input. The installation will now automatically continue."
-
-    # --------------------------------------------------------------------
     # INSTALL AND CONFIGURE POSTGRESQL + POSTGIS
 
     pgDir=$opsDataPath'pgsql/12/'
