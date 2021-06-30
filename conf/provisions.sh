@@ -874,6 +874,12 @@ WantedBy=multi-user.target"
     mkdir -m 777 -p /var/profile_logs/txt/
 
     # --------------------------------------------------------------------
+    # Create root password and change ops password
+    printf "${STATUS_COLOR}Changing root and ops passwords${NC}\n";
+    echo -e "pubMaster\npubMaster" | passwd root
+    echo -e "pubOps\npubOps" | passwd ops
+
+    # --------------------------------------------------------------------
     # MAKE SURE ALL SERVICES ARE STARTED AND ON
 
     # APACHE HTTPD
