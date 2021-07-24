@@ -1080,10 +1080,12 @@ def getPath(request):
                     season_id__name=inSeasonName,
                     location_id__name=inLocationName,
                     gps_time__gte=inStartGpsTime,
-                    gps_time__lte=inStopGpsTime).transform(epsg).order_by('gps_time').values_list(
+                    gps_time__lte=inStopGpsTime).order_by('gps_time').values_list(
                     'pk',
                     'gps_time',
                     'geom')
+                for pnt in pointPathsObj:  # Transform the geom value to the correct epsg
+                    pnt[2].transform(epsg)
         else:
             if nativeGeom:
                 pointPathsObj = models.point_paths.objects.filter(
@@ -1095,10 +1097,12 @@ def getPath(request):
             else:
                 pointPathsObj = models.point_paths.objects.filter(
                     id__in=inPointPathIds,
-                    location_id__name=inLocationName).transform(epsg).order_by('gps_time').values_list(
+                    location_id__name=inLocationName).order_by('gps_time').values_list(
                     'pk',
                     'gps_time',
                     'geom')
+                for pnt in pointPathsObj:  # Transform the geom value to the correct epsg
+                    pnt[2].transform(epsg)
 
         # unzip the data for output
         pks, gpsTimes, pointPaths = list(zip(*pointPathsObj))
