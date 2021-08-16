@@ -523,6 +523,9 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
         echo -e "$postgresServiceStr" > "/etc/systemd/system/postgresql-12.service.d/override.conf"
         printf "${STATUS_COLOR}Initializing db cluster${NC}\n";
         /usr/pgsql-12/bin/postgresql-12-setup initdb
+        printf "${STATUS_COLOR}Replacing postgresql.conf${NC}\n";
+        mv $pgDir"postgresql.conf" $pgDir"postgresql.conf-default"
+        cp /opt/ops/conf/configs/postgresql.conf $pgDir"postgresql.conf"
         printf "${STATUS_COLOR}Enabling postgres service${NC}\n";
         systemctl enable --now postgresql-12
         
