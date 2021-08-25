@@ -1204,7 +1204,7 @@ def getFrameClosest(request):
                     ON       pp.season_id=ss.id
                     WHERE    ss.NAME IN %s
                     AND      pp.location_id = %s
-                    ORDER BY {flip}st_transform(pp.geom,%s){flipclose} <-> st_geomfromtext(%s,%s) limit 1)
+                    ORDER BY st_transform(pp.geom,%s) <-> {flip}st_geomfromtext(%s,%s){flipclose} limit 1)
             SELECT   ss.NAME,
                     pp.segment_id,
                     min(pp.gps_time),
