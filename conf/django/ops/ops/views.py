@@ -216,19 +216,18 @@ def createPath(request):
                                                      id,
                                                      geom
                          FROM {app}_point_paths
-                         WHERE segment_id = {seg}
-                         ORDER BY gps_time),
+                         WHERE segment_id = {seg}),
                              LINE AS
                          (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
                          FROM pts), i_pts AS
-                         (SELECT (ST_Dump(ST_Intersection({flip}ST_Transform(line.ln,{proj}){flipclose}, {flip}ST_Transform(o.geom,{proj}){flipclose}))).geom AS i_pt
+                         (SELECT (ST_Dump(ST_Intersection(ST_Transform(line.ln,{proj}), ST_Transform(o.geom,{proj})))).geom AS i_pt
                          FROM LINE, {app}_segments AS o
                          WHERE o.id != {seg})
-                         SELECT ST_Transform({flip}ST_Force2D(i_pt){flipclose}, 4326) AS i,
+                         SELECT ST_Transform(ST_Force2D(i_pt), 4326) AS i,
                              pts1.id,
                              CASE
-                                 WHEN ST_Equals(i_pt, pts1.geom) THEN degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts2.geom,{proj}){flipclose}))
-                                 ELSE degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts1.geom,{proj}){flipclose}))
+                                 WHEN ST_Equals(i_pt, pts1.geom) THEN degrees(ST_Azimuth(i_pt, ST_Transform(pts2.geom,{proj})))
+                                 ELSE degrees(ST_Azimuth(i_pt, ST_Transform(pts1.geom,{proj})))
                              END
                          FROM i_pts,
                              pts AS pts1,
@@ -240,7 +239,7 @@ def createPath(request):
                              WHERE rn != ST_Z(i_pts.i_pt)::int
                              ORDER BY ABS(ST_Z(i_pts.i_pt)::int - rn) ASC
                              LIMIT 1)
-                         ORDER BY i;""".format(app=app, proj=proj, seg=segmentsObj.pk, flip="ST_FlipCoordinates(" if proj==3413 else "", flipclose=")" if proj==3413 else "")
+                         ORDER BY i;""".format(app=app, proj=proj, seg=segmentsObj.pk)
             cursor.execute(sql_str)
             cross_info1 = cursor.fetchall()
 
