@@ -125,7 +125,7 @@ def createPath(request):
 
         # Create the segment if it does not exist.
         segmentsObj, _ = models.segments.objects.get_or_create(
-            season_id=seasonsObj.pk, radar_id=radarsObj.pk, name=inSegment, geom=linePathGeom)
+            season_id=seasonsObj.pk, radar_id=radarsObj.pk, name=inSegment, geom=linePathGeom, crossover_calc=False)
 
         logging.info('Segment %s of season %s has been created.', inSegment, inSeason)
 
@@ -192,54 +192,110 @@ def createPath(request):
             # Remove the temporary file.
             os.remove(f.name)
 
-            ### calculate and insert crossovers	###
-            logging.info(
-                'Non self-intersecting crossovers for segment %s of season %s are now being found.',
-                inSegment,
-                inSeason)
-            # Get the correct srid for the locaiton
-            proj = utility.epsgFromLocation(inLocationName)
-            # Create a GEOS Well Known Binary reader and initialize vars
-            wkb_r = WKBReader()
-            cross_pts = []
-            cross_angles = []
-            point_path_1_id = []
-            point_path_2_id = []
+        except Exception as e:
+            return utility.errorCheck(e, sys)
+        finally:
+            cursor.close()
 
-            # FIND ALL NON SELF-INTERSECTING CROSSOVERS
-            # Get the points of intersection, the closest point_path_id, and the angle
-            # in degrees for the current segment.
-            sql_str = """SET LOCAL work_mem = '15MB';
-                         WITH pts AS
-                         (SELECT row_number() OVER (
-                                                     ORDER BY gps_time) AS rn,
-                                                     id,
-                                                     geom
-                         FROM {app}_point_paths
-                         WHERE segment_id = {seg}),
-                             LINE AS
-                         (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
-                         FROM pts), i_pts AS
-                         (SELECT (ST_Dump(ST_Intersection(ST_Transform(line.ln,{proj}), ST_Transform(o.geom,{proj})))).geom AS i_pt
-                         FROM LINE, {app}_segments AS o
-                         WHERE o.id != {seg})
-                         SELECT ST_Transform(ST_Force2D(i_pt), 4326) AS i,
-                             pts1.id,
-                             CASE
-                                 WHEN ST_Equals(i_pt, pts1.geom) THEN degrees(ST_Azimuth(i_pt, ST_Transform(pts2.geom,{proj})))
-                                 ELSE degrees(ST_Azimuth(i_pt, ST_Transform(pts1.geom,{proj})))
-                             END
-                         FROM i_pts,
-                             pts AS pts1,
-                             pts AS pts2
-                         WHERE pts1.rn = ST_Z(i_pt)::int
-                         AND pts2.rn =
-                             (SELECT rn
-                             FROM pts
-                             WHERE rn != ST_Z(i_pts.i_pt)::int
-                             ORDER BY ABS(ST_Z(i_pts.i_pt)::int - rn) ASC
-                             LIMIT 1)
-                         ORDER BY i;""".format(app=app, proj=proj, seg=segmentsObj.pk)
+        logging.info(
+            'Segment %s of season %s was successfully inserted.',
+            inSegment,
+            inSeason)
+        return utility.response(1, 'SUCCESS: PATH INSERTION COMPLETED.', {})
+
+    except Exception as e:
+        return utility.errorCheck(e, sys)
+
+
+def crossoverCalculation(request):
+    """ Creates/Updates entries in the crossovers tables.
+
+    Input:
+            geometry: (geojson) {'type':'LineString','coordinates',[longitude latitude]}
+            season: (string) name of the season
+            season_group: (string) name of the season group
+            location: (string) name of the location
+            radar: (string) name of the radar
+            segment: (string) name of the segment
+
+    Output:
+            status: (integer) 0:error 1:success 2:warning
+            data: string status message
+
+    """
+
+    try:
+        models, data, app, cookies = utility.getInput(
+            request)  # get the input and models
+
+        inLinePath = data['geometry']
+        inSegment = data['properties']['segment']
+        inSeason = data['properties']['season']
+        inLocationName = data['properties']['location']
+        inSeasonGroup = data['properties']['season_group']
+        inRadar = data['properties']['radar']
+
+        locationsObj, _ = models.locations.objects.get(name=inLocationName.lower())
+        seasonGroupsObj, _ = models.season_groups.objects.get(name=inSeasonGroup)
+        seasonsObj, _ = models.seasons.objects.get(name=inSeason, season_group_id=seasonGroupsObj.pk, location_id=locationsObj.pk)
+        radarsObj, _ = models.radars.objects.get(name=inRadar.lower())
+
+        linePathGeom = GEOSGeometry(ujson.dumps(inLinePath))
+
+        segmentsObj, _ = models.segments.objects.get(
+            season_id=seasonsObj.pk, radar_id=radarsObj.pk, name=inSegment, geom=linePathGeom)
+
+        ### calculate and insert crossovers	###
+        logging.info(
+            'Non self-intersecting crossovers for segment %s of season %s are now being found.',
+            inSegment,
+            inSeason)
+        # Get the correct srid for the locaiton
+        proj = utility.epsgFromLocation(inLocationName)
+        # Create a GEOS Well Known Binary reader and initialize vars
+        wkb_r = WKBReader()
+        cross_pts = []
+        cross_angles = []
+        point_path_1_id = []
+        point_path_2_id = []
+
+        # FIND ALL NON SELF-INTERSECTING CROSSOVERS
+        # Get the points of intersection, the closest point_path_id, and the angle
+        # in degrees for the current segment.
+        sql_str = """SET LOCAL work_mem = '15MB';
+                        WITH pts AS
+                        (SELECT row_number() OVER (
+                                                    ORDER BY gps_time) AS rn,
+                                                    id,
+                                                    geom
+                        FROM {app}_point_paths
+                        WHERE segment_id = {seg}),
+                            LINE AS
+                        (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
+                        FROM pts), i_pts AS
+                        (SELECT (ST_Dump(ST_Intersection(ST_Transform(line.ln,{proj}), ST_Transform(o.geom,{proj})))).geom AS i_pt
+                        FROM LINE, {app}_segments AS o
+                        WHERE o.id != {seg})
+                        SELECT ST_Transform(ST_Force2D(i_pt), 4326) AS i,
+                            pts1.id,
+                            CASE
+                                WHEN ST_Equals(i_pt, pts1.geom) THEN degrees(ST_Azimuth(i_pt, ST_Transform(pts2.geom,{proj})))
+                                ELSE degrees(ST_Azimuth(i_pt, ST_Transform(pts1.geom,{proj})))
+                            END
+                        FROM i_pts,
+                            pts AS pts1,
+                            pts AS pts2
+                        WHERE pts1.rn = ST_Z(i_pt)::int
+                        AND pts2.rn =
+                            (SELECT rn
+                            FROM pts
+                            WHERE rn != ST_Z(i_pts.i_pt)::int
+                            ORDER BY ABS(ST_Z(i_pts.i_pt)::int - rn) ASC
+                            LIMIT 1)
+                        ORDER BY i;""".format(app=app, proj=proj, seg=segmentsObj.pk)
+        cursor = connection.cursor()
+        try:
+
             cursor.execute(sql_str)
             cross_info1 = cursor.fetchall()
 
@@ -248,43 +304,43 @@ def createPath(request):
                 # Get the closest point_path_id and the angle in degrees for the other
                 # segments
                 sql_str = """SET LOCAL work_mem = '15MB';
-                             WITH pts AS
-                             (SELECT row_number() OVER (
-                                                         ORDER BY gps_time) AS rn,
-                                                         geom,
-                                                         id,
-                                                         segment_id
-                             FROM {app}_point_paths
-                             WHERE segment_id IN
-                                 (SELECT s2.id
-                                     FROM {app}_segments AS s1, {app}_segments AS s2
-                                     WHERE s1.id = {seg}
-                                     AND s2.id != {seg}
-                                     AND ST_Intersects(s1.geom, s2.geom))
-                             ORDER BY gps_time),
-                                 LINE AS
-                             (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
-                             FROM pts
-                             GROUP BY pts.segment_id), i_pts AS
-                             (SELECT (ST_Dump(ST_Intersection({flip}ST_Transform(line.ln,{proj}){flipclose}, {flip}ST_Transform(o.geom,{proj}){flipclose}))).geom AS i_pt
-                             FROM LINE, {app}_segments AS o
-                             WHERE o.id = {seg})
-                             SELECT pts1.id,
-                                 CASE
-                                     WHEN ST_Equals(i_pt, pts1.geom) THEN degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts2.geom,{proj}){flipclose}))
-                                     ELSE degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts1.geom,{proj}){flipclose}))
-                                 END
-                             FROM i_pts,
-                                 pts AS pts1,
-                                 pts AS pts2
-                             WHERE pts1.rn = ST_Z(i_pt)::int
-                             AND pts2.rn =
-                                 (SELECT rn
-                                 FROM pts
-                                 WHERE rn != ST_Z(i_pts.i_pt)::int
-                                 ORDER BY ABS(ST_Z(i_pts.i_pt)::int - rn) ASC
-                                 LIMIT 1)
-                             ORDER BY ST_Transform({flip}ST_Force2D(i_pt){flipclose}, 4326);""".format(app=app, proj=proj, seg=segmentsObj.pk, flip="ST_FlipCoordinates(" if proj==3413 else "", flipclose=")" if proj==3413 else "")
+                                WITH pts AS
+                                (SELECT row_number() OVER (
+                                                            ORDER BY gps_time) AS rn,
+                                                            geom,
+                                                            id,
+                                                            segment_id
+                                FROM {app}_point_paths
+                                WHERE segment_id IN
+                                    (SELECT s2.id
+                                        FROM {app}_segments AS s1, {app}_segments AS s2
+                                        WHERE s1.id = {seg}
+                                        AND s2.id != {seg}
+                                        AND ST_Intersects(s1.geom, s2.geom))
+                                ORDER BY gps_time),
+                                    LINE AS
+                                (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
+                                FROM pts
+                                GROUP BY pts.segment_id), i_pts AS
+                                (SELECT (ST_Dump(ST_Intersection({flip}ST_Transform(line.ln,{proj}){flipclose}, {flip}ST_Transform(o.geom,{proj}){flipclose}))).geom AS i_pt
+                                FROM LINE, {app}_segments AS o
+                                WHERE o.id = {seg})
+                                SELECT pts1.id,
+                                    CASE
+                                        WHEN ST_Equals(i_pt, pts1.geom) THEN degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts2.geom,{proj}){flipclose}))
+                                        ELSE degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts1.geom,{proj}){flipclose}))
+                                    END
+                                FROM i_pts,
+                                    pts AS pts1,
+                                    pts AS pts2
+                                WHERE pts1.rn = ST_Z(i_pt)::int
+                                AND pts2.rn =
+                                    (SELECT rn
+                                    FROM pts
+                                    WHERE rn != ST_Z(i_pts.i_pt)::int
+                                    ORDER BY ABS(ST_Z(i_pts.i_pt)::int - rn) ASC
+                                    LIMIT 1)
+                                ORDER BY ST_Transform({flip}ST_Force2D(i_pt){flipclose}, 4326);""".format(app=app, proj=proj, seg=segmentsObj.pk, flip="ST_FlipCoordinates(" if proj==3413 else "", flipclose=")" if proj==3413 else "")
                 cursor.execute(sql_str)
                 cross_info2 = cursor.fetchall()
 
@@ -437,17 +493,19 @@ def createPath(request):
                     'No crossovers for segment %s of season %s were found.',
                     inSegment,
                     inSeason)
+            
+            logging.info(
+                'Segment %s of season %s has finished crossover calculation.',
+                inSegment,
+                inSeason)
+            segmentsObj.crossover_calc = True
+            segmentsObj.save()
+            return utility.response(1, 'SUCCESS: CROSSOVER CALCULATION COMPLETED.', {})
 
         except Exception as e:
             return utility.errorCheck(e, sys)
         finally:
             cursor.close()
-
-        logging.info(
-            'Segment %s of season %s was successfully inserted.',
-            inSegment,
-            inSeason)
-        return utility.response(1, 'SUCCESS: PATH INSERTION COMPLETED.', {})
 
     except Exception as e:
         return utility.errorCheck(e, sys)
