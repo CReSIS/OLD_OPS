@@ -275,7 +275,7 @@ def crossoverCalculation(request):
                         FROM pts), i_pts AS
                         (SELECT (ST_Dump(ST_Intersection(ST_Transform(line.ln,{proj}), ST_Transform(o.geom,{proj})))).geom AS i_pt
                         FROM LINE, {app}_segments AS o
-                        WHERE o.id != {seg})
+                        WHERE o.id != {seg} AND o.crossover_calc=true)
                         SELECT ST_Transform(ST_Force2D(i_pt), 4326) AS i,
                             pts1.id,
                             CASE
@@ -324,7 +324,7 @@ def crossoverCalculation(request):
                                 GROUP BY pts.segment_id), i_pts AS
                                 (SELECT (ST_Dump(ST_Intersection({flip}ST_Transform(line.ln,{proj}){flipclose}, {flip}ST_Transform(o.geom,{proj}){flipclose}))).geom AS i_pt
                                 FROM LINE, {app}_segments AS o
-                                WHERE o.id = {seg})
+                                WHERE o.id = {seg} AND o.crossover_calc=true)
                                 SELECT pts1.id,
                                     CASE
                                         WHEN ST_Equals(i_pt, pts1.geom) THEN degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts2.geom,{proj}){flipclose}))
@@ -510,6 +510,24 @@ def crossoverCalculation(request):
     except Exception as e:
         return utility.errorCheck(e, sys)
 
+
+def getPendingCrossoverSegments(request):
+    """ Get segments which have not yet had their crossovers calculated. """
+    models, data, app, cookies = utility.getInput(request)  # get the input
+
+    sql_str = """SELECT * from {app}_segments where crossover_calc=false""".format(app=app)
+    cursor = connection.cursor()
+    try:
+
+        cursor.execute(sql_str)
+        crossover_segments = cursor.fetchall()
+
+        # return the output
+        return utility.response(1,
+                                {'crossover_segments': crossover_segments},
+                                {})
+    except Exception as e:
+        return utility.errorCheck(e, sys) 
 
 @ipAuth()
 def alterPathResolution(request):

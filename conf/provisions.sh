@@ -686,8 +686,9 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
             python /var/django/$appName/manage.py makemigrations $app
         done
 
-        printf "${STATUS_COLOR}Reordering Migrations${NC}\n";
-        python /opt/ops/conf/tools/reorder_migrations.py
+        ## No longer necessary as initial migrations are now included in the repo
+        # printf "${STATUS_COLOR}Reordering Migrations${NC}\n";
+        # python /opt/ops/conf/tools/reorder_migrations.py
 
         printf "${STATUS_COLOR}Migrating${NC}\n";
         python /var/django/$appName/manage.py migrate
