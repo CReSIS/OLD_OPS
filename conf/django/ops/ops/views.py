@@ -211,13 +211,7 @@ def crossoverCalculation(request):
     """ Creates/Updates entries in the crossovers tables.
 
     Input:
-            geometry: (geojson) {'type':'LineString','coordinates',[longitude latitude]}
-            season: (string) name of the season
-            season_group: (string) name of the season group
-            location: (string) name of the location
-            radar: (string) name of the radar
-            segment: (string) name of the segment
-
+            segments: (list[int]) list of segments for which to calculate crossovers
     Output:
             status: (integer) 0:error 1:success 2:warning
             data: string status message
@@ -228,306 +222,307 @@ def crossoverCalculation(request):
         models, data, app, cookies = utility.getInput(
             request)  # get the input and models
 
-        inLinePath = data['geometry']
-        inSegment = data['properties']['segment']
-        inSeason = data['properties']['season']
-        inLocationName = data['properties']['location']
-        inSeasonGroup = data['properties']['season_group']
-        inRadar = data['properties']['radar']
+        segments = data["segments"]
 
-        locationsObj, _ = models.locations.objects.get(name=inLocationName.lower())
-        seasonGroupsObj, _ = models.season_groups.objects.get(name=inSeasonGroup)
-        seasonsObj, _ = models.seasons.objects.get(name=inSeason, season_group_id=seasonGroupsObj.pk, location_id=locationsObj.pk)
-        radarsObj, _ = models.radars.objects.get(name=inRadar.lower())
+        for segment_id in segments:
 
-        linePathGeom = GEOSGeometry(ujson.dumps(inLinePath))
+            cursor = connection.cursor()
 
-        segmentsObj, _ = models.segments.objects.get(
-            season_id=seasonsObj.pk, radar_id=radarsObj.pk, name=inSegment, geom=linePathGeom)
+            try:
+                cursor.execute(f"SELECT geom, name, season_id, radar_id from {app}_segments where id={segment_id};")
+                inLinePath, inSegment, season_id, radar_id = cursor.fetchone()
 
-        ### calculate and insert crossovers	###
-        logging.info(
-            'Non self-intersecting crossovers for segment %s of season %s are now being found.',
-            inSegment,
-            inSeason)
-        # Get the correct srid for the locaiton
-        proj = utility.epsgFromLocation(inLocationName)
-        # Create a GEOS Well Known Binary reader and initialize vars
-        wkb_r = WKBReader()
-        cross_pts = []
-        cross_angles = []
-        point_path_1_id = []
-        point_path_2_id = []
+                cursor.execute(f"SELECT name, location_id, season_group_id from {app}_seasons where id={season_id};")
+                inSeason, location_id, season_group_id = cursor.fetchone()
 
-        # FIND ALL NON SELF-INTERSECTING CROSSOVERS
-        # Get the points of intersection, the closest point_path_id, and the angle
-        # in degrees for the current segment.
-        sql_str = """SET LOCAL work_mem = '15MB';
-                        WITH pts AS
-                        (SELECT row_number() OVER (
-                                                    ORDER BY gps_time) AS rn,
-                                                    id,
-                                                    geom
-                        FROM {app}_point_paths
-                        WHERE segment_id = {seg}),
-                            LINE AS
-                        (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
-                        FROM pts), i_pts AS
-                        (SELECT (ST_Dump(ST_Intersection(ST_Transform(line.ln,{proj}), ST_Transform(o.geom,{proj})))).geom AS i_pt
-                        FROM LINE, {app}_segments AS o
-                        WHERE o.id != {seg} AND o.crossover_calc=true)
-                        SELECT ST_Transform(ST_Force2D(i_pt), 4326) AS i,
-                            pts1.id,
-                            CASE
-                                WHEN ST_Equals(i_pt, pts1.geom) THEN degrees(ST_Azimuth(i_pt, ST_Transform(pts2.geom,{proj})))
-                                ELSE degrees(ST_Azimuth(i_pt, ST_Transform(pts1.geom,{proj})))
-                            END
-                        FROM i_pts,
-                            pts AS pts1,
-                            pts AS pts2
-                        WHERE pts1.rn = ST_Z(i_pt)::int
-                        AND pts2.rn =
-                            (SELECT rn
-                            FROM pts
-                            WHERE rn != ST_Z(i_pts.i_pt)::int
-                            ORDER BY ABS(ST_Z(i_pts.i_pt)::int - rn) ASC
-                            LIMIT 1)
-                        ORDER BY i;""".format(app=app, proj=proj, seg=segmentsObj.pk)
-        cursor = connection.cursor()
-        try:
+                cursor.execute(f"SELECT name from {app}_locations where id={location_id};")
+                inLocationName = cursor.fetchone()[0]
 
-            cursor.execute(sql_str)
-            cross_info1 = cursor.fetchall()
+                cursor.execute(f"SELECT name from {app}_season_groups where id={season_group_id};")
+                inSeasonGroup = cursor.fetchone()[0]
 
-            # Only perform second query and processing if the above had results.
-            if cross_info1:
-                # Get the closest point_path_id and the angle in degrees for the other
-                # segments
-                sql_str = """SET LOCAL work_mem = '15MB';
-                                WITH pts AS
-                                (SELECT row_number() OVER (
-                                                            ORDER BY gps_time) AS rn,
-                                                            geom,
-                                                            id,
-                                                            segment_id
-                                FROM {app}_point_paths
-                                WHERE segment_id IN
-                                    (SELECT s2.id
-                                        FROM {app}_segments AS s1, {app}_segments AS s2
-                                        WHERE s1.id = {seg}
-                                        AND s2.id != {seg}
-                                        AND ST_Intersects(s1.geom, s2.geom))
-                                ORDER BY gps_time),
-                                    LINE AS
-                                (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
+                cursor.execute(f"SELECT name from {app}_radars where id={radar_id};")
+                inRadar = cursor.fetchone()[0]
+            except Exception as e:
+                return utility.errorCheck(e, sys)
+            finally:
+                cursor.close()
+
+            locationsObj = models.locations.objects.get(name=inLocationName.lower())
+            seasonGroupsObj = models.season_groups.objects.get(name=inSeasonGroup)
+            seasonsObj = models.seasons.objects.get(name=inSeason, season_group_id=seasonGroupsObj.pk, location_id=locationsObj.pk)
+            radarsObj = models.radars.objects.get(name=inRadar.lower())
+
+            linePathGeom = GEOSGeometry(inLinePath)
+
+            segmentsObj = models.segments.objects.get(
+                season_id=seasonsObj.pk, radar_id=radarsObj.pk, name=inSegment, geom=linePathGeom)
+
+            ### calculate and insert crossovers	###
+            logging.info(
+                'Non self-intersecting crossovers for segment %s of season %s are now being found.',
+                inSegment,
+                inSeason)
+            # Get the correct srid for the locaiton
+            proj = utility.epsgFromLocation(inLocationName)
+            # Create a GEOS Well Known Binary reader and initialize vars
+            wkb_r = WKBReader()
+            cross_pts = []
+            cross_angles = []
+            point_path_1_id = []
+            point_path_2_id = []
+
+            # FIND ALL NON SELF-INTERSECTING CROSSOVERS
+            # Get the points of intersection, the closest point_path_id, and the angle
+            # in degrees for the current segment.
+            sql_str = """SET LOCAL work_mem = '15MB';
+                            WITH pts AS
+                            (SELECT row_number() OVER (
+                                                        ORDER BY gps_time) AS rn,
+                                                        id,
+                                                        geom
+                            FROM {app}_point_paths
+                            WHERE segment_id = {seg}),
+                                LINE AS
+                            (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
+                            FROM pts), i_pts AS
+                            (SELECT (ST_Dump(ST_Intersection(ST_Transform(line.ln,{proj}), ST_Transform(o.geom,{proj})))).geom AS i_pt
+                            FROM LINE, {app}_segments AS o
+                            WHERE o.id != {seg} AND o.crossover_calc=true)
+                            SELECT ST_Transform(ST_Force2D(i_pt), 4326) AS i,
+                                pts1.id,
+                                CASE
+                                    WHEN ST_Equals(i_pt, pts1.geom) THEN degrees(ST_Azimuth(i_pt, ST_Transform(pts2.geom,{proj})))
+                                    ELSE degrees(ST_Azimuth(i_pt, ST_Transform(pts1.geom,{proj})))
+                                END
+                            FROM i_pts,
+                                pts AS pts1,
+                                pts AS pts2
+                            WHERE pts1.rn = ST_Z(i_pt)::int
+                            AND pts2.rn =
+                                (SELECT rn
                                 FROM pts
-                                GROUP BY pts.segment_id), i_pts AS
-                                (SELECT (ST_Dump(ST_Intersection({flip}ST_Transform(line.ln,{proj}){flipclose}, {flip}ST_Transform(o.geom,{proj}){flipclose}))).geom AS i_pt
-                                FROM LINE, {app}_segments AS o
-                                WHERE o.id = {seg} AND o.crossover_calc=true)
-                                SELECT pts1.id,
-                                    CASE
-                                        WHEN ST_Equals(i_pt, pts1.geom) THEN degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts2.geom,{proj}){flipclose}))
-                                        ELSE degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts1.geom,{proj}){flipclose}))
-                                    END
-                                FROM i_pts,
-                                    pts AS pts1,
-                                    pts AS pts2
-                                WHERE pts1.rn = ST_Z(i_pt)::int
-                                AND pts2.rn =
-                                    (SELECT rn
-                                    FROM pts
-                                    WHERE rn != ST_Z(i_pts.i_pt)::int
-                                    ORDER BY ABS(ST_Z(i_pts.i_pt)::int - rn) ASC
-                                    LIMIT 1)
-                                ORDER BY ST_Transform({flip}ST_Force2D(i_pt){flipclose}, 4326);""".format(app=app, proj=proj, seg=segmentsObj.pk, flip="ST_FlipCoordinates(" if proj==3413 else "", flipclose=")" if proj==3413 else "")
-                cursor.execute(sql_str)
-                cross_info2 = cursor.fetchall()
+                                WHERE rn != ST_Z(i_pts.i_pt)::int
+                                ORDER BY ABS(ST_Z(i_pts.i_pt)::int - rn) ASC
+                                LIMIT 1)
+                            ORDER BY i;""".format(app=app, proj=proj, seg=segmentsObj.pk)
+            cursor = connection.cursor()
+            try:
 
-                if cross_info2:
-                    # Extract all crossovers from above results.
-                    for idx in range(len(cross_info1)):
-                        cross_pts.append(cross_info1[idx][0])
-                        point_path_1_id.append(cross_info1[idx][1])
-                        point_path_2_id.append(cross_info2[idx][0])
-                        # Determine the angle of intersection
-                        angle1 = cross_info1[idx][2]
-                        angle2 = cross_info2[idx][1]
+                cursor.execute(sql_str)
+                cross_info1 = cursor.fetchall()
+
+                # Only perform second query and processing if the above had results.
+                if cross_info1:
+                    # Get the closest point_path_id and the angle in degrees for the other
+                    # segments
+                    sql_str = """SET LOCAL work_mem = '15MB';
+                                    WITH pts AS
+                                    (SELECT row_number() OVER (
+                                                                ORDER BY gps_time) AS rn,
+                                                                geom,
+                                                                id,
+                                                                segment_id
+                                    FROM {app}_point_paths
+                                    WHERE segment_id IN
+                                        (SELECT s2.id
+                                            FROM {app}_segments AS s1, {app}_segments AS s2
+                                            WHERE s1.id = {seg}
+                                            AND s2.id != {seg}
+                                            AND ST_Intersects(s1.geom, s2.geom))
+                                    ORDER BY gps_time),
+                                        LINE AS
+                                    (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
+                                    FROM pts
+                                    GROUP BY pts.segment_id), i_pts AS
+                                    (SELECT (ST_Dump(ST_Intersection({flip}ST_Transform(line.ln,{proj}){flipclose}, {flip}ST_Transform(o.geom,{proj}){flipclose}))).geom AS i_pt
+                                    FROM LINE, {app}_segments AS o
+                                    WHERE o.id = {seg} AND o.crossover_calc=true)
+                                    SELECT pts1.id,
+                                        CASE
+                                            WHEN ST_Equals(i_pt, pts1.geom) THEN degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts2.geom,{proj}){flipclose}))
+                                            ELSE degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts1.geom,{proj}){flipclose}))
+                                        END
+                                    FROM i_pts,
+                                        pts AS pts1,
+                                        pts AS pts2
+                                    WHERE pts1.rn = ST_Z(i_pt)::int
+                                    AND pts2.rn =
+                                        (SELECT rn
+                                        FROM pts
+                                        WHERE rn != ST_Z(i_pts.i_pt)::int
+                                        ORDER BY ABS(ST_Z(i_pts.i_pt)::int - rn) ASC
+                                        LIMIT 1)
+                                    ORDER BY ST_Transform({flip}ST_Force2D(i_pt){flipclose}, 4326);""".format(app=app, proj=proj, seg=segmentsObj.pk, flip="ST_FlipCoordinates(" if proj==3413 else "", flipclose=")" if proj==3413 else "")
+                    cursor.execute(sql_str)
+                    cross_info2 = cursor.fetchall()
+
+                    if cross_info2:
+                        # Extract all crossovers from above results.
+                        for idx in range(len(cross_info1)):
+                            cross_pts.append(cross_info1[idx][0])
+                            point_path_1_id.append(cross_info1[idx][1])
+                            point_path_2_id.append(cross_info2[idx][0])
+                            # Determine the angle of intersection
+                            angle1 = cross_info1[idx][2]
+                            angle2 = cross_info2[idx][1]
+                            angle = math.fabs(angle1 - angle2)
+                            # Only record the acute angle.
+                            if angle > 90:
+                                angle = math.fabs(180 - angle)
+                                if angle > 90:
+                                    angle = math.fabs(180 - angle)
+                            cross_angles.append(angle)
+
+                    else:
+                        # This should not occur.
+                        return utility.response(
+                            0, "ERROR FINDING MATCHING CROSSOVER POINT PATHS ON INTERSECTING LINES", {})
+
+                # FIND ALL SELF-INTERSECTING CROSSOVERS:
+                # Fetch the given line path from the db as a multilinestring.
+                # 'ST_UnaryUnion' results in a multilinestring with the last point of
+                # every linestring except the last linestring as a crossover and the
+                # first point of every linestring except the first linestring as a
+                # crossover.
+                logging.info(
+                    'Self-intersecting crossovers for segment %s of season %s are now being found.',
+                    inSegment,
+                    inSeason)
+                sql_str = """WITH pts AS
+                            (SELECT id,
+                                    geom
+                            FROM {app}_point_paths
+                            WHERE segment_id = {seg}
+                            ORDER BY gps_time)
+                            SELECT ST_UnaryUnion({flip}ST_Transform(ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.id||')', 4326)),{proj}){flipclose})
+                            FROM pts;""".format(app=app, proj=proj, seg=segmentsObj.pk, flip="ST_FlipCoordinates(" if proj==3413 else "", flipclose=")" if proj==3413 else "")
+                cursor.execute(sql_str)
+                line = cursor.fetchone()
+
+                # Create a GEOS geometry from the result fetched above.
+                lines = wkb_r.read(line[0])
+                # Check if resulting object is a multilinestring, indicating crossovers.
+                if lines.geom_type.encode('ascii', 'ignore') == 'MultiLineString':
+                    # Get the point_path_ids for all points for the given segment:
+                    pt_ids = models.point_paths.objects.filter(
+                        segment_id=segmentsObj.pk).values_list(
+                        'id', flat=True)
+                    # Create a dictionary to keep track of crossovers and point ids.
+                    self_crosses = {}
+                    # Create a dictionary for managing next points (the point after the
+                    # crossover along the flight path)
+                    nxt_pts = {}
+                    # Loop through all linestrings created by ST_UnaryUnion
+                    for idx in range(len(lines) - 1):
+                        # Set the value of idx2:
+                        idx2 = idx + 1
+
+                        # Keep track of intersection point w/ dictionary:
+                        i_point = lines[idx][-1]
+                        if i_point not in list(self_crosses.keys()):
+                            self_crosses[i_point] = []
+                            nxt_pts[i_point] = []
+
+                        # Fall back/forward to point w/ z in pt_ids.
+                        # For the point before the crossover:
+                        # Include the crossover pt in the search (could be on top of
+                        # point_path geom)
+                        coord_idx = -1
+                        while lines[idx][coord_idx][2] not in pt_ids:
+                            coord_idx -= 1
+                            if math.fabs(coord_idx) > len(lines[idx].coords):
+                                coord_idx = -1
+                                idx -= 1
+                        pt_1 = lines[idx][coord_idx]
+                        # For the point after the crossover:
+                        coord_idx = 1  # Start after the crossover point.
+                        while lines[idx2][coord_idx][2] not in pt_ids:
+                            coord_idx += 1
+                            if coord_idx >= len(lines[idx2].coords):
+                                coord_idx = 0
+                                idx2 += 1
+                        pt_2 = lines[idx2][coord_idx]
+
+                        # select pt closest to current intersection point
+                        if LineString(
+                                pt_1, i_point).length <= LineString(
+                                i_point, pt_2).length:
+                            self_crosses[i_point].append(pt_1[2])
+
+                        else:
+                            self_crosses[i_point].append(pt_2[2])
+                        nxt_pts[i_point].append(pt_2)
+
+                    # Extract information from self-intersecting crossovers dict and
+                    # determine the angle of intersection
+                    for i_pt in self_crosses:
+                        cross_pts.append(
+                            Point(
+                                i_pt[0],
+                                i_pt[1],
+                                srid=proj).transform(
+                                CoordTransform(
+                                    SpatialReference(proj),
+                                    SpatialReference(4326)),
+                                True))
+                        point_path_1_id.append(self_crosses[i_pt][0])
+                        point_path_2_id.append(self_crosses[i_pt][1])
+
+                        # Find the angle of self-intersection
+                        change_x1 = i_pt[0] - nxt_pts[i_pt][0][0]
+                        change_y1 = i_pt[1] - nxt_pts[i_pt][0][1]
+                        change_x2 = i_pt[0] - nxt_pts[i_pt][1][0]
+                        change_y2 = i_pt[1] - nxt_pts[i_pt][1][1]
+                        angle1 = math.degrees(math.atan2(change_y1, change_x1))
+                        angle2 = math.degrees(math.atan2(change_y2, change_x2))
                         angle = math.fabs(angle1 - angle2)
-                        # Only record the acute angle.
+                        # Get the acute angle:
                         if angle > 90:
                             angle = math.fabs(180 - angle)
                             if angle > 90:
                                 angle = math.fabs(180 - angle)
                         cross_angles.append(angle)
 
+                # Check if any crossovers were found.
+                if len(point_path_1_id) > 0:
+                    logging.info(
+                        'Crossovers for segment %s of season %s are being inserted.',
+                        inSegment,
+                        inSeason)
+                    crossovers = []
+                    # If so, package for bulk insert.
+                    for i in range(len(point_path_1_id)):
+                        crossovers.append(
+                            models.crossovers(
+                                point_path_1_id=point_path_1_id[i],
+                                point_path_2_id=point_path_2_id[i],
+                                angle=cross_angles[i],
+                                geom=cross_pts[i]))
+                    # Bulk insert found crossovers into the database.
+                    _ = models.crossovers.objects.bulk_create(crossovers)
                 else:
-                    # This should not occur.
-                    return utility.response(
-                        0, "ERROR FINDING MATCHING CROSSOVER POINT PATHS ON INTERSECTING LINES", {})
-
-            # FIND ALL SELF-INTERSECTING CROSSOVERS:
-            # Fetch the given line path from the db as a multilinestring.
-            # 'ST_UnaryUnion' results in a multilinestring with the last point of
-            # every linestring except the last linestring as a crossover and the
-            # first point of every linestring except the first linestring as a
-            # crossover.
-            logging.info(
-                'Self-intersecting crossovers for segment %s of season %s are now being found.',
-                inSegment,
-                inSeason)
-            sql_str = """WITH pts AS
-                        (SELECT id,
-                                geom
-                        FROM {app}_point_paths
-                        WHERE segment_id = {seg}
-                        ORDER BY gps_time)
-                        SELECT ST_UnaryUnion({flip}ST_Transform(ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.id||')', 4326)),{proj}){flipclose})
-                        FROM pts;""".format(app=app, proj=proj, seg=segmentsObj.pk, flip="ST_FlipCoordinates(" if proj==3413 else "", flipclose=")" if proj==3413 else "")
-            cursor.execute(sql_str)
-            line = cursor.fetchone()
-
-            # Create a GEOS geometry from the result fetched above.
-            lines = wkb_r.read(line[0])
-            # Check if resulting object is a multilinestring, indicating crossovers.
-            if lines.geom_type.encode('ascii', 'ignore') == 'MultiLineString':
-                # Get the point_path_ids for all points for the given segment:
-                pt_ids = models.point_paths.objects.filter(
-                    segment_id=segmentsObj.pk).values_list(
-                    'id', flat=True)
-                # Create a dictionary to keep track of crossovers and point ids.
-                self_crosses = {}
-                # Create a dictionary for managing next points (the point after the
-                # crossover along the flight path)
-                nxt_pts = {}
-                # Loop through all linestrings created by ST_UnaryUnion
-                for idx in range(len(lines) - 1):
-                    # Set the value of idx2:
-                    idx2 = idx + 1
-
-                    # Keep track of intersection point w/ dictionary:
-                    i_point = lines[idx][-1]
-                    if i_point not in list(self_crosses.keys()):
-                        self_crosses[i_point] = []
-                        nxt_pts[i_point] = []
-
-                    # Fall back/forward to point w/ z in pt_ids.
-                    # For the point before the crossover:
-                    # Include the crossover pt in the search (could be on top of
-                    # point_path geom)
-                    coord_idx = -1
-                    while lines[idx][coord_idx][2] not in pt_ids:
-                        coord_idx -= 1
-                        if math.fabs(coord_idx) > len(lines[idx].coords):
-                            coord_idx = -1
-                            idx -= 1
-                    pt_1 = lines[idx][coord_idx]
-                    # For the point after the crossover:
-                    coord_idx = 1  # Start after the crossover point.
-                    while lines[idx2][coord_idx][2] not in pt_ids:
-                        coord_idx += 1
-                        if coord_idx >= len(lines[idx2].coords):
-                            coord_idx = 0
-                            idx2 += 1
-                    pt_2 = lines[idx2][coord_idx]
-
-                    # select pt closest to current intersection point
-                    if LineString(
-                            pt_1, i_point).length <= LineString(
-                            i_point, pt_2).length:
-                        self_crosses[i_point].append(pt_1[2])
-
-                    else:
-                        self_crosses[i_point].append(pt_2[2])
-                    nxt_pts[i_point].append(pt_2)
-
-                # Extract information from self-intersecting crossovers dict and
-                # determine the angle of intersection
-                for i_pt in self_crosses:
-                    cross_pts.append(
-                        Point(
-                            i_pt[0],
-                            i_pt[1],
-                            srid=proj).transform(
-                            CoordTransform(
-                                SpatialReference(proj),
-                                SpatialReference(4326)),
-                            True))
-                    point_path_1_id.append(self_crosses[i_pt][0])
-                    point_path_2_id.append(self_crosses[i_pt][1])
-
-                    # Find the angle of self-intersection
-                    change_x1 = i_pt[0] - nxt_pts[i_pt][0][0]
-                    change_y1 = i_pt[1] - nxt_pts[i_pt][0][1]
-                    change_x2 = i_pt[0] - nxt_pts[i_pt][1][0]
-                    change_y2 = i_pt[1] - nxt_pts[i_pt][1][1]
-                    angle1 = math.degrees(math.atan2(change_y1, change_x1))
-                    angle2 = math.degrees(math.atan2(change_y2, change_x2))
-                    angle = math.fabs(angle1 - angle2)
-                    # Get the acute angle:
-                    if angle > 90:
-                        angle = math.fabs(180 - angle)
-                        if angle > 90:
-                            angle = math.fabs(180 - angle)
-                    cross_angles.append(angle)
-
-            # Check if any crossovers were found.
-            if len(point_path_1_id) > 0:
+                    logging.info(
+                        'No crossovers for segment %s of season %s were found.',
+                        inSegment,
+                        inSeason)
+                
                 logging.info(
-                    'Crossovers for segment %s of season %s are being inserted.',
+                    'Segment %s of season %s has finished crossover calculation.',
                     inSegment,
                     inSeason)
-                crossovers = []
-                # If so, package for bulk insert.
-                for i in range(len(point_path_1_id)):
-                    crossovers.append(
-                        models.crossovers(
-                            point_path_1_id=point_path_1_id[i],
-                            point_path_2_id=point_path_2_id[i],
-                            angle=cross_angles[i],
-                            geom=cross_pts[i]))
-                # Bulk insert found crossovers into the database.
-                _ = models.crossovers.objects.bulk_create(crossovers)
-            else:
-                logging.info(
-                    'No crossovers for segment %s of season %s were found.',
-                    inSegment,
-                    inSeason)
-            
-            logging.info(
-                'Segment %s of season %s has finished crossover calculation.',
-                inSegment,
-                inSeason)
-            segmentsObj.crossover_calc = True
-            segmentsObj.save()
-            return utility.response(1, 'SUCCESS: CROSSOVER CALCULATION COMPLETED.', {})
+                segmentsObj.crossover_calc = True
+                segmentsObj.save()
+                return utility.response(1, 'SUCCESS: CROSSOVER CALCULATION COMPLETED.', {})
 
-        except Exception as e:
-            return utility.errorCheck(e, sys)
-        finally:
-            cursor.close()
+            except Exception as e:
+                return utility.errorCheck(e, sys)
+            finally:
+                cursor.close()
 
     except Exception as e:
         return utility.errorCheck(e, sys)
 
-
-def getPendingCrossoverSegments(request):
-    """ Get segments which have not yet had their crossovers calculated. """
-    models, data, app, cookies = utility.getInput(request)  # get the input
-
-    sql_str = """SELECT * from {app}_segments where crossover_calc=false""".format(app=app)
-    cursor = connection.cursor()
-    try:
-
-        cursor.execute(sql_str)
-        crossover_segments = cursor.fetchall()
-
-        # return the output
-        return utility.response(1,
-                                {'crossover_segments': crossover_segments},
-                                {})
-    except Exception as e:
-        return utility.errorCheck(e, sys) 
 
 @ipAuth()
 def alterPathResolution(request):
