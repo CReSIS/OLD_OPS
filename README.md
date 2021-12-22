@@ -3,7 +3,7 @@ OPS
 
 OpenPolarServer Spatial Data Infrastructure
 
-##About
+## About
 
 The OpenPolarServer (OPS) is a complete spatial data infrastructure (SDI) built for The Center for Remote Sensing of Ice Sheets (CReSIS) at The University of Kansas. The SDI is a complete Linux server created using vagrant provisioning and Oracle VirtualBox. The server includes the following components:
 
@@ -13,22 +13,31 @@ The OpenPolarServer (OPS) is a complete spatial data infrastructure (SDI) built 
 * Django Web Framework
 * ExtJS + GeoEXT + OpenLayers GeoPortal web application
 * Optional CRON and SSMTP configuration
- 
-##Requirements
 
-To install the OPS SDI you need to download and install the following:
+## To cite usage of the Open Polar Server please use the following:
 
-Oracle VirtualBox (4.3.6+): https://www.virtualbox.org/wiki/Downloads
+  CReSIS. 2021. Open Polar Server [computer software], Lawrence, Kansas, USA. Retrieved from https://github.com/CReSIS/.
 
-A VM WILL EVENTUALLY BE MADE AVAILBLE FOR DISTIBUTION. THIS IS CURRENTLY IN PROGRESS.
+## To acknowledge the use of the CReSIS Toolbox, please note Kansas, NSF and NASA contributions. For example:
 
-##Installation
+  We acknowledge the use of the CReSIS Open Polar Server from CReSIS generated with support from the University of Kansas, NASA Operation IceBridge grant NNX16AH54G, and NSF grants ICER-2126503.
 
-COMING SOON.
+## Requirements
+
+A Centos 6 Linux server or virtual machine. We test the setup using Oracle VirtualBox at https://www.virtualbox.org/wiki/Downloads.
+
+Provisioned Virtual Machines are available at:
+https://data.cresis.ku.edu/data/temp/ct/ops/
+
+**NOTE: We are currently updating all the packages to the latest releases on a Centos 7 virtual box which we aim to distribute in April 2021.**
+
+## Installation
+
+Check https://github.com/CReSIS/OPS/wiki for instructions.
 
 ### Public OPS Authentication
 
-The distributed source code is meant for public use and therefore the username and password information is included here. Obviously these values have changed for the CReSIS hosted OPS system.
+The username and password for the default setup are included here.
 
 **Linux OS**
 
