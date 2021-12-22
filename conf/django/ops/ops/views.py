@@ -223,6 +223,9 @@ def crossoverCalculation(request):
             request)  # get the input and models
 
         segments = data["segments"]
+        if type(segments) == int:
+            # Matlab arrays of one element are not JSONified into a list of one element
+            segments = [segments]
 
         for segment_id in segments:
 
@@ -266,7 +269,6 @@ def crossoverCalculation(request):
             # Get the correct srid for the locaiton
             proj = utility.epsgFromLocation(inLocationName)
             # Create a GEOS Well Known Binary reader and initialize vars
-            wkb_r = WKBReader()
             cross_pts = []
             cross_angles = []
             point_path_1_id = []
@@ -401,9 +403,9 @@ def crossoverCalculation(request):
                 line = cursor.fetchone()
 
                 # Create a GEOS geometry from the result fetched above.
-                lines = wkb_r.read(line[0])
+                lines = GEOSGeometry(line[0])
                 # Check if resulting object is a multilinestring, indicating crossovers.
-                if lines.geom_type.encode('ascii', 'ignore') == 'MultiLineString':
+                if lines.geom_type == 'MultiLineString':
                     # Get the point_path_ids for all points for the given segment:
                     pt_ids = models.point_paths.objects.filter(
                         segment_id=segmentsObj.pk).values_list(
