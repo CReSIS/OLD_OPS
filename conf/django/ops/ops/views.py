@@ -1651,6 +1651,11 @@ def getLayerPointsCsv(request):
             inStartSeg = '00000000_00'
             inStopSeg = '99999999_99'
 
+        inStartDateStr = inStartSeg.split("_")[0]
+        inStopDateStr = inStopSeg.split("_")[0]
+        inStartDate = datetime.datetime.strptime(inStartDateStr, '%Y%m%d')
+        inStopDate = datetime.datetime.strptime(inStopDateStr, '%Y%m%d')
+
         try:
             inSeasons = utility.forceList(data['properties']['season'])
         except BaseException:
@@ -1768,6 +1773,7 @@ def getLayerPointsCsv(request):
 
                 # calculate utc date and seconds of day
                 utcDateStruct = time.gmtime(row[6])
+                rowDateTime = datetime.datetime.fromtimestamp(row[6])
                 outUtcDate = time.strftime('%Y%m%d', utcDateStruct)
                 outUtcSod = float(
                     utcDateStruct.tm_hour *
@@ -1775,6 +1781,9 @@ def getLayerPointsCsv(request):
                     utcDateStruct.tm_min *
                     60.0 +
                     utcDateStruct.tm_sec)
+
+                if not (inStartDate <= rowDateTime <= inStopDate):
+                    continue  # Filter between start and stop dates provided
 
                 # Account for surfaces without bottom values
                 if row[8] is None:
