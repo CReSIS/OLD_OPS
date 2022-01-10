@@ -211,7 +211,13 @@ def crossoverCalculation(request):
     """ Creates/Updates entries in the crossovers tables.
 
     Input:
-            segments: (list[int]) list of segments for which to calculate crossovers
+            geometry: (geojson) {'type':'LineString','coordinates',[longitude latitude]}
+            season: (string) name of the season
+            season_group: (string) name of the season group
+            location: (string) name of the location
+            radar: (string) name of the radar
+            segment: (string) name of the segment
+
     Output:
             status: (integer) 0:error 1:success 2:warning
             data: string status message
@@ -226,7 +232,6 @@ def crossoverCalculation(request):
         if type(segments) == int:
             # Matlab arrays of one element are not JSONified into a list of one element
             segments = [segments]
-
         for segment_id in segments:
 
             cursor = connection.cursor()
@@ -310,7 +315,6 @@ def crossoverCalculation(request):
                             ORDER BY i;""".format(app=app, proj=proj, seg=segmentsObj.pk)
             cursor = connection.cursor()
             try:
-
                 cursor.execute(sql_str)
                 cross_info1 = cursor.fetchall()
 
@@ -401,7 +405,6 @@ def crossoverCalculation(request):
                             FROM pts;""".format(app=app, proj=proj, seg=segmentsObj.pk, flip="ST_FlipCoordinates(" if proj==3413 else "", flipclose=")" if proj==3413 else "")
                 cursor.execute(sql_str)
                 line = cursor.fetchone()
-
                 # Create a GEOS geometry from the result fetched above.
                 lines = GEOSGeometry(line[0])
                 # Check if resulting object is a multilinestring, indicating crossovers.
