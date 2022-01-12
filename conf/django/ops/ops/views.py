@@ -293,14 +293,14 @@ def crossoverCalculation(request):
                                 LINE AS
                             (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
                             FROM pts), i_pts AS
-                            (SELECT (ST_Dump(ST_Intersection(ST_Transform(line.ln,{proj}), ST_Transform(o.geom,{proj})))).geom AS i_pt
+                            (SELECT (ST_Dump(ST_Intersection({flip}ST_Transform(line.ln,{proj}){flipclose}, {flip}ST_Transform(o.geom,{proj}){flipclose}))).geom AS i_pt
                             FROM LINE, {app}_segments AS o
                             WHERE o.id != {seg} AND o.crossover_calc=true)
-                            SELECT ST_Transform(ST_Force2D(i_pt), 4326) AS i,
+                            SELECT {flip}ST_Transform({flip}ST_Force2D(i_pt){flipclose}, 4326){flipclose} AS i,
                                 pts1.id,
                                 CASE
-                                    WHEN ST_Equals(i_pt, pts1.geom) THEN degrees(ST_Azimuth(i_pt, ST_Transform(pts2.geom,{proj})))
-                                    ELSE degrees(ST_Azimuth(i_pt, ST_Transform(pts1.geom,{proj})))
+                                    WHEN ST_Equals(i_pt, {flip}ST_Transform(pts1.geom,{proj}){flipclose}) THEN degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts2.geom,{proj}){flipclose}))
+                                    ELSE degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts1.geom,{proj}){flipclose}))
                                 END
                             FROM i_pts,
                                 pts AS pts1,
@@ -312,7 +312,7 @@ def crossoverCalculation(request):
                                 WHERE rn != ST_Z(i_pts.i_pt)::int
                                 ORDER BY ABS(ST_Z(i_pts.i_pt)::int - rn) ASC
                                 LIMIT 1)
-                            ORDER BY i;""".format(app=app, proj=proj, seg=segmentsObj.pk)
+                            ORDER BY i;""".format(app=app, proj=proj, seg=segmentsObj.pk, flip="ST_FlipCoordinates(" if proj==3413 else "", flipclose=")" if proj==3413 else "")
             cursor = connection.cursor()
             try:
                 cursor.execute(sql_str)
@@ -346,7 +346,7 @@ def crossoverCalculation(request):
                                     WHERE o.id = {seg} AND o.crossover_calc=true)
                                     SELECT pts1.id,
                                         CASE
-                                            WHEN ST_Equals(i_pt, pts1.geom) THEN degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts2.geom,{proj}){flipclose}))
+                                            WHEN ST_Equals(i_pt, {flip}ST_Transform(pts1.geom,{proj}){flipclose}) THEN degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts2.geom,{proj}){flipclose}))
                                             ELSE degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts1.geom,{proj}){flipclose}))
                                         END
                                     FROM i_pts,
