@@ -5,4 +5,4 @@ secret_key.txt
 gen_key.py
 db_pswd.txt
 requirements.txt
-migrations
+*.code-workspace
