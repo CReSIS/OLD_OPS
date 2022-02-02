@@ -283,36 +283,38 @@ def crossoverCalculation(request):
             # Get the points of intersection, the closest point_path_id, and the angle
             # in degrees for the current segment.
             sql_str = """SET LOCAL work_mem = '15MB';
-                            WITH pts AS
-                            (SELECT row_number() OVER (
-                                                        ORDER BY gps_time) AS rn,
-                                                        id,
-                                                        geom
-                            FROM {app}_point_paths
-                            WHERE segment_id = {seg}),
-                                LINE AS
+                        WITH pts AS
+                            (SELECT row_number() OVER (ORDER BY gps_time) AS rn,
+                                    id,
+                                    geom
+                                FROM {app}_point_paths
+                                WHERE segment_id = {seg}),
+                        LINE AS
                             (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
-                            FROM pts), i_pts AS
+                                FROM pts),
+                        i_pts AS
                             (SELECT (ST_Dump(ST_Intersection({flip}ST_Transform(line.ln,{proj}){flipclose}, {flip}ST_Transform(o.geom,{proj}){flipclose}))).geom AS i_pt
-                            FROM LINE, {app}_segments AS o
-                            WHERE o.id != {seg} AND o.crossover_calc=true)
-                            SELECT {flip}ST_Transform({flip}ST_Force2D(i_pt){flipclose}, 4326){flipclose} AS i,
-                                pts1.id,
-                                CASE
-                                    WHEN ST_Equals(i_pt, {flip}ST_Transform(pts1.geom,{proj}){flipclose}) THEN degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts2.geom,{proj}){flipclose}))
-                                    ELSE degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts1.geom,{proj}){flipclose}))
-                                END
+                                FROM LINE,
+                            {app}_segments AS o
+                                WHERE o.id != {seg} AND o.crossover_calc=true)
+                        
+                        SELECT {flip}ST_Transform({flip}ST_Force2D(i_pt){flipclose}, 4326){flipclose} AS i,
+                        pts1.id,
+                            CASE
+                                WHEN ST_Equals(i_pt, {flip}ST_Transform(pts1.geom,{proj}){flipclose}) THEN degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts2.geom,{proj}){flipclose}))
+                                ELSE degrees(ST_Azimuth(i_pt, {flip}ST_Transform(pts1.geom,{proj}){flipclose}))
+                            END
                             FROM i_pts,
-                                pts AS pts1,
-                                pts AS pts2
-                            WHERE pts1.rn = ST_Z(i_pt)::int
-                            AND pts2.rn =
-                                (SELECT rn
-                                FROM pts
-                                WHERE rn != ST_Z(i_pts.i_pt)::int
-                                ORDER BY ABS(ST_Z(i_pts.i_pt)::int - rn) ASC
-                                LIMIT 1)
-                            ORDER BY i;""".format(app=app, proj=proj, seg=segmentsObj.pk, flip="ST_FlipCoordinates(" if proj==3413 else "", flipclose=")" if proj==3413 else "")
+                        pts AS pts1,
+                        pts AS pts2
+                        WHERE pts1.rn = ST_Z(i_pt)::int
+                        AND pts2.rn =
+                            (SELECT rn
+                            FROM pts
+                            WHERE rn != ST_Z(i_pts.i_pt)::int
+                            ORDER BY ABS(ST_Z(i_pts.i_pt)::int - rn) ASC
+                            LIMIT 1)
+                        ORDER BY i;""".format(app=app, proj=proj, seg=segmentsObj.pk, flip="ST_FlipCoordinates(" if proj==3413 else "", flipclose=")" if proj==3413 else "")
             cursor = connection.cursor()
             try:
                 cursor.execute(sql_str)
@@ -1279,19 +1281,19 @@ def getFrameClosest(request):
                     ON       pp.season_id=ss.id
                     WHERE    ss.NAME IN %s
                     AND      pp.location_id = %s
-                    ORDER BY st_transform(pp.geom,%s) <-> {flip}st_geomfromtext(%s,%s){flipclose} limit 1)
+                    ORDER BY st_transform(pp.geom,%s) <-> st_geomfromtext(%s,%s) limit 1)
             SELECT   ss.NAME,
                     pp.segment_id,
                     min(pp.gps_time),
                     max(pp.gps_time),
                     frm.NAME,
-                    st_makeline({flip}st_transform(st_geomfromtext('POINTZ('
+                    st_makeline(st_transform(st_geomfromtext('POINTZ('
                             || st_x(pp.geom)
                             || ' '
                             || st_y(pp.geom)
                             || ' '
                             || pp.gps_time
-                            ||')',4326),%s){flipclose})
+                            ||')',4326),%s))
             FROM     pt,
                     {app}_point_paths pp
             JOIN     {app}_seasons ss
@@ -1302,7 +1304,7 @@ def getFrameClosest(request):
             GROUP BY ss.NAME,
                     pp.segment_id,
                     frm.NAME;
-            """.format(app=app, flip="ST_FlipCoordinates(" if epsg==3413 else "", flipclose=")" if epsg==3413 else "")
+            """.format(app=app)
             with connection.cursor() as cursor:
                 cursor.execute(
                     queryStr, [
