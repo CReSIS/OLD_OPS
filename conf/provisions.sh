@@ -631,7 +631,7 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
     sed -i "s|		'NAME': 'ops'|		'NAME': '$dbName'|g" /var/django/ops/ops/settings.py
     sed -i "s|		'USER': 'admin'|		'USER': '$dbUser'|g" /var/django/ops/ops/settings.py
 
-    #ADD DJANGO ADMINS.
+    # ADD DJANGO ADMINS.
     while true; do
         if [[ -z "$adminStr" ]]; then
             read -p "Do you wish to add an admin to Django (receives error messages)? [y/n]" yn

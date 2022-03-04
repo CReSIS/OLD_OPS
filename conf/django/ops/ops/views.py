@@ -337,7 +337,7 @@ def crossoverCalculation(request):
                                         (SELECT s2.id
                                             FROM {app}_segments AS s1, {app}_segments AS s2
                                             WHERE s1.id = {seg}
-                                            AND s2.id != {seg}
+                                            AND s2.id != {seg} and s2.crossover_calc=true
                                             AND ST_Intersects(s1.geom, s2.geom))
                                     ORDER BY gps_time),
                                         LINE AS
@@ -346,7 +346,7 @@ def crossoverCalculation(request):
                                     GROUP BY pts.segment_id), i_pts AS
                                     (SELECT (ST_Dump(ST_Intersection(ST_Transform(line.ln,{proj}), ST_Transform(o.geom,{proj})))).geom AS i_pt
                                     FROM LINE, {app}_segments AS o
-                                    WHERE o.id = {seg} AND o.crossover_calc=true)
+                                    WHERE o.id = {seg})
                                     SELECT pts1.id,
                                         CASE
                                             WHEN ST_Equals(i_pt, ST_Transform(pts1.geom,{proj})) THEN degrees(ST_Azimuth(i_pt, ST_Transform(pts2.geom,{proj})))
