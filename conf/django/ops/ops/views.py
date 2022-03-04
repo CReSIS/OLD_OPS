@@ -207,6 +207,7 @@ def createPath(request):
         return utility.errorCheck(e, sys)
 
 
+@ipAuth()
 def crossoverCalculation(request):
     """ Creates/Updates entries in the crossovers tables.
 
