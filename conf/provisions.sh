@@ -797,6 +797,27 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
     printf "${STATUS_COLOR}Reconfiguring gitlab${NC}\n";
     sudo gitlab-ctl restart
 
+    printf "${STATUS_COLOR}Removing host key check requirement for gitlab.com${NC}\n";
+    printf "Host gitlab.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+
+    printf "${STATUS_COLOR}Cloning repos from CReSIS Gitlab${NC}\n";
+    mkdir ~/repos
+    cd ~/repos
+    git clone https://gitlab.com/openpolarradar/opr.git
+    git clone https://gitlab.com/openpolarradar/opr.wiki.git
+    git clone https://gitlab.com/openpolarradar/opr_params.git
+    
+    printf "${STATUS_COLOR}Pushing opr to local gitlab${NC}\n";
+    cd ~/repos/opr
+    git push -u http://root:pubMaster@localhost/git/root/opr.git master
+    printf "${STATUS_COLOR}Pushing opr wiki to local gitlab${NC}\n";
+    cd ~/repos/opr.wiki
+    git push http://root:pubMaster@localhost/git/root/opr.wiki.git HEAD:master
+    printf "${STATUS_COLOR}Pushing opr params to local gitlab${NC}\n";
+    cd ~/repos/opr_params
+    git push -u http://root:pubMaster@localhost/git/root/opr_params.git master
+
+    cd ~
 
     # --------------------------------------------------------------------
     # INSTALL AND CONFIGURE APACHE TOMCAT AND GEOSERVER(WAR)
