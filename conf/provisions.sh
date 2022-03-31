@@ -111,11 +111,21 @@ before_reboot() {
     printf "${STATUS_COLOR}Storing db password${NC}\n";
     echo -e $dbPswd > /etc/db_pswd.txt;
 
-    read -s -p "Gitlab External URL (default=https://"$serverName"/git): " GITLAB_URL && printf "\n";
+    read -s -p "Gitlab External URL (default=http://"$serverName"/git): " GITLAB_URL && printf "\n";
     update_config "GITLAB_URL" $GITLAB_URL
     if [[ -z "${GITLAB_URL// }" ]]; then
-    update_config "GITLAB_URL" "\"https://"$serverName"/git\""
+    update_config "GITLAB_URL" "\"http://"$serverName"/git\""
     fi
+
+    read -s -p "Timezone (default=America/Chicago): " timeZone && printf "\n";
+    update_config "timeZone" $timeZone
+    if [[ -z "${timeZone// }" ]]; then
+    update_config "timeZone" "\"America/Chicago\""
+    fi
+    
+    printf "${STATUS_COLOR}Setting Timezone${NC}\n";
+    timedatectl set-timezone $timeZone
+
 
     # --------------------------------------------------------------------
     # PRE-PROVISION THE OPS (NEED FOR CRESIS VM TEMPLATE)
@@ -278,6 +288,7 @@ EOM
     # INCLUDE THE SITE CONFIGURATION FOR HTTPD
     printf "${STATUS_COLOR}Updating httpd site config globally${NC}\n";
     echo "Include /var/www/sites/"$serverName"/conf/"$appName".conf" >> /etc/httpd/conf/httpd.conf
+    echo "SetEnv TZ ${timeZone}" >> /etc/httpd/conf/httpd.conf
 
     printf "${STATUS_COLOR}Creating webdata dir${NC}\n";
     mkdir -m 777 -p $webDataDir
@@ -373,6 +384,7 @@ siteConf="
         ErrorDocument 500 /500.html
         ErrorDocument 502 /502.html
         ErrorDocument 503 /503.html
+        RequestHeader set "X-Forwarded-Proto" expr="%{REQUEST_SCHEME}e"
     </Location>
 
 </VirtualHost>"
@@ -779,17 +791,18 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
     printf "${STATUS_COLOR}Installing gitlab dependencies${NC}\n";
     sudo yum install -y curl policycoreutils-python openssh-server perl
     printf "${STATUS_COLOR}Installing gitlab repo${NC}\n";
-    curl -sS https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.rpm.sh | sudo bash
+    curl -sS https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.rpm.sh | sudo bash
     printf "${STATUS_COLOR}Installing gitlab${NC}\n";
     sudo EXTERNAL_URL="${GITLAB_URL}" GITLAB_ROOT_EMAIL="root@local" GITLAB_ROOT_PASSWORD="pubMaster" yum install -y gitlab-ee
 
     printf "${STATUS_COLOR}Updating config${NC}\n";
     gitlabConfDir=/etc/gitlab/gitlab.rb
-    sed -i "s,# web_server['external_users'] = [],web_server['external_users'] = ['apache'],g" $gitlabConfDir
-    sed -i "s,# nginx['enable'] = true,nginx['enable'] = false,g" $gitlabConfDir
-    sed -i "s,# gitlab_workhorse['listen_network'] = \"unix\",gitlab_workhorse['listen_network'] = \"tcp\",g" $gitlabConfDir
-    sed -i "s,# gitlab_workhorse['listen_addr'] = \"/var/opt/gitlab/gitlab-workhorse/sockets/socket\",gitlab_workhorse['listen_addr'] = \"127.0.0.1:8188\",g" $gitlabConfDir
-    sed -i "s,# puma['port'] = 8080,puma['port'] = 8189,g" $gitlabConfDir
+    sed -i "s,# web_server\['external_users'\] = \[\],web_server['external_users'] = ['apache'],g" $gitlabConfDir
+    sed -i "s,# nginx\['enable'\] = true,nginx['enable'] = false,g" $gitlabConfDir
+    sed -i "s,# gitlab_workhorse\['listen_network'\] = \"unix\",gitlab_workhorse['listen_network'] = \"tcp\",g" $gitlabConfDir
+    sed -i "s,# gitlab_workhorse\['listen_addr'\] = \"/var/opt/gitlab/gitlab-workhorse/sockets/socket\",gitlab_workhorse['listen_addr'] = \"127.0.0.1:8188\",g" $gitlabConfDir
+    sed -i "s,# puma\['port'\] = 8080,puma['port'] = 8189,g" $gitlabConfDir
+    sed -i "s,# gitlab_rails\['time_zone'\] = 'UTC',gitlab_rails['time_zone'] = '${timeZone}',g" $gitlabConfDir
     sudo gitlab-ctl reconfigure
 
     printf "${STATUS_COLOR}Restarting apache${NC}\n";
@@ -797,8 +810,8 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
     printf "${STATUS_COLOR}Reconfiguring gitlab${NC}\n";
     sudo gitlab-ctl restart
 
-    printf "${STATUS_COLOR}Removing host key check requirement for gitlab.com${NC}\n";
-    printf "Host gitlab.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+    # printf "${STATUS_COLOR}Removing host key check requirement for gitlab.com${NC}\n";
+    # printf "Host gitlab.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 
     printf "${STATUS_COLOR}Cloning repos from CReSIS Gitlab${NC}\n";
     mkdir ~/repos
