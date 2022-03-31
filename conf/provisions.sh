@@ -820,18 +820,6 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
     git clone https://gitlab.com/openpolarradar/opr.wiki.git
     git clone https://gitlab.com/openpolarradar/opr_params.git
     
-    printf "${STATUS_COLOR}Pushing opr to local gitlab${NC}\n";
-    cd ~/repos/opr
-    git push -u http://root:pubMaster@localhost/git/root/opr.git master
-    printf "${STATUS_COLOR}Pushing opr wiki to local gitlab${NC}\n";
-    cd ~/repos/opr.wiki
-    git push http://root:pubMaster@localhost/git/root/opr.wiki.git HEAD:master
-    printf "${STATUS_COLOR}Pushing opr params to local gitlab${NC}\n";
-    cd ~/repos/opr_params
-    git push -u http://root:pubMaster@localhost/git/root/opr_params.git master
-
-    cd ~
-
     # --------------------------------------------------------------------
     # INSTALL AND CONFIGURE APACHE TOMCAT AND GEOSERVER(WAR)
 
@@ -992,6 +980,21 @@ WantedBy=multi-user.target"
     service tomcat start
     printf "${STATUS_COLOR}chkconfig tomcat on${NC}\n";
     chkconfig tomcat on
+
+    # --------------------------------------------------------------------
+    # Push repos to gitlab now that it has had time to start up
+    printf "${STATUS_COLOR}Pushing opr to local gitlab${NC}\n";
+    cd ~/repos/opr
+    git push -u http://root:pubMaster@localhost/git/root/opr.git master
+    printf "${STATUS_COLOR}Pushing opr wiki to local gitlab${NC}\n";
+    cd ~/repos/opr.wiki
+    git push http://root:pubMaster@localhost/git/root/opr.wiki.git HEAD:master
+    printf "${STATUS_COLOR}Pushing opr params to local gitlab${NC}\n";
+    cd ~/repos/opr_params
+    git push -u http://root:pubMaster@localhost/git/root/opr_params.git master
+
+    cd ~
+
 
     # --------------------------------------------------------------------
     # DO A FINAL SYSTEM UPDATE
