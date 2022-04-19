@@ -522,12 +522,13 @@ def crossoverCalculation(request):
                     inSeason)
                 segmentsObj.crossover_calc = True
                 segmentsObj.save()
-                return utility.response(1, 'SUCCESS: CROSSOVER CALCULATION COMPLETED.', {})
 
             except Exception as e:
                 return utility.errorCheck(e, sys)
             finally:
                 cursor.close()
+
+        return utility.response(1, 'SUCCESS: CROSSOVER CALCULATION COMPLETED.', {})
 
     except Exception as e:
         return utility.errorCheck(e, sys)
