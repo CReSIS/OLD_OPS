@@ -264,6 +264,7 @@ def crossoverCalculation(request):
 
             linePathGeom = GEOSGeometry(inLinePath)
 
+            # TODO[reece]: Surely this can be condensed to only use the segment id to retrieve the segment
             segmentsObj = models.segments.objects.get(
                 season_id=seasonsObj.pk, radar_id=radarsObj.pk, name=inSegment, geom=linePathGeom)
 
@@ -296,10 +297,9 @@ def crossoverCalculation(request):
                                 FROM pts),
                         i_pts AS
                             (SELECT (ST_Dump(ST_Intersection(ST_Transform(line.ln,{proj}), ST_Transform(o.geom,{proj})))).geom AS i_pt
-                                FROM LINE,
-                            {app}_segments AS o
-                                WHERE o.id != {seg} AND o.crossover_calc=true)
-                        
+                                FROM LINE, {app}_segments AS o
+                                    WHERE o.id != {seg} AND o.crossover_calc=true)
+
                         SELECT ST_Transform(ST_Force2D(i_pt), 4326) AS i,
                         pts1.id,
                             CASE
@@ -326,6 +326,11 @@ def crossoverCalculation(request):
                 if cross_info1:
                     # Get the closest point_path_id and the angle in degrees for the other
                     # segments
+                    logging.info(
+                        'Closest points on intersecting segments for segment %s of season %s are now being found.',
+                        inSegment,
+                        inSeason)
+
                     sql_str = """SET LOCAL work_mem = '15MB';
                                     WITH pts AS
                                     (SELECT row_number() OVER (
