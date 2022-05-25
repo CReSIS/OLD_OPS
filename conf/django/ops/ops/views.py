@@ -86,6 +86,9 @@ def createPath(request):
         inFrameCount = data['properties']['frame_count']
         inFrameStartGpsTimes = utility.forceList(
             data['properties']['frame_start_gps_time'])
+        inSegmentResolution = data['properties']['segment_resolution'] if "segment_resolution" in data['properties'] else 0
+
+        proj = utility.epsgFromLocation(inLocationName)
 
         # Set up the basic logging configuration for createPath:
         logging.basicConfig(
@@ -106,6 +109,13 @@ def createPath(request):
             name=inRadar.lower())  # get or create the radar
 
         linePathGeom = GEOSGeometry(ujson.dumps(inLinePath))  # create a geometry object
+        original_epsg = linePathGeom.srid
+        SegmentlinePathGeom = linePathGeom.clone()
+        if inSegmentResolution != 0:
+            # Transform to the reference system expected for simplification (the location's epsg)
+            SegmentlinePathGeom.transform(proj)
+            SegmentlinePathGeom = SegmentlinePathGeom.simplify(inSegmentResolution, True)
+            SegmentlinePathGeom.transform(original_epsg)
 
         # Check of the segment exists already:
         segmentsObj = models.segments.objects.filter(
@@ -125,7 +135,7 @@ def createPath(request):
 
         # Create the segment if it does not exist.
         segmentsObj, _ = models.segments.objects.get_or_create(
-            season_id=seasonsObj.pk, radar_id=radarsObj.pk, name=inSegment, geom=linePathGeom, crossover_calc=False)
+            season_id=seasonsObj.pk, radar_id=radarsObj.pk, name=inSegment, geom=SegmentlinePathGeom, crossover_calc=False)
 
         logging.info('Segment %s of season %s has been created.', inSegment, inSeason)
 
