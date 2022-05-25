@@ -143,7 +143,7 @@ def createPath(request):
         os.makedirs(temppath, mode=0o777, exist_ok=True)
 
         with tempfile.NamedTemporaryFile(mode='w', prefix='tmp_', dir=temppath, suffix='_pointPaths.csv', delete=False) as f:
-            
+
             # Create a csv writer object
             fwrite = csv.writer(f, delimiter=',')
 
@@ -238,8 +238,8 @@ def crossoverCalculation(request):
             cursor = connection.cursor()
 
             try:
-                cursor.execute(f"SELECT geom, name, season_id, radar_id from {app}_segments where id={segment_id};")
-                inLinePath, inSegment, season_id, radar_id = cursor.fetchone()
+                cursor.execute(f"SELECT name, season_id, radar_id from {app}_segments where id={segment_id};")
+                inSegment, season_id, radar_id = cursor.fetchone()
 
                 cursor.execute(f"SELECT name, location_id, season_group_id from {app}_seasons where id={season_id};")
                 inSeason, location_id, season_group_id = cursor.fetchone()
@@ -247,26 +247,13 @@ def crossoverCalculation(request):
                 cursor.execute(f"SELECT name from {app}_locations where id={location_id};")
                 inLocationName = cursor.fetchone()[0]
 
-                cursor.execute(f"SELECT name from {app}_season_groups where id={season_group_id};")
-                inSeasonGroup = cursor.fetchone()[0]
-
                 cursor.execute(f"SELECT name from {app}_radars where id={radar_id};")
-                inRadar = cursor.fetchone()[0]
             except Exception as e:
                 return utility.errorCheck(e, sys)
             finally:
                 cursor.close()
 
-            locationsObj = models.locations.objects.get(name=inLocationName.lower())
-            seasonGroupsObj = models.season_groups.objects.get(name=inSeasonGroup)
-            seasonsObj = models.seasons.objects.get(name=inSeason, season_group_id=seasonGroupsObj.pk, location_id=locationsObj.pk)
-            radarsObj = models.radars.objects.get(name=inRadar.lower())
-
-            linePathGeom = GEOSGeometry(inLinePath)
-
-            # TODO[reece]: Surely this can be condensed to only use the segment id to retrieve the segment
-            segmentsObj = models.segments.objects.get(
-                season_id=seasonsObj.pk, radar_id=radarsObj.pk, name=inSegment, geom=linePathGeom)
+            segmentsObj = models.segments.objects.get(id=segment_id)
 
             ### calculate and insert crossovers	###
             logging.info(
