@@ -226,6 +226,12 @@ def crossoverCalculation(request):
     """
 
     try:
+        logging.basicConfig(
+            filename=opsSettings.OPS_DATA_PATH +
+            'django_logs/createPath.log',
+            format='%(levelname)s :: %(asctime)s :: %(message)s',
+            datefmt='%c',
+            level=logging.DEBUG)
         models, data, app, cookies = utility.getInput(
             request)  # get the input and models
 
