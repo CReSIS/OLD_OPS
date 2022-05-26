@@ -236,6 +236,12 @@ def crossoverCalculation(request):
     """
 
     try:
+        logging.basicConfig(
+            filename=opsSettings.OPS_DATA_PATH +
+            'django_logs/createPath.log',
+            format='%(levelname)s :: %(asctime)s :: %(message)s',
+            datefmt='%c',
+            level=logging.DEBUG)
         models, data, app, cookies = utility.getInput(
             request)  # get the input and models
 
@@ -283,12 +289,16 @@ def crossoverCalculation(request):
             # in degrees for the current segment.
             sql_str = """SET LOCAL work_mem = '15MB';
                         WITH pts AS
-                            (SELECT row_number() OVER (ORDER BY gps_time) AS rn,
-                                    id,
-                                    geom
-                                FROM {app}_point_paths
-                                WHERE segment_id = {seg}
-                                ORDER BY gps_time),
+                            (SELECT (dps).path[1] AS rn,
+                                pp.id,
+                                (dps).geom
+                            -- Map geom points to point_path points by comparing x and y values
+                            from (select st_dumppoints(geom) as dps from {app}_segments WHERE id = {seg}) dp
+                            join {app}_point_paths pp on
+                            ROUND(st_x(pp.geom)::numeric, 8)=ROUND(st_x((dps).geom)::numeric, 8) 
+                            and ROUND(st_y(pp.geom)::numeric, 8)=ROUND(st_y((dps).geom)::numeric, 8) 
+                            where pp.segment_id={seg}
+                            ORDER BY rn),
                         LINE AS
                             (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
                                 FROM pts),
@@ -329,43 +339,47 @@ def crossoverCalculation(request):
                         inSeason)
 
                     sql_str = """SET LOCAL work_mem = '15MB';
-                                    WITH pts AS
-                                    (SELECT row_number() OVER (
-                                                                ORDER BY gps_time) AS rn,
-                                                                geom,
-                                                                id,
-                                                                segment_id
-                                    FROM {app}_point_paths
-                                    WHERE segment_id IN
-                                        (SELECT s2.id
-                                            FROM {app}_segments AS s1, {app}_segments AS s2
-                                            WHERE s1.id = {seg}
-                                            AND s2.id != {seg} and s2.crossover_calc=true
-                                            AND ST_Intersects(s1.geom, s2.geom))
-                                    ORDER BY gps_time),
-                                        LINE AS
-                                    (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
+                                with segment_ids as (SELECT s2.id as ids
+                                        FROM {app}_segments AS s1, {app}_segments AS s2
+                                        WHERE s1.id = {seg}
+                                        AND s2.id != {seg} and s2.crossover_calc=true
+                                        AND ST_Intersects(s1.geom, s2.geom)),
+                                pts AS
+                                (SELECT row_number() over (order by segment_id, (dps).path[1]) AS rn,
+                                    (dps).geom,
+                                    pp.id,
+                                    segment_id
+                                -- Map geom points to point_path points by comparing x and y values
+                                from (select st_dumppoints(geom) as dps from {app}_segments WHERE id in (select ids from segment_ids)) dp
+                                join {app}_point_paths pp on
+                                ROUND(st_x(pp.geom)::numeric, 8)=ROUND(st_x((dps).geom)::numeric, 8)
+                                and ROUND(st_y(pp.geom)::numeric, 8)=ROUND(st_y((dps).geom)::numeric, 8)
+                                where pp.segment_id in (select ids from segment_ids)
+                                ORDER BY rn
+                                ),
+                                    LINE AS
+                                (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
+                                FROM pts
+                                GROUP BY pts.segment_id), i_pts AS
+                                (SELECT (ST_Dump(ST_Intersection(ST_Transform(line.ln,{proj}), ST_Transform(o.geom,{proj})))).geom AS i_pt
+                                FROM LINE, {app}_segments AS o
+                                WHERE o.id = {seg})
+                                SELECT pts1.id,
+                                    CASE
+                                        WHEN ST_Equals(i_pt, ST_Transform(pts1.geom,{proj})) THEN degrees(ST_Azimuth(i_pt, ST_Transform(pts2.geom,{proj})))
+                                        ELSE degrees(ST_Azimuth(i_pt, ST_Transform(pts1.geom,{proj})))
+                                    END
+                                FROM i_pts,
+                                    pts AS pts1,
+                                    pts AS pts2
+                                WHERE pts1.rn = ST_Z(i_pt)::int
+                                AND pts2.rn =
+                                    (SELECT rn
                                     FROM pts
-                                    GROUP BY pts.segment_id), i_pts AS
-                                    (SELECT (ST_Dump(ST_Intersection(ST_Transform(line.ln,{proj}), ST_Transform(o.geom,{proj})))).geom AS i_pt
-                                    FROM LINE, {app}_segments AS o
-                                    WHERE o.id = {seg})
-                                    SELECT pts1.id,
-                                        CASE
-                                            WHEN ST_Equals(i_pt, ST_Transform(pts1.geom,{proj})) THEN degrees(ST_Azimuth(i_pt, ST_Transform(pts2.geom,{proj})))
-                                            ELSE degrees(ST_Azimuth(i_pt, ST_Transform(pts1.geom,{proj})))
-                                        END
-                                    FROM i_pts,
-                                        pts AS pts1,
-                                        pts AS pts2
-                                    WHERE pts1.rn = ST_Z(i_pt)::int
-                                    AND pts2.rn =
-                                        (SELECT rn
-                                        FROM pts
-                                        WHERE rn != ST_Z(i_pts.i_pt)::int
-                                        ORDER BY ABS(ST_Z(i_pts.i_pt)::int - rn) ASC
-                                        LIMIT 1)
-                                    ORDER BY ST_Transform(ST_Force2D(i_pt), 4326);""".format(app=app, proj=proj, seg=segmentsObj.pk)
+                                    WHERE rn != ST_Z(i_pts.i_pt)::int
+                                    ORDER BY ABS(ST_Z(i_pts.i_pt)::int - rn) ASC
+                                    LIMIT 1)
+                                ORDER BY ST_Transform(ST_Force2D(i_pt), 4326);""".format(app=app, proj=proj, seg=segmentsObj.pk)
                     cursor.execute(sql_str)
                     cross_info2 = cursor.fetchall()
 
@@ -402,11 +416,16 @@ def crossoverCalculation(request):
                     inSegment,
                     inSeason)
                 sql_str = """WITH pts AS
-                            (SELECT id,
-                                    geom
-                            FROM {app}_point_paths
-                            WHERE segment_id = {seg}
-                            ORDER BY gps_time)
+                            (SELECT (dps).path[1] AS rn,
+                                    pp.id,
+                                    (dps).geom
+                                -- Map geom points to point_path points by comparing x and y values
+                                from (select st_dumppoints(geom) as dps from {app}_segments WHERE id = {seg}) dp
+                                join {app}_point_paths pp on
+                                ROUND(st_x(pp.geom)::numeric, 8)=ROUND(st_x((dps).geom)::numeric, 8) 
+                                and ROUND(st_y(pp.geom)::numeric, 8)=ROUND(st_y((dps).geom)::numeric, 8) 
+                                where pp.segment_id={seg}
+                                ORDER BY rn)
                             SELECT ST_UnaryUnion(ST_Transform(ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.id||')', 4326)),{proj}))
                             FROM pts;""".format(app=app, proj=proj, seg=segmentsObj.pk)
                 cursor.execute(sql_str)
