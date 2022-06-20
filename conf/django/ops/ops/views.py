@@ -669,7 +669,6 @@ def simplifySegmentsResolution(request):
 
     Input:
             segment: (string(s)) OR segment_id (integer(s))
-            season: (string) name of the season for the segment(s) being altered.
             resolution: (double) number of meters between each point
 
     Output:
@@ -690,24 +689,21 @@ def simplifySegmentsResolution(request):
         else:
             return utility.response(0, userProfileObj, {})
 
-        # Get the input
-        inSeason = data['properties']['season']
-
         try:
             inSegmentName = utility.forceList(data['properties']['segment'])
             segmentObjs = models.segments.objects.filter(
-                name__in=inSegmentName, season__name=inSeason)
+                name__in=inSegmentName)
             if len(segmentObjs) == 0:
                 return utility.response(
-                    0, 'No segment(s) with the specified name(s) exist for the given season.', {})
+                    0, 'No segment(s) with the specified name(s) exist.', {})
 
         except KeyError:
             inSegmentId = utility.forceList(data['properties']['segment_id'])
             segmentObjs = models.segments.objects.filter(
-                id__in=inSegmentId, season__name=inSeason)
+                id__in=inSegmentId)
             if len(segmentObjs) == 0:
                 return utility.response(
-                    0, 'No segment(s) with the specified id(s) exist for the given season.', {})
+                    0, 'No segment(s) with the specified id(s) exist.', {})
 
         resolution = data['properties']['resolution']
 
