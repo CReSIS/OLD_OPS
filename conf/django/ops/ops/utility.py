@@ -210,7 +210,8 @@ def getData(request):
     """
     if request.method == "POST":
         try:
-
+            
+            data = None
             app = request.POST.get("app")
             jsonData = request.POST.get("data")
 
