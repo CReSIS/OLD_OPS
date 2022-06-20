@@ -23,6 +23,7 @@ urlpatterns = [
     # INPUT VIEWS
     path("create/path", ops.views.createPath),
     path("alter/path/resolution", ops.views.alterPathResolution),
+    path("alter/path/simplify", ops.views.simplifySegmentsResolution),
     path("create/layer", ops.views.createLayer),
     path("delete/layer", ops.views.deleteLayer),
     path("create/layer/points", ops.views.createLayerPoints),

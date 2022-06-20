@@ -664,6 +664,84 @@ def alterPathResolution(request):
 
 
 @ipAuth()
+def simplifySegmentsResolution(request):
+    """ Simplifies a segment's resolution using ST_SimplifyPreserveTopology.
+
+    Input:
+            segment: (string(s)) OR segment_id (integer(s))
+            season: (string) name of the season for the segment(s) being altered.
+            resolution: (double) number of meters between each point
+
+    Output:
+            status: (integer) 0:error 1:success 2:warning
+            data: string status message
+
+    """
+    try:
+        models, data, app, cookies = utility.getInput(
+            request)  # get the input and models
+
+        # Authenticate the user. Must be able to create data.
+        userProfileObj, status = utility.getUserProfile(cookies)
+        if status:
+            if not userProfileObj.isRoot and not userProfileObj.createData:
+                return utility.response(
+                    0, 'ERROR: USER NOT AUTHORIZED TO CREATE DATA.', {})
+        else:
+            return utility.response(0, userProfileObj, {})
+
+        # Get the input
+        inSeason = data['properties']['season']
+
+        try:
+            inSegmentName = utility.forceList(data['properties']['segment'])
+            segmentObjs = models.segments.objects.filter(
+                name__in=inSegmentName, season__name=inSeason)
+            if len(segmentObjs) == 0:
+                return utility.response(
+                    0, 'No segment(s) with the specified name(s) exist for the given season.', {})
+
+        except KeyError:
+            inSegmentId = utility.forceList(data['properties']['segment_id'])
+            segmentObjs = models.segments.objects.filter(
+                id__in=inSegmentId, season__name=inSeason)
+            if len(segmentObjs) == 0:
+                return utility.response(
+                    0, 'No segment(s) with the specified id(s) exist for the given season.', {})
+
+        resolution = data['properties']['resolution']
+
+        # Perform the function logic
+
+        messageStr = f'Resolution has successfully been altered for the following segments: {", ".join(segmentObjs.name)}'
+        try:
+            sqlStr = """update {app}_segments seg set geom=simplified.geom from 
+                        (select points.id as id, st_transform(st_simplifypreservetopology(st_transform(
+                        st_makeline(points.geom), case -- determine epsg to project to before simplification to ensure correct units are used for resolution
+                                                    when loc.name='arctic' then 3413
+                                                    when loc.name='antarctic' then 3031
+                                                    end
+                        ), {resolution}), 4326) as geom
+                        from (select st_force2d(pp.geom) as geom, seg.id as id, seg.season_id 
+                            from {app}_point_paths pp join {app}_segments seg on pp.segment_id=seg.id where seg.id in %s order by gps_time) points
+                            join {app}_seasons ss on points.season_id=ss.id join {app}_locations loc on ss.location_id=loc.id
+                        group by points.id, loc.name) simplified
+                        where seg.id=simplified.id;""".format(app=app, resolution=resolution)
+            with connection.cursor() as cursor:
+                cursor.execute(sqlStr, [segmentObjs.pk])
+
+        except DatabaseError as dberror:
+            return utility.response(0, dberror.args[0], {})
+
+        # return the response.
+
+        return utility.response(1, messageStr, {})
+
+    except Exception as e:
+        return utility.errorCheck(e, sys)
+
+
+@ipAuth()
 def createLayer(request):
     """ Creates an entry in the layers table (or modifies the status of an existing layer).
 
