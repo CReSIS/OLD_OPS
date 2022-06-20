@@ -713,7 +713,7 @@ def simplifySegmentsResolution(request):
 
         # Perform the function logic
 
-        messageStr = f'Resolution has successfully been altered for the following segments: {", ".join(segmentObjs.name)}'
+        messageStr = f'Resolution has successfully been altered for the following segments: {", ".join(str(seg) for seg in segmentObjs)}'
         try:
             sqlStr = """update {app}_segments seg set geom=simplified.geom from 
                         (select points.id as id, st_transform(st_simplifypreservetopology(st_transform(
@@ -728,7 +728,7 @@ def simplifySegmentsResolution(request):
                         group by points.id, loc.name) simplified
                         where seg.id=simplified.id;""".format(app=app, resolution=resolution)
             with connection.cursor() as cursor:
-                cursor.execute(sqlStr, [segmentObjs.pk])
+                cursor.execute(sqlStr, [tuple(seg["id"] for seg in segmentObjs.values())])
 
         except DatabaseError as dberror:
             return utility.response(0, dberror.args[0], {})
