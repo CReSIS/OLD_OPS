@@ -168,7 +168,8 @@ def createPath(request):
                                  inRoll[ptIdx],
                                  inPitch[ptIdx],
                                  inHeading[ptIdx],
-                                 str(pointPathGeom.hexewkb.decode())])
+                                 str(pointPathGeom.hexewkb.decode()), 
+                                 True])
 
         logging.info(
             'Point paths CSV for segment %s of season %s has now been created (%s).',
@@ -181,7 +182,7 @@ def createPath(request):
             # Change permissions on temp file to allow postgres read permission
             os.chmod(f.name, 100)
             # Copy the point paths from the temp csv to the databse.
-            copySql = """COPY {app}_point_paths (location_id, season_id, segment_id, frame_id, gps_time, roll, pitch, heading, geom)
+            copySql = """COPY {app}_point_paths (location_id, season_id, segment_id, frame_id, gps_time, roll, pitch, heading, geom, key_point)
                          FROM %s
                          DELIMITER ',';""".format(app=app)
             cursor.execute(copySql, [f.name])
