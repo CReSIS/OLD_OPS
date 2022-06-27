@@ -709,7 +709,17 @@ def simplifySegmentsResolution(request):
 
         # Perform the function logic
 
-        messageStr = f'Resolution has successfully been altered for the following segments: {", ".join(str(seg) for seg in segmentObjs)}'
+        segmentsStr = ", ".join(str(seg) for seg in segmentObjs)
+
+        logging.basicConfig(
+            filename=opsSettings.OPS_DATA_PATH +
+            'django_logs/createPath.log',
+            format='%(levelname)s :: %(asctime)s :: %(message)s',
+            datefmt='%c',
+            level=logging.DEBUG)
+        logging.info('Performing simplification to resolution of %s on segments %s', resolution, segmentsStr)
+
+        messageStr = f'Resolution has successfully been altered for the following segments: {segmentsStr}'
         try:
             sqlStr = """update {app}_segments seg set geom=simplified.geom from 
                         (select points.id as id, st_transform(st_simplifypreservetopology(st_transform(
@@ -725,8 +735,10 @@ def simplifySegmentsResolution(request):
                         where seg.id=simplified.id;""".format(app=app, resolution=resolution)
             with connection.cursor() as cursor:
                 cursor.execute(sqlStr, [tuple(seg["id"] for seg in segmentObjs.values())])
+                logging.info('Simplification complete')
 
         except DatabaseError as dberror:
+            logging.info('Error occured during simplification: %s', repr(dberror))
             return utility.response(0, dberror.args[0], {})
 
         # return the response.
