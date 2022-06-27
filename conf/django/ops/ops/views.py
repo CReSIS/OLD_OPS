@@ -86,9 +86,6 @@ def createPath(request):
         inFrameCount = data['properties']['frame_count']
         inFrameStartGpsTimes = utility.forceList(
             data['properties']['frame_start_gps_time'])
-        inSegmentResolution = data['properties']['segment_resolution'] if "segment_resolution" in data['properties'] else 0
-
-        proj = utility.epsgFromLocation(inLocationName)
 
         # Set up the basic logging configuration for createPath:
         logging.basicConfig(
@@ -109,13 +106,6 @@ def createPath(request):
             name=inRadar.lower())  # get or create the radar
 
         linePathGeom = GEOSGeometry(ujson.dumps(inLinePath))  # create a geometry object
-        original_epsg = linePathGeom.srid
-        SegmentlinePathGeom = linePathGeom.clone()
-        if inSegmentResolution != 0:
-            # Transform to the reference system expected for simplification (the location's epsg)
-            SegmentlinePathGeom.transform(proj)
-            SegmentlinePathGeom = SegmentlinePathGeom.simplify(inSegmentResolution, True)
-            SegmentlinePathGeom.transform(original_epsg)
 
         # Check of the segment exists already:
         segmentsObj = models.segments.objects.filter(
@@ -135,7 +125,7 @@ def createPath(request):
 
         # Create the segment if it does not exist.
         segmentsObj, _ = models.segments.objects.get_or_create(
-            season_id=seasonsObj.pk, radar_id=radarsObj.pk, name=inSegment, geom=SegmentlinePathGeom, crossover_calc=False)
+            season_id=seasonsObj.pk, radar_id=radarsObj.pk, name=inSegment, geom=linePathGeom, crossover_calc=False)
 
         logging.info('Segment %s of season %s has been created.', inSegment, inSeason)
 
@@ -289,16 +279,7 @@ def crossoverCalculation(request):
             # in degrees for the current segment.
             sql_str = """SET LOCAL work_mem = '15MB';
                         WITH pts AS
-                            (SELECT (dps).path[1] AS rn,
-                                pp.id,
-                                (dps).geom
-                            -- Map geom points to point_path points by comparing x and y values
-                            from (select st_dumppoints(geom) as dps from {app}_segments WHERE id = {seg}) dp
-                            join {app}_point_paths pp on
-                            ROUND(st_x(pp.geom)::numeric, 8)=ROUND(st_x((dps).geom)::numeric, 8) 
-                            and ROUND(st_y(pp.geom)::numeric, 8)=ROUND(st_y((dps).geom)::numeric, 8) 
-                            where pp.segment_id={seg}
-                            ORDER BY rn),
+                            (select row_number() over (order by gps_time) AS rn, pp.id, pp.geom from {app}_point_paths pp where segment_id={seg} and key_point=true order by rn),
                         LINE AS
                             (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
                                 FROM pts),
@@ -345,25 +326,15 @@ def crossoverCalculation(request):
                                         AND s2.id != {seg} and s2.crossover_calc=true
                                         AND ST_Intersects(s1.geom, s2.geom)),
                                 pts AS
-                                (SELECT row_number() over (order by segment_id, (dps).path[1]) AS rn,
-                                    (dps).geom,
-                                    pp.id,
-                                    segment_id
-                                -- Map geom points to point_path points by comparing x and y values
-                                from (select st_dumppoints(geom) as dps from {app}_segments WHERE id in (select ids from segment_ids)) dp
-                                join {app}_point_paths pp on
-                                ROUND(st_x(pp.geom)::numeric, 8)=ROUND(st_x((dps).geom)::numeric, 8)
-                                and ROUND(st_y(pp.geom)::numeric, 8)=ROUND(st_y((dps).geom)::numeric, 8)
-                                where pp.segment_id in (select ids from segment_ids)
-                                ORDER BY rn
-                                ),
-                                    LINE AS
-                                (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
-                                FROM pts
-                                GROUP BY pts.segment_id), i_pts AS
-                                (SELECT (ST_Dump(ST_Intersection(ST_Transform(line.ln,{proj}), ST_Transform(o.geom,{proj})))).geom AS i_pt
-                                FROM LINE, {app}_segments AS o
-                                WHERE o.id = {seg})
+                                    (select row_number() over (order by gps_time) AS rn, pp.geom, pp.id, pp.segment_id from {app}_point_paths pp where segment_id in (select ids from segment_ids) and key_point=true order by segment_id, rn),
+                                LINE AS
+                                    (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
+                                    FROM pts
+                                    GROUP BY pts.segment_id), 
+                                i_pts AS
+                                    (SELECT (ST_Dump(ST_Intersection(ST_Transform(line.ln,{proj}), ST_Transform(o.geom,{proj})))).geom AS i_pt
+                                    FROM LINE, {app}_segments AS o
+                                    WHERE o.id = {seg})
                                 SELECT pts1.id,
                                     CASE
                                         WHEN ST_Equals(i_pt, ST_Transform(pts1.geom,{proj})) THEN degrees(ST_Azimuth(i_pt, ST_Transform(pts2.geom,{proj})))
@@ -416,16 +387,7 @@ def crossoverCalculation(request):
                     inSegment,
                     inSeason)
                 sql_str = """WITH pts AS
-                            (SELECT (dps).path[1] AS rn,
-                                    pp.id,
-                                    (dps).geom
-                                -- Map geom points to point_path points by comparing x and y values
-                                from (select st_dumppoints(geom) as dps from {app}_segments WHERE id = {seg}) dp
-                                join {app}_point_paths pp on
-                                ROUND(st_x(pp.geom)::numeric, 8)=ROUND(st_x((dps).geom)::numeric, 8) 
-                                and ROUND(st_y(pp.geom)::numeric, 8)=ROUND(st_y((dps).geom)::numeric, 8) 
-                                where pp.segment_id={seg}
-                                ORDER BY rn)
+                                (select row_number() over (order by gps_time) AS rn, pp.id, pp.geom from {app}_point_paths pp where segment_id={seg} and key_point=true order by rn)
                             SELECT ST_UnaryUnion(ST_Transform(ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.id||')', 4326)),{proj}))
                             FROM pts;""".format(app=app, proj=proj, seg=segmentsObj.pk)
                 cursor.execute(sql_str)
@@ -720,7 +682,10 @@ def simplifySegmentsResolution(request):
         logging.info('Performing simplification to resolution of %s on segments %s', resolution, segmentsStr)
 
         messageStr = f'Resolution has successfully been altered for the following segments: {segmentsStr}'
+        segment_id_list = tuple(seg["id"] for seg in segmentObjs.values())
+        segment_name_list = tuple(seg["name"] for seg in segmentObjs.values())
         try:
+            # perform the simplification
             sqlStr = """update {app}_segments seg set geom=simplified.geom from 
                         (select points.id as id, st_transform(st_simplifypreservetopology(st_transform(
                         st_makeline(points.geom), case -- determine epsg to project to before simplification to ensure correct units are used for resolution
@@ -734,8 +699,30 @@ def simplifySegmentsResolution(request):
                         group by points.id, loc.name) simplified
                         where seg.id=simplified.id;""".format(app=app, resolution=resolution)
             with connection.cursor() as cursor:
-                cursor.execute(sqlStr, [tuple(seg["id"] for seg in segmentObjs.values())])
-                logging.info('Simplification complete')
+                cursor.execute(sqlStr, [segment_id_list])
+                logging.info('Segment geom simplification complete')
+
+            # Set all key_points for segments to false
+            sqlStr = """update {app}_point_paths set key_point=false where segment_id in %s;""".format(app=app)
+            with connection.cursor() as cursor:
+                cursor.execute(sqlStr, [segment_id_list])
+                logging.info('Key points set to false')
+
+            # Find key points and set to true for each segment
+            for segment_id, segment_name in zip(segment_id_list, segment_name_list):
+                logging.info(f'Finding key points for segment {segment_name}')
+                sqlStr = """update {app}_point_paths set key_point=true
+                            where id in
+                                (select pp.id from {app}_point_paths pp join
+                                    (select st_dumppoints(geom) as seg_points from {app}_segments dseg where dseg.id=%s) seg
+                                on ROUND(st_x(pp.geom)::numeric, 8)=ROUND(st_x((seg_points).geom)::numeric, 8)
+                                and ROUND(st_y(pp.geom)::numeric, 8)=ROUND(st_y((seg_points).geom)::numeric, 8)
+                                where pp.segment_id=%s);""".format(app=app)
+                with connection.cursor() as cursor:
+                    cursor.execute(sqlStr, [segment_id, segment_id])
+                    logging.info(f'Key points found for segment {segment_name}')
+
+            logging.info('Simplification process complete')
 
         except DatabaseError as dberror:
             logging.info('Error occured during simplification: %s', repr(dberror))
