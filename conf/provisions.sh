@@ -483,18 +483,21 @@ except Exception as E:
     # --------------------------------------------------------------------
     # WRITE CRONTAB CONFIGURATION
 
-cronStr="
+    printf "${STATUS_COLOR}Creating crontab${NC}\n";
+    echo -n > /etc/crontab
+
+cat << EOM > /etc/crontab
 SHELL=/bin/bash
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 MAILTO=''
 HOME=/
 
 # REMOVE CSV FILES OLDER THAN 7 DAYS AT 2 AM DAILY
-0 2 * * * root rm -f $(find "$webDataDir"/csv/*.csv -mtime +7);
-0 2 * * * root rm -f $(find "$webDataDir"/kml/*.kml -mtime +7); 
-0 2 * * * root rm -f $(find "$webDataDir"/mat/*.mat -mtime +7);
-0 2 * * * root rm -f $(find "$webDataDir"/reports/*.csv -mtime +7);
-0 2 * * * root rm -f $(find "$webDataDir"/datapacks/*.tar.gz -mtime +7);
+0 2 * * * root rm -f \$(find $webDataDir/csv/*.csv -mtime +7);
+0 2 * * * root rm -f \$(find $webDataDir/kml/*.kml -mtime +7); 
+0 2 * * * root rm -f \$(find $webDataDir/mat/*.mat -mtime +7);
+0 2 * * * root rm -f \$(find $webDataDir/reports/*.csv -mtime +7);
+0 2 * * * root rm -f \$(find $webDataDir/datapacks/*.tar.gz -mtime +7);
 
 # VACUUM ANALYZE-ONLY THE ENTIRE OPS DATABASE AT 2 AM DAILY
 0 2 * * * root sh /opt/ops/conf/tools/vacuumAnalyze.sh ops
@@ -503,16 +506,11 @@ HOME=/
 0 2 * * 7 root sh /opt/ops/conf/tools/createPostgresqlReport.sh "$opsDataPath"postgresql_reports/
 
 # REMOVE POSTGRESQL REPORTS OLDER THAN 2 MONTHS EVERY SUNDAY AT 2 AM
-0 2 * * 7 root rm -f $(find "$opsDataPath"postgresql_reports/*.html -mtime +60);
+0 2 * * 7 root rm -f \$(find $opsDataPath/postgresql_reports/*.html -mtime +60);
 
 # CLEAR THE CONTENTS OF THE DJANGO LOGS EVERY MONTH (FIRST OF MONTH, 2 AM)
-0 2 1 * * root > "$opsDataPath"django_logs/createPath.log;
-
-"
-
-    printf "${STATUS_COLOR}Creating crontab${NC}\n";
-    echo -n > /etc/crontab
-    echo "$cronStr" > /etc/crontab
+0 2 1 * * root > $opsDataPath/django_logs/createPath.log;
+EOM
 
     printf "${STATUS_COLOR}Restarting crond${NC}\n";
     service crond start
