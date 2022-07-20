@@ -296,8 +296,8 @@ def crossoverCalculation(request):
                                 ELSE degrees(ST_Azimuth(i_pt, ST_Transform(pts1.geom,{proj})))
                             END
                             FROM i_pts,
-                        pts AS pts1,
-                        pts AS pts2
+                            pts AS pts1,
+                            pts AS pts2
                         WHERE pts1.rn = ST_Z(i_pt)::int
                         AND pts2.rn =
                             (SELECT rn
@@ -374,6 +374,10 @@ def crossoverCalculation(request):
 
                     else:
                         # This should not occur.
+                        # Only reached if no crossover information is returned from second query
+                        # But second query is only executed if first query finds crossovers
+                        # If this occurs while editing the queries, likely one no longer matches the other in
+                        logging.error("ERROR FINDING MATCHING CROSSOVER POINT PATHS ON INTERSECTING LINES")
                         return utility.response(
                             0, "ERROR FINDING MATCHING CROSSOVER POINT PATHS ON INTERSECTING LINES", {})
 
@@ -508,13 +512,23 @@ def crossoverCalculation(request):
                 segmentsObj.save()
 
             except Exception as e:
+                import traceback
+                tb = traceback.format_exc()
+                logging.error(tb)
                 return utility.errorCheck(e, sys)
             finally:
                 cursor.close()
 
+        logging.info("SUCCESS: CROSSOVER CALCULATION COMPLETED")
         return utility.response(1, 'SUCCESS: CROSSOVER CALCULATION COMPLETED.', {})
 
     except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        try:
+            logging.error(tb)
+        except Exception:
+            pass
         return utility.errorCheck(e, sys)
 
 
@@ -615,6 +629,10 @@ def alterPathResolution(request):
                 segmentObj.save()
                 messageStr += segmentObj.name + '; '
 
+                # TODO[reece]: Mark key points from these points as done with simplifySegmentsResolution
+                #   Probably extract the key_point finding code from simplifySegmentsResolution into a separate function
+                #   both views can use
+
         except DatabaseError as dberror:
             return utility.response(0, dberror.args[0], {})
 
@@ -632,7 +650,7 @@ def simplifySegmentsResolution(request):
 
     Input:
             segment: (string(s)) OR segment_id (integer(s))
-            resolution: (double) number of meters between each point
+            resolution: (double) number of meters of deviation from original line allowed. 0 for full resolution.
 
     Output:
             status: (integer) 0:error 1:success 2:warning
@@ -685,50 +703,86 @@ def simplifySegmentsResolution(request):
         messageStr = f'Resolution has successfully been altered for the following segments: {segmentsStr}'
         segment_id_list = tuple(seg["id"] for seg in segmentObjs.values())
         segment_name_list = tuple(seg["name"] for seg in segmentObjs.values())
-        try:
-            # perform the simplification
-            sqlStr = """update {app}_segments seg set geom=simplified.geom from 
-                        (select points.id as id, st_transform(st_simplifypreservetopology(st_transform(
-                        st_makeline(points.geom), case -- determine epsg to project to before simplification to ensure correct units are used for resolution
-                                                    when loc.name='arctic' then 3413
-                                                    when loc.name='antarctic' then 3031
-                                                    end
-                        ), {resolution}), 4326) as geom
-                        from (select st_force2d(pp.geom) as geom, seg.id as id, seg.season_id 
-                            from {app}_point_paths pp join {app}_segments seg on pp.segment_id=seg.id where seg.id in %s order by gps_time) points
-                            join {app}_seasons ss on points.season_id=ss.id join {app}_locations loc on ss.location_id=loc.id
-                        group by points.id, loc.name) simplified
-                        where seg.id=simplified.id;""".format(app=app, resolution=resolution)
-            with connection.cursor() as cursor:
-                cursor.execute(sqlStr, [segment_id_list])
-                logging.info('Segment geom simplification complete')
 
-            # Set all key_points for segments to false
-            sqlStr = """update {app}_point_paths set key_point=false where segment_id in %s;""".format(app=app)
-            with connection.cursor() as cursor:
-                cursor.execute(sqlStr, [segment_id_list])
-                logging.info('Key points set to false')
-
-            # Find key points and set to true for each segment
-            for segment_id, segment_name in zip(segment_id_list, segment_name_list):
-                logging.info(f'Finding key points for segment {segment_name}')
-                sqlStr = """update {app}_point_paths set key_point=true
-                            where id in
-                                (select pp.id from {app}_point_paths pp join
-                                    (select st_dumppoints(geom) as seg_points from {app}_segments dseg where dseg.id=%s) seg
-                                on ROUND(st_x(pp.geom)::numeric, 8)=ROUND(st_x((seg_points).geom)::numeric, 8)
-                                and ROUND(st_y(pp.geom)::numeric, 8)=ROUND(st_y((seg_points).geom)::numeric, 8)
-                                where pp.segment_id=%s);""".format(app=app)
+        if resolution == 0:
+            # Use all points for segment geom
+            try:
+                sqlStr = """update {app}_segments set geom=line.geom from 
+                            (select pp.segment_id as seg_id, st_makeline(st_force2d(pp.geom)) as geom from {app}_point_paths pp group by pp.segment_id having pp.segment_id in %s) line
+                            where id=line.seg_id and id in %s;""".format(app=app)
                 with connection.cursor() as cursor:
-                    cursor.execute(sqlStr, [segment_id, segment_id])
-                    logging.info(f'Key points found for segment {segment_name}')
+                    cursor.execute(sqlStr, [segment_id_list, segment_id_list])
+                    logging.info('Segment geom simplification complete')
 
-            logging.info('Simplification process complete')
+                sqlStr = """update {app}_point_paths set key_point=true where segment_id in %s;""".format(app=app)
+                with connection.cursor() as cursor:
+                    cursor.execute(sqlStr, [segment_id_list])
+                    logging.info('Key points set to true')
 
-        except DatabaseError as dberror:
-            logging.info('Error occured during simplification: %s', repr(dberror))
-            return utility.response(0, dberror.args[0], {})
+            except DatabaseError as dberror:
+                logging.info('Error occured during simplification: %s', repr(dberror))
+                return utility.response(0, dberror.args[0], {})
+        else:
+            # Resolution is sparser than 0, perform a simplification
+            try:
+                # perform the simplification
+                sqlStr = """update {app}_segments seg set geom=simplified.geom from 
+                            (select points.id as id, st_transform(st_simplifypreservetopology(st_transform(
+                             st_makeline(points.geom), case -- determine epsg to project to before simplification to ensure correct units are used for resolution
+                                                        when loc.name='arctic' then 3413
+                                                        when loc.name='antarctic' then 3031
+                                                        end
+                                                                                                          ), 
+                                                                  {resolution}), 4326) as geom
+                             from (select st_force2d(pp.geom) as geom, seg.id as id, seg.season_id 
+                                 from {app}_point_paths pp join {app}_segments seg on pp.segment_id=seg.id where seg.id in %s order by gps_time) points
+                             join {app}_seasons ss on points.season_id=ss.id join {app}_locations loc on ss.location_id=loc.id
+                             group by points.id, loc.name
+                            ) simplified
+                            where seg.id=simplified.id;""".format(app=app, resolution=resolution)
+                with connection.cursor() as cursor:
+                    cursor.execute(sqlStr, [segment_id_list])
+                    logging.info('Segment geom simplification complete')
 
+                # Set all key_points for segments to false
+                sqlStr = """update {app}_point_paths set key_point=false where segment_id in %s;""".format(app=app)
+                with connection.cursor() as cursor:
+                    cursor.execute(sqlStr, [segment_id_list])
+                    logging.info('Key points set to false')
+
+                # Find key points and set to true for each segment
+                for segment_id, segment_name in zip(segment_id_list, segment_name_list):
+                    logging.info(f'Finding key points for segment {segment_name}')
+                    sqlStr = """with seg_pts as
+                                (select (st_dumppoints(geom)) as pt
+                                from {app}_segments where id=%s)
+                                update {app}_point_paths set key_point=true where id in 
+                                (SELECT pp.id FROM seg_pts join {app}_point_paths pp 
+                                on pp.id = (select id from {app}_point_paths pp2 
+                                            where pp2.segment_id=%s ORDER BY 
+                                            ABS(st_distance((seg_pts.pt).geom, pp2.geom)) ASC limit 1));""".format(app=app)
+                    with connection.cursor() as cursor:
+                        cursor.execute(sqlStr, [segment_id, segment_id])
+                        logging.info(f'Key points found for segment {segment_name}')
+
+                    # This is hopefully unnecessary but if a point path point was somehow closer to two separate points
+                    # in the segment geom after simplification (which shouldn't be possible since no points should move),
+                    # then this will ensure that the number of key points matches the number of points in the segment geom
+                    logging.info(f'Updating segment to match key_points for segment {segment_name}')
+                    sqlStr = """WITH pts AS
+                                (select pp.id, pp.geom
+                                from {app}_point_paths pp where segment_id=%s and key_point=true order by gps_time),
+                                line as (select ST_MakeLine(st_force2d(pts.geom)) as geom from pts)
+                                update {app}_segments seg set geom=line.geom from pts, line where seg.id=%s;""".format(app=app)
+                    with connection.cursor() as cursor:
+                        cursor.execute(sqlStr, [segment_id, segment_id])
+                        logging.info(f'Segment geom updated for segment {segment_name}')
+
+            except DatabaseError as dberror:
+                logging.info('Error occured during simplification: %s', repr(dberror))
+                return utility.response(0, dberror.args[0], {})
+
+        logging.info('Simplification process complete')
         # return the response.
 
         return utility.response(1, messageStr, {})
