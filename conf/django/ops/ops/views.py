@@ -707,9 +707,11 @@ def simplifySegmentsResolution(request):
         if resolution == 0:
             # Use all points for segment geom
             try:
-                sqlStr = """update {app}_segments set geom=line.geom from 
-                            (select pp.segment_id as seg_id, st_makeline(st_force2d(pp.geom)) as geom from {app}_point_paths pp group by pp.segment_id having pp.segment_id in %s) line
-                            where id=line.seg_id and id in %s;""".format(app=app)
+                sqlStr = """with pts as (select pp.segment_id, pp.geom from {app}_point_paths pp order by gps_time),
+                            line as (select pts.segment_id as seg_id, st_makeline(st_force2d(pts.geom)) as geom 
+                                    from pts group by pts.segment_id having pts.segment_id in %s)
+                            update {app}_segments set geom=line.geom from line   
+                                where id=line.seg_id and id in %s;""".format(app=app)
                 with connection.cursor() as cursor:
                     cursor.execute(sqlStr, [segment_id_list, segment_id_list])
                     logging.info('Segment geom simplification complete')
@@ -742,7 +744,7 @@ def simplifySegmentsResolution(request):
                             where seg.id=simplified.id;""".format(app=app, resolution=resolution)
                 with connection.cursor() as cursor:
                     cursor.execute(sqlStr, [segment_id_list])
-                    logging.info('Segment geom simplification complete')
+                    logging.info('Segment geom simplification done. Updating key_points...')
 
                 # Set all key_points for segments to false
                 sqlStr = """update {app}_point_paths set key_point=false where segment_id in %s;""".format(app=app)
@@ -753,14 +755,12 @@ def simplifySegmentsResolution(request):
                 # Find key points and set to true for each segment
                 for segment_id, segment_name in zip(segment_id_list, segment_name_list):
                     logging.info(f'Finding key points for segment {segment_name}')
-                    sqlStr = """with seg_pts as
-                                (select (st_dumppoints(geom)) as pt
-                                from {app}_segments where id=%s)
-                                update {app}_point_paths set key_point=true where id in 
-                                (SELECT pp.id FROM seg_pts join {app}_point_paths pp 
-                                on pp.id = (select id from {app}_point_paths pp2 
-                                            where pp2.segment_id=%s ORDER BY 
-                                            ABS(st_distance((seg_pts.pt).geom, pp2.geom)) ASC limit 1));""".format(app=app)
+                    sqlStr = """update {app}_point_paths set key_point=true
+                                where id in
+                                (select pp.id from {app}_point_paths pp join
+                                (select st_dumppoints(geom) as seg_points from {app}_segments dseg where dseg.id=%s) seg
+                                on ST_SnapToGrid(st_force2d(pp.geom), 0.000001)=ST_SnapToGrid((seg_points).geom, 0.000001)
+                                where pp.segment_id=%s);""".format(app=app)
                     with connection.cursor() as cursor:
                         cursor.execute(sqlStr, [segment_id, segment_id])
                         logging.info(f'Key points found for segment {segment_name}')
@@ -773,7 +773,7 @@ def simplifySegmentsResolution(request):
                                 (select pp.id, pp.geom
                                 from {app}_point_paths pp where segment_id=%s and key_point=true order by gps_time),
                                 line as (select ST_MakeLine(st_force2d(pts.geom)) as geom from pts)
-                                update {app}_segments seg set geom=line.geom from pts, line where seg.id=%s;""".format(app=app)
+                                update {app}_segments seg set geom=line.geom from line where seg.id=%s;""".format(app=app)
                     with connection.cursor() as cursor:
                         cursor.execute(sqlStr, [segment_id, segment_id])
                         logging.info(f'Segment geom updated for segment {segment_name}')

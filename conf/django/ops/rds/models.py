@@ -71,7 +71,7 @@ class point_paths(models.Model):
     heading = models.DecimalField(max_digits=6, decimal_places=5)
     geom = models.PointField(dim=3)
     objects = models.Manager()
-    key_point = models.BooleanField(default=True)
+    key_point = models.BooleanField(default=True, db_index=True)
 
     def __str__(self):
         return "%d" % (self.id)
