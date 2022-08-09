@@ -650,7 +650,7 @@ def simplifySegmentsResolution(request):
 
     Input:
             segment: (string(s)) OR segment_id (integer(s))
-            resolution: (double) number of meters of deviation from original line allowed. 0 for full resolution.
+            resolution: (double) number of meters of deviation from original line allowed. -1 for full resolution.
 
     Output:
             status: (integer) 0:error 1:success 2:warning
@@ -704,7 +704,7 @@ def simplifySegmentsResolution(request):
         segment_id_list = tuple(seg["id"] for seg in segmentObjs.values())
         segment_name_list = tuple(seg["name"] for seg in segmentObjs.values())
 
-        if resolution == 0:
+        if resolution == -1:
             # Use all points for segment geom
             try:
                 sqlStr = """with pts as (select pp.segment_id, pp.geom from {app}_point_paths pp order by gps_time),
@@ -725,7 +725,7 @@ def simplifySegmentsResolution(request):
                 logging.info('Error occured during simplification: %s', repr(dberror))
                 return utility.response(0, dberror.args[0], {})
         else:
-            # Resolution is sparser than 0, perform a simplification
+            # Resolution is not -1, perform a simplification
             try:
                 # perform the simplification
                 sqlStr = """update {app}_segments seg set geom=simplified.geom from 
