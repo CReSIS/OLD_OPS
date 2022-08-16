@@ -532,9 +532,62 @@ def crossoverCalculation(request):
         return utility.errorCheck(e, sys)
 
 
+def _findKeyPoints(app, segment_id_list, segment_name_list):
+    """
+    Utility function to update the {app}_point_paths table in the database to mark key points.
+    Key points are the points that comprise the {app}_segments geom linestring. Whenever this
+    linestring is changed, this function should be called to update the point paths to match.
+
+    Input:
+        app: (str) the system who's table should be updated (e.g. "rds").
+        segment_id_list: (list) a list of ID of the segments to update.
+        segment_name_list: (list) a list of segment names corresponding to each segment ID for logging purposes
+
+    """
+    logging.basicConfig(
+            filename=opsSettings.OPS_DATA_PATH +
+            'django_logs/createPath.log',
+            format='%(levelname)s :: %(asctime)s :: %(message)s',
+            datefmt='%c',
+            level=logging.DEBUG)
+    # Set all key_points for segments to false
+    sqlStr = """update {app}_point_paths set key_point=false where segment_id in %s;""".format(app=app)
+    with connection.cursor() as cursor:
+        cursor.execute(sqlStr, [segment_id_list])
+        logging.info('Key points set to false')
+
+    # Find key points and set to true for each segment
+    for segment_id, segment_name in zip(segment_id_list, segment_name_list):
+        logging.info(f'Finding key points for segment {segment_name}')
+        sqlStr = """update {app}_point_paths set key_point=true
+                    where id in
+                    (select pp.id from {app}_point_paths pp join
+                    (select st_dumppoints(geom) as seg_points from {app}_segments dseg where dseg.id=%s) seg
+                    on ST_SnapToGrid(st_force2d(pp.geom), 0.000001)=ST_SnapToGrid((seg_points).geom, 0.000001)
+                    where pp.segment_id=%s);""".format(app=app)
+        with connection.cursor() as cursor:
+            cursor.execute(sqlStr, [segment_id, segment_id])
+            logging.info(f'Key points found for segment {segment_name}')
+
+        # Recreate the segment linestring from the marked key points since finding the key points is not a perfect process
+        # Sometimes, due to a precision difference in the DB (I believe), key_points do not exactly match points in the linestring
+        logging.info(f'Updating segment to match key_points for segment {segment_name}')
+        sqlStr = """WITH pts AS
+                    (select pp.id, pp.geom
+                    from {app}_point_paths pp where segment_id=%s and key_point=true order by gps_time),
+                    line as (select ST_MakeLine(st_force2d(pts.geom)) as geom from pts)
+                    update {app}_segments seg set geom=line.geom from line where seg.id=%s;""".format(app=app)
+        with connection.cursor() as cursor:
+            cursor.execute(sqlStr, [segment_id, segment_id])
+            logging.info(f'Segment geom updated for segment {segment_name}')
+
+
 @ipAuth()
 def alterPathResolution(request):
     """ Alters a segment's resolution (vertex point spacing along line).
+
+    Prefer simplifySegmentsResolution for a more sophisticated approach to reducing the 
+    number of points. alterPathResolution is not crossover safe (see note at bottom of function).
 
     Input:
             segment: (string(s)) OR segment_id (integer(s))
@@ -544,7 +597,6 @@ def alterPathResolution(request):
     Output:
             status: (integer) 0:error 1:success 2:warning
             data: string status message
-
     """
     try:
         models, data, app, cookies = utility.getInput(
@@ -629,9 +681,15 @@ def alterPathResolution(request):
                 segmentObj.save()
                 messageStr += segmentObj.name + '; '
 
-                # TODO[reece]: Mark key points from these points as done with simplifySegmentsResolution
-                #   Probably extract the key_point finding code from simplifySegmentsResolution into a separate function
-                #   both views can use
+            # NOTE[Reece]: Point Paths do not exactly map to geom linestring points now due to the use of interpolation above.
+            #              Attempting to find key points will only yield a few points and then the geom will be overwritten to match.
+            #              Either Use a different method to find the closest points to mark as key points or don't mark key points after this method.
+            #              Not marking key points means that once this function has been ran, calculating crossovers will be unreliable
+            #              as a mix of geoms comprised of points in the point paths table and geoms from the segments table
+            #              will be compared and these geoms will differ.
+            # segment_id_list = tuple(seg["id"] for seg in segmentObjs.values())
+            # segment_name_list = tuple(seg["name"] for seg in segmentObjs.values())
+            # _findKeyPoints(app, segment_id_list, segment_name_list)
 
         except DatabaseError as dberror:
             return utility.response(0, dberror.args[0], {})
@@ -746,37 +804,7 @@ def simplifySegmentsResolution(request):
                     cursor.execute(sqlStr, [segment_id_list])
                     logging.info('Segment geom simplification done. Updating key_points...')
 
-                # Set all key_points for segments to false
-                sqlStr = """update {app}_point_paths set key_point=false where segment_id in %s;""".format(app=app)
-                with connection.cursor() as cursor:
-                    cursor.execute(sqlStr, [segment_id_list])
-                    logging.info('Key points set to false')
-
-                # Find key points and set to true for each segment
-                for segment_id, segment_name in zip(segment_id_list, segment_name_list):
-                    logging.info(f'Finding key points for segment {segment_name}')
-                    sqlStr = """update {app}_point_paths set key_point=true
-                                where id in
-                                (select pp.id from {app}_point_paths pp join
-                                (select st_dumppoints(geom) as seg_points from {app}_segments dseg where dseg.id=%s) seg
-                                on ST_SnapToGrid(st_force2d(pp.geom), 0.000001)=ST_SnapToGrid((seg_points).geom, 0.000001)
-                                where pp.segment_id=%s);""".format(app=app)
-                    with connection.cursor() as cursor:
-                        cursor.execute(sqlStr, [segment_id, segment_id])
-                        logging.info(f'Key points found for segment {segment_name}')
-
-                    # This is hopefully unnecessary but if a point path point was somehow closer to two separate points
-                    # in the segment geom after simplification (which shouldn't be possible since no points should move),
-                    # then this will ensure that the number of key points matches the number of points in the segment geom
-                    logging.info(f'Updating segment to match key_points for segment {segment_name}')
-                    sqlStr = """WITH pts AS
-                                (select pp.id, pp.geom
-                                from {app}_point_paths pp where segment_id=%s and key_point=true order by gps_time),
-                                line as (select ST_MakeLine(st_force2d(pts.geom)) as geom from pts)
-                                update {app}_segments seg set geom=line.geom from line where seg.id=%s;""".format(app=app)
-                    with connection.cursor() as cursor:
-                        cursor.execute(sqlStr, [segment_id, segment_id])
-                        logging.info(f'Segment geom updated for segment {segment_name}')
+                _findKeyPoints(app, segment_id_list, segment_name_list)
 
             except DatabaseError as dberror:
                 logging.info('Error occured during simplification: %s', repr(dberror))
