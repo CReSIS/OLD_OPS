@@ -136,9 +136,7 @@ before_reboot() {
     if [ "$preProv" -eq 1 ]; then
 
         printf "${STATUS_COLOR}RPM epel-release${NC}\n";
-        cd ~ && cp /opt/ops/conf/software/epel-release-latest-7.noarch.rpm ./
-        rpm -Uvh epel-release-latest-7*.rpm
-        rm -f epel-release-latest-7.noarch.rpm
+        yum install -y epel-release
         printf "${STATUS_COLOR}Updating yum${NC}\n";
         yum update -y
         printf "${STATUS_COLOR}Yum installing dev tools${NC}\n";
