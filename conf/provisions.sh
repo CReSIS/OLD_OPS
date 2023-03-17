@@ -974,7 +974,7 @@ WantedBy=multi-user.target"
 
     # POSTGRESQL
     printf "${STATUS_COLOR}Killing current postgres processes${NC}\n";
-    killall postgres;
+    pkill postgres;
     printf "${STATUS_COLOR}Restarting postgresql service${NC}\n";
     systemctl restart postgresql-12
     printf "${STATUS_COLOR}chkconfig postgresql-12 on${NC}\n";
