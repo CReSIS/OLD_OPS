@@ -827,6 +827,9 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
 
     # INSALL APACHE TOMCAT
 
+    printf "${STATUS_COLOR}Installing Java JDK${NC}\n";
+    yum install -y java-11-openjdk-devel
+
     printf "${STATUS_COLOR}Creating Tomcat user${NC}\n";
     useradd -m -U -d /opt/tomcat -s /bin/false tomcat
     printf "${STATUS_COLOR}Downloading tomcat 8.5${NC}\n";
