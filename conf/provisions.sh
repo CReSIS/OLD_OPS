@@ -956,7 +956,11 @@ WantedBy=multi-user.target"
     mkdir -m 777 -p /var/profile_logs/txt/
 
     # --------------------------------------------------------------------
-    # Create root password and change ops password
+    # Create ops account
+    printf "${STATUS_COLOR}Create ops user${NC}\n";
+    adduser ops
+    printf "${STATUS_COLOR}Granting sudo access to OPS user${NC}\n";
+    usermod -aG wheel ops
     printf "${STATUS_COLOR}Changing root and ops passwords${NC}\n";
     echo -e "pubMaster\npubMaster" | passwd root
     echo -e "pubOps\npubOps" | passwd ops
