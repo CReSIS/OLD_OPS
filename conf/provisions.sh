@@ -241,7 +241,7 @@ after_reboot() {
     rm -f Python-3.8.7.tgz
     cd Python-3.8.7
     printf "${STATUS_COLOR}Configuring python 3.8.7${NC}\n";
-    ./configure --enable-shared --prefix=/opt/python LDFLAGS=-Wl,-rpath=/opt/python/lib --enable-optimizationsrm
+    ./configure --enable-shared --prefix=/opt/python LDFLAGS=-Wl,-rpath=/opt/python/lib --enable-optimizations
     printf "${STATUS_COLOR}Making python 3.8.7${NC}\n";
     make altinstall
 
