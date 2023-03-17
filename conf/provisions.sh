@@ -135,9 +135,11 @@ before_reboot() {
 
     if [ "$preProv" -eq 1 ]; then
 
-        printf "${STATUS_COLOR}RPM epel-release${NC}\n";
+        printf "${STATUS_COLOR}Yum isntalling epel-release${NC}\n";
         yum install -y epel-release
-        printf "${STATUS_COLOR}Updating yum${NC}\n";
+        printf "${STATUS_COLOR}Cleaning yum metadata${NC}\n";
+        yum clean all  # seems to prevent timeouts during yum update
+        printf "${STATUS_COLOR}Performing yum update${NC}\n";
         yum update -y
         printf "${STATUS_COLOR}Yum installing dev tools${NC}\n";
         yum groupinstall -y "Development Tools"
