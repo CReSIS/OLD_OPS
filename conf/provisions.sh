@@ -284,7 +284,7 @@ EOM
 
     # INSTALL MOD_WSGI (COMPILE WITH Python38)
     printf "${STATUS_COLOR}Pip installing mod_wsgi${NC}\n";
-    pip install --upgrade mod_wsgi --no-cache-dir
+    pip install --upgrade mod_wsgi==4.8 --no-cache-dir
 
     # --------------------------------------------------------------------
     # WRITE CONFIG FILES FOR HTTPD
@@ -540,7 +540,7 @@ EOM
     # INSTALL PYTHON PSYCOPG2 MODULE FOR POSTGRES
     printf "${STATUS_COLOR}Pip installing psycopg2${NC}\n";
     export PATH=/usr/pgsql-12/bin:"$PATH"
-    pip install psycopg2-binary
+    pip install psycopg2-binary==2.9
 
     if [ "$newDb" -eq 1 ]; then
 
@@ -624,16 +624,16 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
 
     # INSTALL PACKAGES WITH PIP
     printf "${STATUS_COLOR}Pip installing website dependencies${NC}\n";
-    pip install Cython
-    pip install geojson ujson django-extensions simplekml pylint
-    pip install --pre line_profiler
+    pip install Cython==0.29
+    pip install geojson==2.5 ujson==4.0 django-extensions==3.1 simplekml==1.3 pylint
+    pip install --pre line_profiler==3.3
 
     # INSTALL NUMPY/SCIPY
     printf "${STATUS_COLOR}Yum installing atlas and blas${NC}\n";
     yum -y install atlas-devel blas-devel
     printf "${STATUS_COLOR}Pip installing numpy and scipy${NC}\n";
-    pip install numpy
-    pip install scipy
+    pip install numpy==1.21
+    pip install scipy==1.7
 
     # INSTALL GEOS
     printf "${STATUS_COLOR}Yum installing geos${NC}\n";
