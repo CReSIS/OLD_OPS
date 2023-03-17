@@ -221,7 +221,8 @@ after_reboot() {
 
     # INSTALL THE PGDG REPO
     printf "${STATUS_COLOR}Installing pgdg repo${NC}\n";
-    cd ~ && cp -f /opt/ops/conf/software/pgdg-redhat-repo-latest.noarch.rpm ./
+    cd ~
+    wget https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
     rpm -Uvh pgdg-redhat-repo-latest.noarch.rpm
     rm -f pgdg-redhat-repo-latest.noarch.rpm
 
