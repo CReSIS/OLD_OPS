@@ -47,12 +47,15 @@ before_reboot() {
     update_config "startTime" "\"$(date -u)\""
     update_config "installPgData" 0
 
+    printf "${STATUS_COLOR}Yum installing tools${NC}\n";
+    yum install -y gzip gcc unzip rsync wget git
+
     # --------------------------------------------------------------------
     #PROMPT TO OPTIONALLY LOAD IN DATA (DATA BULKLOAD)
     while true; do
         read -p "Would you like to bulk load the OpenPolarServer with data? [y/n]" yn
-        case $yn in 
-            [Yy]* ) 
+        case $yn in
+            [Yy]* )
                 update_config "installPgData" 1;
                 printf "		*****NOTE*****\n"
                 printf "You must place the desired datapacks in \n/opt/ops/data/postgresql/ before continuing.\n"
@@ -68,12 +71,12 @@ before_reboot() {
     while true; do
         printf "\nWould you like to load in a sample dataset from CReSIS (useful for testing and upgrading the system)?\n"
         read -p "[y/n]" yn
-        case $yn in 
-            [Yy]* ) 
+        case $yn in
+            [Yy]* )
                 update_config "installPgData" 1;
                 # DOWNLOAD A PREMADE DATA PACK FROM CReSIS (MINIMAL LAYERS)
                 printf "${STATUS_COLOR}Downloading and unzipping premade datapack${NC}\n";
-                wget https://data.cresis.ku.edu/data/ops/SampleData.zip -P /opt/ops/data/postgresql/   
+                wget https://data.cresis.ku.edu/data/ops/SampleData.zip -P /opt/ops/data/postgresql/
                 unzip /opt/ops/data/postgresql/SampleData.zip -d /opt/ops/data/postgresql/
                 rm /opt/ops/data/postgresql/SampleData.zip
                 break;;
@@ -88,7 +91,7 @@ before_reboot() {
     update_config "preProv" 1;
     update_config "newDb" 1;
     update_config "serverName" "\"192.168.111.222\""
-    update_config "serverAdmin" "\"root\""; 
+    update_config "serverAdmin" "\"root\"";
     update_config "appName" "\"ops\"";
     update_config "dbName" "\"ops\"";
 
@@ -122,7 +125,7 @@ before_reboot() {
     if [[ -z "${timeZone// }" ]]; then
     update_config "timeZone" "\"America/Chicago\""
     fi
-    
+
     printf "${STATUS_COLOR}Setting Timezone${NC}\n";
     timedatectl set-timezone $timeZone
 
@@ -134,14 +137,14 @@ before_reboot() {
 
         printf "${STATUS_COLOR}RPM epel-release${NC}\n";
         cd ~ && cp /opt/ops/conf/software/epel-release-latest-7.noarch.rpm ./
-        rpm -Uvh epel-release-latest-7*.rpm 
+        rpm -Uvh epel-release-latest-7*.rpm
         rm -f epel-release-latest-7.noarch.rpm
         printf "${STATUS_COLOR}Updating yum${NC}\n";
         yum update -y
-        printf "${STATUS_COLOR}Yum installing tools${NC}\n";
+        printf "${STATUS_COLOR}Yum installing dev tools${NC}\n";
         yum groupinstall -y "Development Tools"
         yum install -y gzip gcc unzip rsync wget git
-        
+
         printf "${STATUS_COLOR}Stopping firewalld${NC}\n";
         systemctl mask firewalld
         systemctl stop firewalld
@@ -149,17 +152,17 @@ before_reboot() {
         yum install -y iptables-services
         systemctl enable iptables
         printf "${STATUS_COLOR}Setting and restarting iptables${NC}\n";
-        iptables -F 
+        iptables -F
         iptables -A INPUT -p tcp --dport 22 -j ACCEPT #SSH ON TCP 22
         iptables -A INPUT -p tcp --dport 80 -j ACCEPT #HTTP ON TCP 80
         iptables -A INPUT -p tcp --dport 443 -j ACCEPT #HTTPS ON TCP 443
-        iptables -P INPUT DROP 
-        iptables -P FORWARD DROP 
-        iptables -P OUTPUT ACCEPT 
-        iptables -A INPUT -i lo -j ACCEPT 
-        iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT 
-        /sbin/service iptables save 
-        /sbin/service iptables restart 
+        iptables -P INPUT DROP
+        iptables -P FORWARD DROP
+        iptables -P OUTPUT ACCEPT
+        iptables -A INPUT -i lo -j ACCEPT
+        iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+        /sbin/service iptables save
+        /sbin/service iptables restart
 
     fi
 
@@ -228,7 +231,7 @@ after_reboot() {
     printf "${STATUS_COLOR}Yum installing python3.8 dependencies${NC}\n";
     yum -y groupinstall "Development Tools"
     yum -y install openssl-devel bzip2-devel libffi-devel
-    
+
     printf "${STATUS_COLOR}Downloading python 3.8.7 tar${NC}\n";
     cd ~
     wget https://data.cresis.ku.edu/data/temp/ct/ops/Python-3.8.7.tgz
@@ -333,7 +336,7 @@ ProxyPassReverse /geoserver http://localhost:8080/geoserver"
 
 siteConf="
 <VirtualHost *:80>
-    
+
     ServerAdmin "$serverAdmin"
     DocumentRoot /var/www/html
     ServerName "$serverName"
@@ -343,7 +346,7 @@ siteConf="
 
     LoadModule speling_module modules/mod_speling.so
     CheckSpelling on
-    
+
     ScriptAlias /cgi-bin/ /var/www/"$serverName"/cgi-bin/
     <Location /cgi-bin>
         Options +ExecCGI
@@ -357,7 +360,7 @@ siteConf="
         ForceType application/octet-stream
         Header set Content-Disposition attachment
     </Directory>
-    
+
     Alias /profile-logs /var/profile_logs/txt
     <Directory ""/var/profile_logs/txt"">
         Options Indexes FollowSymLinks
@@ -479,7 +482,7 @@ except Exception as E:
     printf "${STATUS_COLOR}Creating and chmodding site proxy cgi${NC}\n";
     echo -e "$cgiStr" > /var/www/sites/$serverName/cgi-bin/proxy.cgi
     chmod +x /var/www/sites/$serverName/cgi-bin/proxy.cgi
-            
+
     # --------------------------------------------------------------------
     # WRITE CRONTAB CONFIGURATION
 
@@ -494,7 +497,7 @@ HOME=/
 
 # REMOVE CSV FILES OLDER THAN 7 DAYS AT 2 AM DAILY
 0 2 * * * root rm -f \$(find $webDataDir/csv/*.csv -mtime +7);
-0 2 * * * root rm -f \$(find $webDataDir/kml/*.kml -mtime +7); 
+0 2 * * * root rm -f \$(find $webDataDir/kml/*.kml -mtime +7);
 0 2 * * * root rm -f \$(find $webDataDir/mat/*.mat -mtime +7);
 0 2 * * * root rm -f \$(find $webDataDir/reports/*.csv -mtime +7);
 0 2 * * * root rm -f \$(find $webDataDir/datapacks/*.tar.gz -mtime +7);
@@ -524,8 +527,8 @@ EOM
 
     # EXCLUDE POSTGRESQL FROM THE BASE CentOS RPM
     printf "${STATUS_COLOR}Excluding postgresql from base centos rpm${NC}\n";
-    sed -i -e '/^\[base\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
-    sed -i -e '/^\[updates\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo 
+    sed -i -e '/^\[base\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo
+    sed -i -e '/^\[updates\]$/a\exclude=postgresql*' /etc/yum.repos.d/CentOS-Base.repo
 
     # INSTALL POSTGRESQL and POSTGIS
     printf "${STATUS_COLOR}Yum installing postgres and dependencies${NC}\n";
@@ -539,7 +542,7 @@ EOM
     pip install psycopg2-binary
 
     if [ "$newDb" -eq 1 ]; then
-        
+
         # MAKE THE SNFS1 MOCK DIRECTORY IF IT DOESNT EXIST
         if [ ! -d "$pgPth" ]
             then
@@ -548,7 +551,7 @@ EOM
                 chown postgres:postgres $pgPth
                 chmod 700 $pgPth
         fi
-        
+
         # INITIALIZE THE DATABASE CLUSTER
 postgresServiceStr="
 [Service]
@@ -565,7 +568,7 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
         cp /opt/ops/conf/configs/postgresql.conf $pgDir"postgresql.conf"
         printf "${STATUS_COLOR}Enabling postgres service${NC}\n";
         systemctl enable --now postgresql-12
-        
+
         # CREATE STARTUP LOG
         printf "${STATUS_COLOR}Creating pg startup log${NC}\n";
         touch $pgDir"pgstartup.log"
@@ -591,7 +594,7 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
         sed -i "s,#log_lock_waits = off,log_lock_waits = on,g" $pgConfDir
         sed -i "s,#log_temp_files = -1,log_temp_files = 0,g" $pgConfDir
         sed -i "s,lc_messages = 'en_US.UTF-8',lc_messages = 'C',g" $pgConfDir
-        
+
         # START UP THE POSTGRESQL SERVER
 
         printf "${STATUS_COLOR}Restarting postgresql service${NC}\n";
@@ -604,7 +607,7 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
 
         # CREATE THE POSTGIS TEMPLATE
         printf "${STATUS_COLOR}PSQL creating postgis template${NC}\n";
-        cmdstring="createdb postgis_template -O "$dbUser 
+        cmdstring="createdb postgis_template -O "$dbUser
         su - postgres -c "$cmdstring"
         psql -U postgres -d postgis_template -c "CREATE EXTENSION postgis; CREATE EXTENSION postgis_topology;"
 
@@ -620,11 +623,11 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
 
     # INSTALL PACKAGES WITH PIP
     printf "${STATUS_COLOR}Pip installing website dependencies${NC}\n";
-    pip install Cython 
+    pip install Cython
     pip install geojson ujson django-extensions simplekml pylint
     pip install --pre line_profiler
 
-    # INSTALL NUMPY/SCIPY 
+    # INSTALL NUMPY/SCIPY
     printf "${STATUS_COLOR}Yum installing atlas and blas${NC}\n";
     yum -y install atlas-devel blas-devel
     printf "${STATUS_COLOR}Pip installing numpy and scipy${NC}\n";
@@ -675,14 +678,14 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
         else
             read -p "Would you like to add another admin to Django (also receives error messages)? [y/n]" yn
         fi
-        case $yn in 
-            [Yy]* ) 
+        case $yn in
+            [Yy]* )
                 echo "Type the admin's name, followed by [ENTER]:";
                 read name;
                 echo "Type the admin's email, followed by [ENTER]:";
-                read email; 
+                read email;
                 read -p "are the name ($name) and email ($email) correct?" yn
-                case $yn in 
+                case $yn in
                     [Yy]* )adminStr="$adminStr \('$name'\, '$email'\)\,";;
                     * ) echo "Please answer yes or no.";;
                 esac;;
@@ -693,15 +696,15 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
     printf "${STATUS_COLOR}Setting django admins in settings.py${NC}\n";
     sed -i "s,ADMINS = (),ADMINS = ($adminStr),g" /var/django/ops/ops/settings.py
 
-    #OPTIONALLY SET DJANGO TO BE IN DEBUG MODE. 			
-    while true; do		
+    #OPTIONALLY SET DJANGO TO BE IN DEBUG MODE.
+    while true; do
 
         read -p "Would you like to have Django operate in debug mode (DEVELOPMENT ENVIRONMENT ONLY!)? [y/n]" yn
-        case $yn in 
-            [Yy]* ) 
+        case $yn in
+            [Yy]* )
                 read -p "ARE YOU SURE YOU WANT DJANGO TO BE IN DEBUG MODE? THIS IS FOR DEVELOPMENT ENVIRONMENTS ONLY. [y/n]" yn
-                case $yn in 
-                    [Yy]* ) 
+                case $yn in
+                    [Yy]* )
                         printf "${STATUS_COLOR}Setting debug mode in settings.py${NC}\n";
                         sed -i "s,DEBUG = False,DEBUG = True,g" /var/django/ops/ops/settings.py;
                         break;;
@@ -758,8 +761,8 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
     fi
 
     # --------------------------------------------------------------------
-    # BULKLOAD DATA TO POSTGRESQL 
-            
+    # BULKLOAD DATA TO POSTGRESQL
+
     # INSTALL pg_bulkload AND DEPENDENCIES
     printf "${STATUS_COLOR}Yum installing openssl and pg_bulkload${NC}\n";
     yum install -y openssl098e;
@@ -817,7 +820,7 @@ Environment=\"PGLOG=${pgDir}pgstartup.log\"
     git clone https://gitlab.com/openpolarradar/opr.git
     git clone https://gitlab.com/openpolarradar/opr.wiki.git
     git clone https://gitlab.com/openpolarradar/opr_params.git
-    
+
     # --------------------------------------------------------------------
     # INSTALL AND CONFIGURE APACHE TOMCAT AND GEOSERVER(WAR)
 
@@ -890,7 +893,7 @@ WantedBy=multi-user.target"
         # DOWNLOAD THE DATA PACK FROM CReSIS (MINIMAL LAYERS)
         printf "${STATUS_COLOR}Downloading minimal data pack from cresis${NC}\n";
         cd /opt/ops/data/geoserver/ && wget https://data.cresis.ku.edu/data/ops/geoserver.zip
-        
+
         # UNZIP THE DOWNLOADED DATA PACK
         printf "${STATUS_COLOR}Unzipping geoserver.zip${NC}\n";
         unzip /opt/ops/data/geoserver/geoserver.zip -d $geoServerDataPath"data/"
@@ -926,7 +929,7 @@ WantedBy=multi-user.target"
     systemctl daemon-reload
     systemctl start tomcat
     systemctl enable tomcat
-    
+
     # --------------------------------------------------------------------
     # INSTALL AND CONFIGURE WEB APPLICATION
 
@@ -1004,7 +1007,7 @@ WantedBy=multi-user.target"
 
     stopTime=$(date -u);
 
-    printf "\n"	
+    printf "\n"
     printf "SYSTEM INSTALLATION AND CONFIGURATION COMPLETE. INSTRUCTIONS BELOW.\n"
     printf "\n"
     printf "#########################################################################\n"
@@ -1015,12 +1018,12 @@ WantedBy=multi-user.target"
     printf "# The Center for Remote Sensing of Ice Sheets (CReSIS)\n"
     printf "# University of Kansas, Lawrence, Ks\n"
     printf "#\n"
-    printf "# Developed by:\n" 
+    printf "# Developed by:\n"
     printf "#  - Kyle W Purdon\n"
     printf "#  - Trey Stafford\n"
     printf "#  - John Paden\n"
     printf "#  - Sam Buchanan\n"
-    printf "#  - Haiji Wang\n"	
+    printf "#  - Haiji Wang\n"
     printf "# Updated by:\n"
     printf "#  - Reece Mathews\n"
     printf "#\n"
@@ -1031,7 +1034,7 @@ WantedBy=multi-user.target"
     printf "#  		- Google Chrome recommended.\n"
     printf "#  - Enter %s as the url.\n" $serverName
     printf "#  - Welcome the the OPS web interface!.\n"
-    printf "#\n"	
+    printf "#\n"
     printf "#########################################################################\n"
     printf "#########################################################################\n"
     printf "\n"
