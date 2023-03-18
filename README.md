@@ -16,24 +16,48 @@ The OpenPolarServer (OPS) is a complete spatial data infrastructure (SDI) built 
 
 ## To cite usage of the Open Polar Server please use the following:
 
-  CReSIS. 2021. Open Polar Server [computer software], Lawrence, Kansas, USA. Retrieved from https://github.com/CReSIS/.
+    CReSIS. 2023. Open Polar Server [computer software], Lawrence,  Kansas, USA. Retrieved from https://github.com/CReSIS/.
 
 ## To acknowledge the use of the CReSIS Toolbox, please note Kansas, NSF and NASA contributions. For example:
 
-  We acknowledge the use of the CReSIS Open Polar Server from CReSIS generated with support from the University of Kansas, NASA Operation IceBridge grant NNX16AH54G, and NSF grants ICER-2126503.
+    We acknowledge the use of the CReSIS Open Polar Server from CReSIS generated with support from the University of Kansas, NASA Operation IceBridge grant NNX16AH54G, and NSF grants ICER-2126503.
 
 ## Requirements
 
-A Centos 6 Linux server or virtual machine. We test the setup using Oracle VirtualBox at https://www.virtualbox.org/wiki/Downloads.
+A Centos 7 Linux server or virtual machine. We test the setup using Oracle VirtualBox at https://www.virtualbox.org/wiki/Downloads.
 
 Provisioned Virtual Machines are available at:
 https://data.cresis.ku.edu/data/temp/ct/ops/
 
-**NOTE: We are currently updating all the packages to the latest releases on a Centos 7 virtual box which we aim to distribute in April 2021.**
-
 ## Installation
 
-Check https://github.com/CReSIS/OPS/wiki for instructions.
+On a clean centos 7.9 VM:
+
+```bash
+yum install -y git
+git clone https://github.com/cresis/ops.git /opt/ops
+cd /opt/ops
+
+sh conf/provisions.sh
+
+# Answer prompts and watch for errors
+# At the half-way point, a reboot is required. After the reboot, resume the script:
+cd /opt/ops
+sh conf/provisions.sh
+```
+
+After install, edit `/var/django/ops/ops/settings.py` and add the URL/IP that points to the VM to the `ALLOWED_HOSTS` list.
+
+## Endpoints
+
+Assuming the VM's IP is `192.168.111.222`:
+
+`192.168.111.222`: The geoportal for accessing OPS
+
+`192.168.111.222/git`: A local Gitlab server with copies of a few OPS-related repos
+
+`192.168.111.222/geoserver`: The geoserver which hosts map data
+
 
 ### Public OPS Authentication
 
@@ -41,23 +65,36 @@ The username and password for the default setup are included here.
 
 **Linux OS**
 
-```username: ops
-password: pubOps```
+```
+username: root
+password: pubMaster
+```
 
+```
+username: ops
+password: pubOps
+```
+
+**Gitlab**
+
+```
+username: root
+password: pubMaster
+```
 
 **GeoServer**
 
-```username: admin
-password: pubAdmin```
-
-```username: root
-password: pubMaster```
-
+```
+username: admin
+password: pubAdmin
+```
 
 **PostgreSQL**
 
-```username: admin
-password: pubAdmin```
+```
+username: admin
+password: pubAdmin
+```
 
 ### Adding CReSIS data to the system
 

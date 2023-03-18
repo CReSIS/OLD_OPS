@@ -8,7 +8,7 @@ while true; do
 		[Yy]* ) 
 			service httpd stop
 			rm -rf /var/www/html/*
-			cp -rf /vagrant/conf/geoportal/* /var/www/html/
+			cp -rf /opt/ops/conf/geoportal/* /var/www/html/
 			service httpd start
 			break;;
 

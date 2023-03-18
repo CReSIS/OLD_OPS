@@ -18,15 +18,15 @@ import sys
 import site
 import ops.monitor
 
-#Use the monitor to restart the Daemon WSGI process on changes
+# Use the monitor to restart the Daemon WSGI process on changes
 ops.monitor.start(interval=1.0)
 
-#Add the site-packages of the OPS virtualenv
-site.addsitedir('/usr/bin/venv/lib/python2.7/site-packages')
+# Add the site-packages of the OPS virtualenv
+site.addsitedir("/usr/bin/venv/lib/python3.8/site-packages")
 
-#Add ops directory to the PYTHONPATH
-sys.path.append('/var/django/ops/')
-sys.path.append('/var/django/ops/ops/')
+# Add ops directory to the PYTHONPATH
+sys.path.append("/var/django/ops/")
+sys.path.append("/var/django/ops/ops/")
 
 # We defer to a DJANGO_SETTINGS_MODULE already in the environment. This breaks
 # if running multiple sites in the same mod_wsgi process. To fix this, use
@@ -34,14 +34,23 @@ sys.path.append('/var/django/ops/ops/')
 # os.environ["DJANGO_SETTINGS_MODULE"] = "ops.settings"
 os.environ["DJANGO_SETTINGS_MODULE"] = "ops.settings"
 
-#Activate VIRTUALENV (OPS)
-activate_env=os.path.expanduser('/usr/bin/venv/bin/activate_this.py')
-execfile(activate_env,dict(__file__=activate_env))
-
 # This application object is used by any WSGI server configured to use this
 # file. This includes Django's development server, if the WSGI_APPLICATION
 # setting points here.
 from django.core.wsgi import get_wsgi_application
+from django.conf import settings
+
+if settings.DEBUG:
+    import debugpy
+    try:
+        debugpy.log_to(settings.ATTACH_DEBUG_LOG_PATH)
+    except RuntimeError:
+        # This error occurs if the logging is already setup when attempting to launch
+        #  wsgi.py -- such as when remoted into a virtual box repo hosting a live, Apache instance
+        print("Debug a live instance with 'Attach to Django', not launch")
+        raise
+    debugpy.listen(("0.0.0.0", settings.ATTACH_DEBUG_PORT))
+
 application = get_wsgi_application()
 
 # Apply WSGI middleware here.
