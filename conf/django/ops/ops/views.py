@@ -168,7 +168,7 @@ def createPath(request):
                                  inRoll[ptIdx],
                                  inPitch[ptIdx],
                                  inHeading[ptIdx],
-                                 str(pointPathGeom.hexewkb.decode()), 
+                                 str(pointPathGeom.hexewkb.decode()),
                                  True])
 
         logging.info(
@@ -331,7 +331,7 @@ def crossoverCalculation(request):
                                 LINE AS
                                     (SELECT ST_MakeLine(ST_GeomFromText('POINTZ('||ST_X(pts.geom)||' '||ST_Y(pts.geom)||' '||pts.rn||')', 4326)) AS ln
                                     FROM pts
-                                    GROUP BY pts.segment_id), 
+                                    GROUP BY pts.segment_id),
                                 i_pts AS
                                     (SELECT (ST_Dump(ST_Intersection(ST_Transform(line.ln,{proj}), ST_Transform(o.geom,{proj})))).geom AS i_pt
                                     FROM LINE, {app}_segments AS o
@@ -503,7 +503,7 @@ def crossoverCalculation(request):
                         'No crossovers for segment %s of season %s were found.',
                         inSegment,
                         inSeason)
-                
+
                 logging.info(
                     'Segment %s of season %s has finished crossover calculation.',
                     inSegment,
@@ -586,7 +586,7 @@ def _findKeyPoints(app, segment_id_list, segment_name_list):
 def alterPathResolution(request):
     """ Alters a segment's resolution (vertex point spacing along line).
 
-    Prefer simplifySegmentsResolution for a more sophisticated approach to reducing the 
+    Prefer simplifySegmentsResolution for a more sophisticated approach to reducing the
     number of points. alterPathResolution is not crossover safe (see note at bottom of function).
 
     Input:
@@ -766,9 +766,9 @@ def simplifySegmentsResolution(request):
             # Use all points for segment geom
             try:
                 sqlStr = """with pts as (select pp.segment_id, pp.geom from {app}_point_paths pp order by gps_time),
-                            line as (select pts.segment_id as seg_id, st_makeline(st_force2d(pts.geom)) as geom 
+                            line as (select pts.segment_id as seg_id, st_makeline(st_force2d(pts.geom)) as geom
                                     from pts group by pts.segment_id having pts.segment_id in %s)
-                            update {app}_segments set geom=line.geom from line   
+                            update {app}_segments set geom=line.geom from line
                                 where id=line.seg_id and id in %s;""".format(app=app)
                 with connection.cursor() as cursor:
                     cursor.execute(sqlStr, [segment_id_list, segment_id_list])
@@ -786,15 +786,15 @@ def simplifySegmentsResolution(request):
             # Resolution is not -1, perform a simplification
             try:
                 # perform the simplification
-                sqlStr = """update {app}_segments seg set geom=simplified.geom from 
+                sqlStr = """update {app}_segments seg set geom=simplified.geom from
                             (select points.id as id, st_transform(st_simplifypreservetopology(st_transform(
                              st_makeline(points.geom), case -- determine epsg to project to before simplification to ensure correct units are used for resolution
                                                         when loc.name='arctic' then 3413
                                                         when loc.name='antarctic' then 3031
                                                         end
-                                                                                                          ), 
+                                                                                                          ),
                                                                   {resolution}), 4326) as geom
-                             from (select st_force2d(pp.geom) as geom, seg.id as id, seg.season_id 
+                             from (select st_force2d(pp.geom) as geom, seg.id as id, seg.season_id
                                  from {app}_point_paths pp join {app}_segments seg on pp.segment_id=seg.id where seg.id in %s order by gps_time) points
                              join {app}_seasons ss on points.season_id=ss.id join {app}_locations loc on ss.location_id=loc.id
                              group by points.id, loc.name
@@ -2159,6 +2159,7 @@ def getFramesWithinPolygon(request):
         return utility.errorCheck(e, sys)
 
 
+
 def getPointsWithinPolygon(request):
     """ Return the list of points located inside a WKT polygon boundary.
 
@@ -2190,6 +2191,7 @@ def getPointsWithinPolygon(request):
             inSeasonNames = utility.forceList(data['properties']['season'])
             useAllSeasons = False
         except BaseException:
+            inSeasonNames = []
             useAllSeasons = True
 
         # perform function logic
@@ -2259,6 +2261,143 @@ def getPointsWithinPolygon(request):
                                         'Season': layerPoints[9],
                                         'Frame': layerPoints[10]},
                                     {})
+
+    except Exception as e:
+        return utility.errorCheck(e, sys)
+
+
+def getCrossoversWithinPolygon(request):
+    """ Return the list of crossovers located inside a WKT polygon boundary.
+
+    Input:
+            bound: (WKT) well-known text polygon geometry (WGS84)
+            location: (string) name of the location
+
+    Optional Inputs:
+            seasons: (string or list of string) seasons within which to restrict the search
+
+    Output:
+            status: (integer) 0:error 1:success 2:warning
+            data:  List of crossovers
+    """
+
+    try:
+        models, data, app, cookies = utility.getInput(
+            request)  # get the input and models
+
+        # parse the data input
+        inLocationName = data['properties']['location']
+        inBoundaryWkt = data['properties']['bound']
+
+        # parse the optional data input
+        try:
+            inSeasonNames = utility.forceList(data['properties']['seasons'])
+            useAllSeasons = False
+        except BaseException:
+            useAllSeasons = True
+
+        inSeasonNames = tuple(inSeasonNames)
+
+        # perform function logic
+        # Get location id
+        locationId = models.locations.objects.filter(
+            name=inLocationName).values_list(
+            'pk', flat=True)[0]
+
+        try:
+            sqlStr = """WITH surflp AS
+                        (SELECT lp.twtt,
+                                lp.type,
+                                lp.quality,
+                                lp.point_path_id
+                        FROM {app}_layer_points lp
+                        WHERE lp.layer_id = 1),
+                            botlp AS
+                        (SELECT lp.twtt,
+                                lp.type,
+                                lp.quality,
+                                lp.point_path_id
+                        FROM {app}_layer_points lp
+                        WHERE lp.layer_id = 2)
+
+                    SELECT ST_Y(CX.GEOM) CX_LAT,
+                        ST_X(CX.GEOM) CX_LON,
+                        CX.ANGLE CX_ANGLE,
+
+                        PP1.GPS_TIME PT1_GPS_TIME,
+                        PP2.GPS_TIME PT2_GPS_TIME,
+
+                        PP1.ROLL PT1_ROLL,
+                        PP2.ROLL PT2_ROLL,
+
+                        PP1.PITCH PT1_PITCH,
+                        PP2.PITCH PT2_PITCH,
+
+                        PP1.HEADING PT1_HEADING,
+                        PP2.HEADING PT2_HEADING,
+
+                        ST_Y(PP1.GEOM) PT1_LAT,
+                        ST_Y(PP2.GEOM) PT2_LAT,
+
+                        ST_X(PP1.GEOM) PT1_LON,
+                        ST_X(PP2.GEOM) PT2_LON,
+
+                        ST_Z(PP1.GEOM) PT1_ELEVATION,
+                        ST_Z(PP2.GEOM) PT2_ELEVATION,
+
+                        SURFLP1.TWTT * ({half_c}) PT1_SURFACE,
+                        SURFLP2.TWTT * ({half_c}) PT2_SURFACE,
+                        SURFLP1.TWTT * ({half_c}) + ((BOTLP1.TWTT - SURFLP1.TWTT) * ({half_c} / SQRT(3.15))) PT1_BOTTOM,
+                        SURFLP2.TWTT * ({half_c}) + ((BOTLP2.TWTT - SURFLP2.TWTT) * ({half_c} / SQRT(3.15))) PT2_BOTTOM,
+                        ABS((SURFLP1.TWTT * ({half_c})) - (SURFLP1.TWTT * ({half_c}) + ((BOTLP1.TWTT - SURFLP1.TWTT) * ({half_c} / SQRT(3.15))))) PT1_THICKNESS,
+                        ABS((SURFLP2.TWTT * ({half_c})) - (SURFLP2.TWTT * ({half_c}) + ((BOTLP2.TWTT - SURFLP2.TWTT) * ({half_c} / SQRT(3.15))))) PT2_THICKNESS,
+
+                        S1.NAME PT1_SEASON,
+                        S2.NAME PT2_SEASON,
+                        FRM1.NAME PT1_FRAME,
+                        FRM2.NAME PT2_FRAME,
+                        SEG1.NAME PT1_SEGMENT,
+                        SEG2.NAME PT2_SEGMENT
+
+                    FROM {app}_CROSSOVERS CX
+
+                    join {app}_point_paths pp1 on cx.point_path_1_id=pp1.id
+                    join {app}_point_paths pp2 on cx.point_path_2_id=pp2.id
+
+                    JOIN surflp surflp1 ON pp1.id=surflp1.point_path_id
+                    JOIN surflp surflp2 ON pp2.id=surflp2.point_path_id
+                    LEFT JOIN botlp botlp1 ON pp1.id=botlp1.point_path_id
+                    LEFT JOIN botlp botlp2 ON pp2.id=botlp2.point_path_id
+
+                    join {app}_segments seg1 on seg1.id=pp1.segment_id
+                    join {app}_segments seg2 on seg2.id=pp2.segment_id
+
+                    JOIN {app}_SEASONS S1 ON S1.ID = PP1.SEASON_ID
+                    JOIN {app}_SEASONS S2 ON S2.ID = PP2.SEASON_ID
+
+                    JOIN {app}_FRAMES FRM1 ON FRM1.ID = PP1.FRAME_ID
+                    JOIN {app}_FRAMES FRM2 ON FRM2.ID = PP2.FRAME_ID
+
+                    WHERE (PP1.LOCATION_ID = %s OR PP2.LOCATION_ID = %s)
+                    	AND (%s or S1.NAME IN %s OR S2.NAME IN %s)
+                        AND ST_WITHIN(CX.GEOM, ST_GEOMFROMTEXT(%s, 4326));""".format(app=app, half_c="299792458.0/2")
+
+            # Query the database and fetch results
+            with connection.cursor() as cursor:
+                cursor.execute(sqlStr, [locationId, locationId, useAllSeasons, inSeasonNames, inSeasonNames, inBoundaryWkt])
+                data = cursor.fetchall()
+                columns = [c.name for c in cursor.description]
+
+        except DatabaseError as dberror:
+            return utility.response(0, dberror.args[0], {})
+
+        if len(data) == 0:
+            return utility.response(
+                2, "WARNING: THERE ARE NO POINTS IN THIS POLYGON.", {})
+        else:
+            layerPoints = list(zip(*data))  # unzip the layerPointsObj
+            # return the output
+            return utility.response(1, {col: values for col, values in zip(columns, layerPoints)}, {})
 
     except Exception as e:
         return utility.errorCheck(e, sys)
@@ -4238,7 +4377,7 @@ def profile(request):
 
     """
     import line_profiler
-    
+
     try:
 
         view = request.POST.get('view')  # get the function call

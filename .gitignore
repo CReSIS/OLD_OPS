@@ -6,3 +6,6 @@ gen_key.py
 db_pswd.txt
 requirements.txt
 *.code-workspace
+
+data/
+provisions.config
