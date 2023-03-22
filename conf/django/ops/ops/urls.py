@@ -49,6 +49,6 @@ urlpatterns = [
     path("get/user/profile/data", ops.views.getUserProfileData),
     path("get/frame/polygon", ops.views.getFramesWithinPolygon),
     path("get/point/polygon", ops.views.getPointsWithinPolygon),
-    path("get/crossovers/polygon", ops.views.getCrossoversWithinPolygon),
+    path("get/crossovers/polygon", ops.views.getCrossoversWithinPolygonCSV),
     path("calculateCrossovers", ops.views.crossoverCalculation),
 ]

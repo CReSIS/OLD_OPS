@@ -10,6 +10,8 @@ from .utility import ipAuth
 from decimal import Decimal
 import ops.utility as utility
 import sys
+import threading
+import traceback
 import os
 import datetime
 import simplekml
@@ -512,7 +514,6 @@ def crossoverCalculation(request):
                 segmentsObj.save()
 
             except Exception as e:
-                import traceback
                 tb = traceback.format_exc()
                 logging.error(tb)
                 return utility.errorCheck(e, sys)
@@ -523,7 +524,6 @@ def crossoverCalculation(request):
         return utility.response(1, 'SUCCESS: CROSSOVER CALCULATION COMPLETED.', {})
 
     except Exception as e:
-        import traceback
         tb = traceback.format_exc()
         try:
             logging.error(tb)
@@ -2266,8 +2266,115 @@ def getPointsWithinPolygon(request):
         return utility.errorCheck(e, sys)
 
 
-def getCrossoversWithinPolygon(request):
-    """ Return the list of crossovers located inside a WKT polygon boundary.
+def _getCrossoversWithinPolygon(app, locationId, useAllSeasons, inSeasonNames, inBoundaryWkt, serverFn):
+    """ Utility function to find Crossovers within a polygon.
+
+    Called by getCrossoversWithinPolygonCSV in a separate thread.
+    """
+
+    try:
+        sqlStr = """WITH surflp AS
+                    (SELECT lp.twtt,
+                            lp.type,
+                            lp.quality,
+                            lp.point_path_id
+                    FROM {app}_layer_points lp
+                    WHERE lp.layer_id = 1),
+                        botlp AS
+                    (SELECT lp.twtt,
+                            lp.type,
+                            lp.quality,
+                            lp.point_path_id
+                    FROM {app}_layer_points lp
+                    WHERE lp.layer_id = 2)
+
+                SELECT ST_Y(CX.GEOM) CX_LAT,
+                    ST_X(CX.GEOM) CX_LON,
+                    CX.ANGLE CX_ANGLE,
+
+                    PP1.GPS_TIME PT1_GPS_TIME,
+                    PP2.GPS_TIME PT2_GPS_TIME,
+
+                    PP1.ROLL PT1_ROLL,
+                    PP2.ROLL PT2_ROLL,
+
+                    PP1.PITCH PT1_PITCH,
+                    PP2.PITCH PT2_PITCH,
+
+                    PP1.HEADING PT1_HEADING,
+                    PP2.HEADING PT2_HEADING,
+
+                    ST_Y(PP1.GEOM) PT1_LAT,
+                    ST_Y(PP2.GEOM) PT2_LAT,
+
+                    ST_X(PP1.GEOM) PT1_LON,
+                    ST_X(PP2.GEOM) PT2_LON,
+
+                    ST_Z(PP1.GEOM) PT1_ELEVATION,
+                    ST_Z(PP2.GEOM) PT2_ELEVATION,
+
+                    SURFLP1.TWTT * ({half_c}) PT1_SURFACE,
+                    SURFLP2.TWTT * ({half_c}) PT2_SURFACE,
+                    SURFLP1.TWTT * ({half_c}) + ((BOTLP1.TWTT - SURFLP1.TWTT) * ({half_c} / SQRT(3.15))) PT1_BOTTOM,
+                    SURFLP2.TWTT * ({half_c}) + ((BOTLP2.TWTT - SURFLP2.TWTT) * ({half_c} / SQRT(3.15))) PT2_BOTTOM,
+                    ABS((SURFLP1.TWTT * ({half_c})) - (SURFLP1.TWTT * ({half_c}) + ((BOTLP1.TWTT - SURFLP1.TWTT) * ({half_c} / SQRT(3.15))))) PT1_THICKNESS,
+                    ABS((SURFLP2.TWTT * ({half_c})) - (SURFLP2.TWTT * ({half_c}) + ((BOTLP2.TWTT - SURFLP2.TWTT) * ({half_c} / SQRT(3.15))))) PT2_THICKNESS,
+
+                    S1.NAME PT1_SEASON,
+                    S2.NAME PT2_SEASON,
+                    FRM1.NAME PT1_FRAME,
+                    FRM2.NAME PT2_FRAME,
+                    SEG1.NAME PT1_SEGMENT,
+                    SEG2.NAME PT2_SEGMENT
+
+                FROM {app}_CROSSOVERS CX
+
+                join {app}_point_paths pp1 on cx.point_path_1_id=pp1.id
+                join {app}_point_paths pp2 on cx.point_path_2_id=pp2.id
+
+                JOIN surflp surflp1 ON pp1.id=surflp1.point_path_id
+                JOIN surflp surflp2 ON pp2.id=surflp2.point_path_id
+                LEFT JOIN botlp botlp1 ON pp1.id=botlp1.point_path_id
+                LEFT JOIN botlp botlp2 ON pp2.id=botlp2.point_path_id
+
+                join {app}_segments seg1 on seg1.id=pp1.segment_id
+                join {app}_segments seg2 on seg2.id=pp2.segment_id
+
+                JOIN {app}_SEASONS S1 ON S1.ID = PP1.SEASON_ID
+                JOIN {app}_SEASONS S2 ON S2.ID = PP2.SEASON_ID
+
+                JOIN {app}_FRAMES FRM1 ON FRM1.ID = PP1.FRAME_ID
+                JOIN {app}_FRAMES FRM2 ON FRM2.ID = PP2.FRAME_ID
+
+                WHERE (PP1.LOCATION_ID = %s OR PP2.LOCATION_ID = %s)
+                    AND (%s or S1.NAME IN %s OR S2.NAME IN %s)
+                    AND ST_WITHIN(CX.GEOM, ST_GEOMFROMTEXT(%s, 4326));""".format(app=app, half_c="299792458.0/2")
+
+        # Query the database and fetch results
+        with connection.cursor() as cursor:
+            cursor.execute(sqlStr, [locationId, locationId, useAllSeasons, inSeasonNames, inSeasonNames, inBoundaryWkt])
+            data = cursor.fetchall()
+            columns = [c.name for c in cursor.description]
+
+    except DatabaseError as dberror:
+        with open(serverFn, 'w') as csvFile:
+            tb = traceback.format_exc()
+            csvFile.write("Error occured during processing:\n")
+            csvFile.write(tb)
+
+        return
+
+    # Create CSV
+    with open(serverFn, 'w') as csvFile:
+        csvWriter = csv.writer(csvFile, delimiter=',', quoting=csv.QUOTE_NONE)
+        csvWriter.writerow(columns)
+        csvWriter.writerows(data)
+
+
+def getCrossoversWithinPolygonCSV(request):
+    """ Generate a CSV containing crossovers located inside a WKT polygon boundary.
+
+    This task is run on a separate thread so that the URL can be immediately returned.
 
     Input:
             bound: (WKT) well-known text polygon geometry (WGS84)
@@ -2278,7 +2385,7 @@ def getCrossoversWithinPolygon(request):
 
     Output:
             status: (integer) 0:error 1:success 2:warning
-            data:  List of crossovers
+            data:  url to the CSV on the server
     """
 
     try:
@@ -2294,6 +2401,7 @@ def getCrossoversWithinPolygon(request):
             inSeasonNames = utility.forceList(data['properties']['seasons'])
             useAllSeasons = False
         except BaseException:
+            inSeasonNames = ['empty list']
             useAllSeasons = True
 
         inSeasonNames = tuple(inSeasonNames)
@@ -2304,100 +2412,19 @@ def getCrossoversWithinPolygon(request):
             name=inLocationName).values_list(
             'pk', flat=True)[0]
 
-        try:
-            sqlStr = """WITH surflp AS
-                        (SELECT lp.twtt,
-                                lp.type,
-                                lp.quality,
-                                lp.point_path_id
-                        FROM {app}_layer_points lp
-                        WHERE lp.layer_id = 1),
-                            botlp AS
-                        (SELECT lp.twtt,
-                                lp.type,
-                                lp.quality,
-                                lp.point_path_id
-                        FROM {app}_layer_points lp
-                        WHERE lp.layer_id = 2)
+        serverDir = opsSettings.OPS_DATA_PATH + 'data/csv/'  # file path to csv dir
+        webDir = 'data/csv/'  # URL path to csv dir
 
-                    SELECT ST_Y(CX.GEOM) CX_LAT,
-                        ST_X(CX.GEOM) CX_LON,
-                        CX.ANGLE CX_ANGLE,
+        tmpFn = 'OPS_CReSIS_Crossovers_WKT_' + utility.randId(10) + '.csv'
 
-                        PP1.GPS_TIME PT1_GPS_TIME,
-                        PP2.GPS_TIME PT2_GPS_TIME,
+        serverFn = serverDir + tmpFn  # file path to csv file
+        webFn = webDir + tmpFn  # URL path to csv file
 
-                        PP1.ROLL PT1_ROLL,
-                        PP2.ROLL PT2_ROLL,
+        crossover_wkt_thread = threading.Thread(target=_getCrossoversWithinPolygon, args=(app, locationId, useAllSeasons, inSeasonNames, inBoundaryWkt, serverFn))
+        crossover_wkt_thread.name = "crossover_wkt_thread"
+        crossover_wkt_thread.start()
 
-                        PP1.PITCH PT1_PITCH,
-                        PP2.PITCH PT2_PITCH,
-
-                        PP1.HEADING PT1_HEADING,
-                        PP2.HEADING PT2_HEADING,
-
-                        ST_Y(PP1.GEOM) PT1_LAT,
-                        ST_Y(PP2.GEOM) PT2_LAT,
-
-                        ST_X(PP1.GEOM) PT1_LON,
-                        ST_X(PP2.GEOM) PT2_LON,
-
-                        ST_Z(PP1.GEOM) PT1_ELEVATION,
-                        ST_Z(PP2.GEOM) PT2_ELEVATION,
-
-                        SURFLP1.TWTT * ({half_c}) PT1_SURFACE,
-                        SURFLP2.TWTT * ({half_c}) PT2_SURFACE,
-                        SURFLP1.TWTT * ({half_c}) + ((BOTLP1.TWTT - SURFLP1.TWTT) * ({half_c} / SQRT(3.15))) PT1_BOTTOM,
-                        SURFLP2.TWTT * ({half_c}) + ((BOTLP2.TWTT - SURFLP2.TWTT) * ({half_c} / SQRT(3.15))) PT2_BOTTOM,
-                        ABS((SURFLP1.TWTT * ({half_c})) - (SURFLP1.TWTT * ({half_c}) + ((BOTLP1.TWTT - SURFLP1.TWTT) * ({half_c} / SQRT(3.15))))) PT1_THICKNESS,
-                        ABS((SURFLP2.TWTT * ({half_c})) - (SURFLP2.TWTT * ({half_c}) + ((BOTLP2.TWTT - SURFLP2.TWTT) * ({half_c} / SQRT(3.15))))) PT2_THICKNESS,
-
-                        S1.NAME PT1_SEASON,
-                        S2.NAME PT2_SEASON,
-                        FRM1.NAME PT1_FRAME,
-                        FRM2.NAME PT2_FRAME,
-                        SEG1.NAME PT1_SEGMENT,
-                        SEG2.NAME PT2_SEGMENT
-
-                    FROM {app}_CROSSOVERS CX
-
-                    join {app}_point_paths pp1 on cx.point_path_1_id=pp1.id
-                    join {app}_point_paths pp2 on cx.point_path_2_id=pp2.id
-
-                    JOIN surflp surflp1 ON pp1.id=surflp1.point_path_id
-                    JOIN surflp surflp2 ON pp2.id=surflp2.point_path_id
-                    LEFT JOIN botlp botlp1 ON pp1.id=botlp1.point_path_id
-                    LEFT JOIN botlp botlp2 ON pp2.id=botlp2.point_path_id
-
-                    join {app}_segments seg1 on seg1.id=pp1.segment_id
-                    join {app}_segments seg2 on seg2.id=pp2.segment_id
-
-                    JOIN {app}_SEASONS S1 ON S1.ID = PP1.SEASON_ID
-                    JOIN {app}_SEASONS S2 ON S2.ID = PP2.SEASON_ID
-
-                    JOIN {app}_FRAMES FRM1 ON FRM1.ID = PP1.FRAME_ID
-                    JOIN {app}_FRAMES FRM2 ON FRM2.ID = PP2.FRAME_ID
-
-                    WHERE (PP1.LOCATION_ID = %s OR PP2.LOCATION_ID = %s)
-                    	AND (%s or S1.NAME IN %s OR S2.NAME IN %s)
-                        AND ST_WITHIN(CX.GEOM, ST_GEOMFROMTEXT(%s, 4326));""".format(app=app, half_c="299792458.0/2")
-
-            # Query the database and fetch results
-            with connection.cursor() as cursor:
-                cursor.execute(sqlStr, [locationId, locationId, useAllSeasons, inSeasonNames, inSeasonNames, inBoundaryWkt])
-                data = cursor.fetchall()
-                columns = [c.name for c in cursor.description]
-
-        except DatabaseError as dberror:
-            return utility.response(0, dberror.args[0], {})
-
-        if len(data) == 0:
-            return utility.response(
-                2, "WARNING: THERE ARE NO POINTS IN THIS POLYGON.", {})
-        else:
-            layerPoints = list(zip(*data))  # unzip the layerPointsObj
-            # return the output
-            return utility.response(1, {col: values for col, values in zip(columns, layerPoints)}, {})
+        return utility.response(1, webFn, {})
 
     except Exception as e:
         return utility.errorCheck(e, sys)
