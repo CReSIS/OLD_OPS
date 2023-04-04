@@ -2347,7 +2347,7 @@ def _getCrossoversWithinPolygon(app, locationId, useAllSeasons, inSeasonNames, i
                 JOIN {app}_FRAMES FRM2 ON FRM2.ID = PP2.FRAME_ID
 
                 WHERE (PP1.LOCATION_ID = %s OR PP2.LOCATION_ID = %s)
-                    AND (%s or S1.NAME IN %s OR S2.NAME IN %s)
+                    AND (%s or S1.NAME IN %s AND S2.NAME IN %s)
                     AND ST_WITHIN(CX.GEOM, ST_GEOMFROMTEXT(%s, 4326));""".format(app=app, half_c="299792458.0/2")
 
         # Query the database and fetch results
